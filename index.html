@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitácora VAZSE CHANGE</title>
+<title>Bitácora VAZSE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -879,9 +879,25 @@ function badgeEstado(estado) {
 
 function fmtFecha(f) {
   if (!f) return '—';
-  const s = String(f);
-  if (s.includes('T') || s.length === 10) return s.substring(0, 10);
-  return s;
+  // If it's already a proper date object or timestamp
+  if (f instanceof Date) {
+    return f.getFullYear() + '-' +
+      String(f.getMonth()+1).padStart(2,'0') + '-' +
+      String(f.getDate()).padStart(2,'0');
+  }
+  const s = String(f).trim();
+  // ISO format: 2025-03-25T00:00:00.000Z
+  if (s.includes('T')) return s.substring(0, 10);
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Try parsing as date
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+  }
+  return s.substring(0, 10);
 }
 
 // ── CARGA DATOS ───────────────────────────────────────
@@ -1078,13 +1094,28 @@ async function agregarViaje() {
   btn.disabled = false; btn.textContent = '+ Agregar viaje';
 }
 
-async function eliminarViaje(id,fecha,tipo,costo) {
+async function eliminarViaje(id, fecha, tipo, costo) {
   if (!confirm('¿Eliminar este registro?')) return;
+  // Find the original index in viajes array (1-based for Sheets, +2 for header)
+  const r = viajes.find(v => v.id === id);
+  if (!r) { toast('Registro no encontrado','err'); return; }
+  const fechaNorm = fmtFecha(r.fecha);
+  const costoNum  = parseFloat(r.costo);
+  console.log('Eliminando:', { fecha: fechaNorm, tipo: r.tipo, costo: costoNum });
   try {
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',fecha,tipo,costo})});
-    viajes = viajes.filter(r=>r.id!==id);
-    filtrarViajes(); actualizarGraficaV(); toast('Registro eliminado','ok');
-  } catch(e){ toast('No se pudo eliminar','err'); }
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'delete', fecha: fechaNorm, tipo: r.tipo, costo: costoNum })
+    });
+    viajes = viajes.filter(v => v.id !== id);
+    filtrarViajes(); actualizarGraficaV();
+    toast('Registro eliminado','ok');
+  } catch(e) {
+    console.error('Error al eliminar:', e);
+    toast('No se pudo eliminar','err');
+  }
 }
 
 function duplicarViaje(id) {
