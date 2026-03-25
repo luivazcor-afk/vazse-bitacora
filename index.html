@@ -246,8 +246,8 @@ tbody td{padding:9px 12px;vertical-align:middle}
   .tab{font-size:12px;padding:8px 10px}
 }
 </style>
-<!-- Google Identity Services for Drive upload -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Google API Client for Drive upload -->
+<script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
 <div class="app">
@@ -740,6 +740,23 @@ const GDRIVE_FOLDER_ID  = '1rpt3ifuAlQYYjWn9IUp6lv-OsSoZ2vjN';
 const GDRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
 let   gdriveToken       = null;
 let   gdriveTokenExpiry = 0;
+let   gapiReady         = false;
+
+// Load gapi and init auth
+function initGapi() {
+  gapi.load('client:auth2', () => {
+    gapi.client.init({
+      clientId: GDRIVE_CLIENT_ID,
+      scope: GDRIVE_SCOPE
+    }).then(() => {
+      gapiReady = true;
+    }).catch(err => console.warn('gapi init error:', err));
+  });
+}
+// Init after page load
+window.addEventListener('load', () => {
+  if (typeof gapi !== 'undefined') initGapi();
+});
 const POR_PAGINA = 15;
 
 // ── STATE ─────────────────────────────────────────────
@@ -1094,17 +1111,38 @@ async function getGdriveToken() {
   // Return cached token if still valid (5 min buffer)
   if (gdriveToken && Date.now() < gdriveTokenExpiry - 300000) return gdriveToken;
   return new Promise((resolve, reject) => {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: GDRIVE_CLIENT_ID,
-      scope: GDRIVE_SCOPE,
-      callback: (resp) => {
-        if (resp.error) { reject(resp.error); return; }
+    if (typeof gapi === 'undefined' || !gapiReady) {
+      reject('Google API no cargada. Recarga la página.');
+      return;
+    }
+    const authInstance = gapi.auth2.getAuthInstance();
+    if (!authInstance) { reject('Auth no inicializado'); return; }
+    const signIn = () => {
+      authInstance.signIn({ prompt: 'select_account' }).then(user => {
+        const resp = user.getAuthResponse(true);
         gdriveToken       = resp.access_token;
         gdriveTokenExpiry = Date.now() + (resp.expires_in * 1000);
         resolve(gdriveToken);
+      }).catch(err => reject(err.error || err));
+    };
+    if (authInstance.isSignedIn.get()) {
+      const user = authInstance.currentUser.get();
+      const resp = user.getAuthResponse(true);
+      // Check if token still valid
+      if (resp.expires_at > Date.now() + 60000) {
+        gdriveToken = resp.access_token;
+        gdriveTokenExpiry = resp.expires_at;
+        resolve(gdriveToken);
+      } else {
+        user.reloadAuthResponse().then(newResp => {
+          gdriveToken       = newResp.access_token;
+          gdriveTokenExpiry = Date.now() + (newResp.expires_in * 1000);
+          resolve(gdriveToken);
+        }).catch(signIn);
       }
-    });
-    client.requestAccessToken({ prompt: gdriveToken ? '' : 'consent' });
+    } else {
+      signIn();
+    }
   });
 }
 
