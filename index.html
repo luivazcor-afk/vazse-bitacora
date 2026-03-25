@@ -246,8 +246,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
   .tab{font-size:12px;padding:8px 10px}
 }
 </style>
-<!-- Google API Client for Drive upload -->
-<script src="https://apis.google.com/js/api.js"></script>
+<!-- OAuth2 implicit flow — no external library needed -->
 </head>
 <body>
 <div class="app">
@@ -740,22 +739,70 @@ const GDRIVE_FOLDER_ID  = '1rpt3ifuAlQYYjWn9IUp6lv-OsSoZ2vjN';
 const GDRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
 let   gdriveToken       = null;
 let   gdriveTokenExpiry = 0;
-let   gapiReady         = false;
 
-// Load gapi and init auth
-function initGapi() {
-  gapi.load('client:auth2', () => {
-    gapi.client.init({
-      clientId: GDRIVE_CLIENT_ID,
-      scope: GDRIVE_SCOPE
-    }).then(() => {
-      gapiReady = true;
-    }).catch(err => console.warn('gapi init error:', err));
+// ── OAUTH2 IMPLICIT FLOW ──────────────────────────────
+// Checks URL hash for token after redirect
+function checkOAuthToken() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.replace('#','?').slice(1));
+  const token = params.get('access_token');
+  const expiresIn = parseInt(params.get('expires_in') || '3600');
+  if (token) {
+    gdriveToken = token;
+    gdriveTokenExpiry = Date.now() + expiresIn * 1000;
+    sessionStorage.setItem('gdrive_token', token);
+    sessionStorage.setItem('gdrive_token_expiry', String(gdriveTokenExpiry));
+    // Clean URL
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    toast('Google Drive autorizado ✓', 'ok');
+    // Resume pending upload if any
+    if (window._pendingUpload) {
+      const {file, progressId, resolve, reject} = window._pendingUpload;
+      window._pendingUpload = null;
+      subirArchivoConToken(file, progressId, token).then(resolve).catch(reject);
+    }
+  }
+}
+
+// Restore token from session
+function restoreToken() {
+  const t = sessionStorage.getItem('gdrive_token');
+  const exp = parseInt(sessionStorage.getItem('gdrive_token_expiry') || '0');
+  if (t && exp > Date.now() + 60000) {
+    gdriveToken = t;
+    gdriveTokenExpiry = exp;
+  }
+}
+
+function solicitarToken() {
+  const params = new URLSearchParams({
+    client_id: GDRIVE_CLIENT_ID,
+    redirect_uri: window.location.origin + window.location.pathname,
+    response_type: 'token',
+    scope: GDRIVE_SCOPE,
+    include_granted_scopes: 'true',
+    prompt: 'select_account'
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+async function getGdriveToken() {
+  restoreToken();
+  if (gdriveToken && Date.now() < gdriveTokenExpiry - 60000) return gdriveToken;
+  // Need to redirect for auth — save context first
+  return new Promise((resolve, reject) => {
+    // Store callback intent in sessionStorage
+    sessionStorage.setItem('gdrive_pending', '1');
+    solicitarToken();
+    // This promise won't resolve — page will redirect and come back
+    setTimeout(() => reject('Redirigiendo a Google para autorizar...'), 1000);
   });
 }
-// Init after page load
+
 window.addEventListener('load', () => {
-  if (typeof gapi !== 'undefined') initGapi();
+  restoreToken();
+  checkOAuthToken();
 });
 const POR_PAGINA = 15;
 
@@ -1107,55 +1154,34 @@ function quitarArchivo(tipo) {
   }
 }
 
-async function getGdriveToken() {
-  // Return cached token if still valid (5 min buffer)
-  if (gdriveToken && Date.now() < gdriveTokenExpiry - 300000) return gdriveToken;
-  return new Promise((resolve, reject) => {
-    if (typeof gapi === 'undefined' || !gapiReady) {
-      reject('Google API no cargada. Recarga la página.');
-      return;
-    }
-    const authInstance = gapi.auth2.getAuthInstance();
-    if (!authInstance) { reject('Auth no inicializado'); return; }
-    const signIn = () => {
-      authInstance.signIn({ prompt: 'select_account' }).then(user => {
-        const resp = user.getAuthResponse(true);
-        gdriveToken       = resp.access_token;
-        gdriveTokenExpiry = Date.now() + (resp.expires_in * 1000);
-        resolve(gdriveToken);
-      }).catch(err => reject(err.error || err));
-    };
-    if (authInstance.isSignedIn.get()) {
-      const user = authInstance.currentUser.get();
-      const resp = user.getAuthResponse(true);
-      // Check if token still valid
-      if (resp.expires_at > Date.now() + 60000) {
-        gdriveToken = resp.access_token;
-        gdriveTokenExpiry = resp.expires_at;
-        resolve(gdriveToken);
-      } else {
-        user.reloadAuthResponse().then(newResp => {
-          gdriveToken       = newResp.access_token;
-          gdriveTokenExpiry = Date.now() + (newResp.expires_in * 1000);
-          resolve(gdriveToken);
-        }).catch(signIn);
-      }
-    } else {
-      signIn();
-    }
-  });
-}
+// getGdriveToken defined above in OAuth section
 
 async function subirArchivo(file, progressId) {
   if (file.size > 50 * 1024 * 1024) {
-    throw 'El archivo supera el límite de 50 MB.';
+    throw 'El archivo supera el límite de 50 MB. Por favor selecciona un archivo más pequeño.';
   }
+  restoreToken();
+  if (!gdriveToken || Date.now() >= gdriveTokenExpiry - 60000) {
+    // Save file reference and redirect to auth
+    toast('Redirigiendo a Google para autorizar Drive...', 'inf');
+    await new Promise(r => setTimeout(r, 1200));
+    const params = new URLSearchParams({
+      client_id: GDRIVE_CLIENT_ID,
+      redirect_uri: window.location.origin + window.location.pathname,
+      response_type: 'token',
+      scope: GDRIVE_SCOPE,
+      include_granted_scopes: 'true'
+    });
+    window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+    return; // page will redirect
+  }
+  return subirArchivoConToken(file, progressId, gdriveToken);
+}
+
+async function subirArchivoConToken(file, progressId, token) {
   const progress = document.getElementById(progressId);
   if (progress) progress.classList.add('show');
-  try {
-    // Get OAuth token
-    const token = await getGdriveToken();
-    // Build multipart request
+  try {    // Build multipart request
     const metadata = JSON.stringify({ name: file.name, parents: [GDRIVE_FOLDER_ID] });
     const boundary = '-------vazse_boundary_' + Date.now();
     const delimiter = '\r\n--' + boundary + '\r\n';
