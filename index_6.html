@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora VAZSE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;color:#1a1a18;min-height:100vh}
+.app{max-width:1140px;margin:0 auto;padding:1.25rem}
+
+/* MEMBRETE */
+.membrete{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:12px;margin-bottom:1rem;flex-wrap:wrap;gap:10px}
+.membrete img{height:52px;width:auto;object-fit:contain}
+.membrete-right{text-align:right}
+.membrete-title{font-size:14px;font-weight:500;color:#185FA5}
+.membrete-sub{font-size:11px;color:#888780;margin-top:2px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:#ebe9e4;border-radius:10px;padding:4px}
+.tab{flex:1;padding:9px 16px;font-size:13px;font-weight:500;border:none;background:transparent;border-radius:7px;cursor:pointer;color:#888780;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab:hover{color:#1a1a18}
+.tab.active{background:#fff;color:#1a1a18;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tab-icon{font-size:14px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* CARDS & LAYOUT */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:32px;height:32px;border-radius:8px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-title{font-size:15px;font-weight:500}
+.brand-sub{font-size:12px;color:#888780;margin-top:2px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-ok{background:#1D9E75}.dot-err{background:#D85A30}.dot-loading{background:#BA7517;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:7px 13px;font-size:12px;font-weight:500;border:0.5px solid rgba(0,0,0,.22);border-radius:8px;background:transparent;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s;color:#1a1a18}
+.btn:hover{background:rgba(0,0,0,.05)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn-primary{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
+.btn-primary:hover{background:#B5D4F4}
+.btn-danger{background:#FAECE7;color:#712B13;border-color:#F5C4B3}
+.btn-danger:hover{background:#F5C4B3}
+.btn-success{background:#EAF3DE;color:#27500A;border-color:#C0DD97}
+.btn-success:hover{background:#C0DD97}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+.metric{background:#f1efeb;border-radius:12px;padding:.85rem 1rem;border:0.5px solid rgba(0,0,0,.08)}
+.metric-label{font-size:11px;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.metric-val{font-size:20px;font-weight:500;line-height:1}
+.metric-val.pos{color:#0F6E56}.metric-val.neg{color:#993C1D}.metric-val.warn{color:#854F0B}
+
+/* CHART */
+.chart-card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.chart-title{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.05em}
+.chart-legend{display:flex;gap:14px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#888780}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* FORM */
+.section-label{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.form-card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:12px;padding:1.25rem;margin-bottom:1.25rem}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+.fg.half{grid-column:span 2}
+.fg label{font-size:11px;font-weight:500;color:#888780;letter-spacing:.03em}
+.fg input,.fg select,.fg textarea{padding:8px 10px;font-size:13px;border:0.5px solid rgba(0,0,0,.22);border-radius:8px;background:#fff;font-family:inherit;transition:border-color .15s;color:#1a1a18}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#378ADD}
+.fg textarea{resize:vertical;min-height:52px}
+
+/* FILE INPUT */
+.file-zone{border:1.5px dashed rgba(0,0,0,.2);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color .15s;background:#fafaf8}
+.file-zone:hover{border-color:#378ADD;background:#E6F1FB}
+.file-zone input{display:none}
+.file-zone-text{font-size:12px;color:#888780}
+.file-zone-text strong{color:#185FA5}
+.file-attached{font-size:11px;color:#27500A;background:#EAF3DE;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;margin-top:6px}
+.file-attached button{background:none;border:none;cursor:pointer;color:#27500A;font-size:13px;padding:0 2px}
+
+.btn-add{margin-top:10px;width:100%;padding:9px;font-size:13px;font-weight:500;border:0.5px solid #378ADD;border-radius:8px;background:#E6F1FB;color:#0C447C;cursor:pointer;transition:background .15s}
+.btn-add:hover{background:#B5D4F4}
+.btn-add:disabled{opacity:.4;cursor:default}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.toolbar input,.toolbar select{padding:7px 10px;font-size:12px;border:0.5px solid rgba(0,0,0,.22);border-radius:8px;background:#fff;font-family:inherit;color:#1a1a18}
+.toolbar input{flex:1;min-width:120px}
+.toolbar select{min-width:110px}
+.btn-clear{font-size:11px;color:#888780;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:8px}
+.btn-clear:hover{background:rgba(0,0,0,.05)}
+.results-info{font-size:11px;color:#888780;margin-left:auto;white-space:nowrap}
+
+/* TABLE */
+.table-outer{border:0.5px solid rgba(0,0,0,.1);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px}
+thead{background:#f1efeb}
+thead th{font-size:11px;font-weight:500;color:#888780;text-align:left;padding:9px 12px;border-bottom:0.5px solid rgba(0,0,0,.08);white-space:nowrap;letter-spacing:.03em;cursor:pointer;user-select:none}
+thead th:hover{color:#1a1a18}
+thead th.no-sort{cursor:default}
+.sort-arrow{margin-left:3px;opacity:.4;font-size:10px}
+tbody tr{border-bottom:0.5px solid rgba(0,0,0,.06);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f7f6f3}
+tbody td{padding:9px 12px;vertical-align:middle}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
+.badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.b-carga{background:#E6F1FB;color:#0C447C}.b-carga .badge-dot{background:#185FA5}
+.b-descarga{background:#EAF3DE;color:#27500A}.b-descarga .badge-dot{background:#3B6D11}
+.b-traslado{background:#FAEEDA;color:#633806}.b-traslado .badge-dot{background:#854F0B}
+.b-otro{background:#F1EFE8;color:#444441}.b-otro .badge-dot{background:#5F5E5A}
+.b-lavado{background:#E1F5EE;color:#085041}.b-lavado .badge-dot{background:#1D9E75}
+.b-lavado-esp{background:#9FE1CB;color:#04342C}.b-lavado-esp .badge-dot{background:#0F6E56}
+.b-maniobras{background:#EEEDFE;color:#26215C}.b-maniobras .badge-dot{background:#7F77DD}
+.b-flete-full{background:#FAECE7;color:#4A1B0C}.b-flete-full .badge-dot{background:#D85A30}
+.b-flete-sen{background:#F5C4B3;color:#712B13}.b-flete-sen .badge-dot{background:#993C1D}
+.b-seguro{background:#FAEEDA;color:#412402}.b-seguro .badge-dot{background:#EF9F27}
+.b-pendiente{background:#FAEEDA;color:#633806}.b-pendiente .badge-dot{background:#BA7517}
+.b-pagado{background:#EAF3DE;color:#27500A}.b-pagado .badge-dot{background:#3B6D11}
+.b-vencido{background:#FAECE7;color:#712B13}.b-vencido .badge-dot{background:#D85A30}
+.b-parcial{background:#E6F1FB;color:#0C447C}.b-parcial .badge-dot{background:#185FA5}
+
+.util-pos{color:#0F6E56;font-weight:500}
+.util-neg{color:#993C1D;font-weight:500}
+.muted{color:#888780}
+.trunc{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ACCIONES TABLA */
+.td-actions{display:flex;gap:4px;align-items:center}
+.btn-sm{padding:3px 8px;font-size:11px;font-weight:500;border-radius:6px;border:0.5px solid rgba(0,0,0,.18);background:transparent;cursor:pointer;color:#1a1a18;white-space:nowrap;transition:background .12s}
+.btn-sm:hover{background:rgba(0,0,0,.06)}
+.btn-sm.del:hover{color:#993C1D;background:#FAECE7;border-color:#F0997B}
+.btn-sm.view{color:#185FA5;border-color:#B5D4F4;background:#E6F1FB}
+.btn-sm.view:hover{background:#B5D4F4}
+
+/* PAGINACIÓN */
+.pagination{display:flex;align-items:center;gap:6px;justify-content:center;margin-top:8px}
+.pg-btn{padding:5px 10px;font-size:12px;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;background:transparent;cursor:pointer;transition:background .15s;color:#1a1a18}
+.pg-btn:hover{background:rgba(0,0,0,.05)}
+.pg-btn:disabled{opacity:.3;cursor:default}
+.pg-btn.active{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
+.pg-info{font-size:12px;color:#888780;padding:0 4px}
+
+.empty-state{padding:2.5rem 1rem;text-align:center}
+.empty-state p{font-size:13px;color:#888780}
+
+/* MODAL PREVIEW */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:1.25rem;width:92%;max-width:860px;max-height:90vh;display:flex;flex-direction:column;gap:12px}
+.modal-header{display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:500}
+.modal-close{background:none;border:none;cursor:pointer;font-size:18px;color:#888780;padding:2px 6px;border-radius:6px}
+.modal-close:hover{background:rgba(0,0,0,.06)}
+.modal-body{flex:1;overflow:auto;border-radius:8px;background:#f5f5f3;min-height:400px;display:flex;align-items:center;justify-content:center}
+.modal-body iframe{width:100%;height:520px;border:none;border-radius:8px}
+.modal-body img{max-width:100%;max-height:500px;border-radius:8px;object-fit:contain}
+
+/* UPLOAD PROGRESS */
+.upload-progress{display:none;align-items:center;gap:8px;font-size:12px;color:#888780;margin-top:8px}
+.upload-progress.show{display:flex}
+.spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.1);border-top-color:#185FA5;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:20px;right:20px;pointer-events:none;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{font-size:12px;font-weight:500;padding:9px 16px;border-radius:8px;opacity:0;transition:opacity .25s,transform .25s;white-space:nowrap;transform:translateY(8px)}
+.toast.ok{background:#EAF3DE;color:#27500A;border:0.5px solid #97C459}
+.toast.err{background:#FAECE7;color:#712B13;border:0.5px solid #F0997B}
+.toast.inf{background:#E6F1FB;color:#0C447C;border:0.5px solid #B5D4F4}
+.toast.show{opacity:1;transform:translateY(0)}
+
+
+
+/* MARGIN BAR */
+.margin-bar{display:inline-block;width:40px;height:6px;border-radius:3px;vertical-align:middle;margin-left:4px}
+.margin-pct{font-size:10px;color:#888780;margin-left:3px}
+
+/* ALERT BANNER */
+.alert-banner{display:none;background:#FAECE7;border:0.5px solid #F5C4B3;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:#712B13;align-items:center;gap:10px;cursor:pointer}
+.alert-banner.show{display:flex}
+.alert-banner strong{font-weight:500}
+
+/* REPORT TABS */
+.report-tabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:0.5px solid rgba(0,0,0,.1);padding-bottom:0}
+.report-tab{padding:7px 14px;font-size:12px;font-weight:500;border:none;background:transparent;cursor:pointer;color:#888780;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.report-tab:hover{color:#1a1a18}
+.report-tab.active{color:#185FA5;border-bottom-color:#185FA5}
+.report-panel{display:none}
+.report-panel.active{display:block}
+
+/* SUMMARY TABLE */
+.sum-table{width:100%;border-collapse:collapse;font-size:13px}
+.sum-table th{font-size:11px;font-weight:500;color:#888780;text-align:left;padding:8px 12px;border-bottom:0.5px solid rgba(0,0,0,.08);text-transform:uppercase;letter-spacing:.04em}
+.sum-table td{padding:8px 12px;border-bottom:0.5px solid rgba(0,0,0,.06)}
+.sum-table tr:last-child td{border-bottom:none}
+.sum-table tr:hover td{background:#f7f6f3}
+.sum-table .num{text-align:right;white-space:nowrap}
+.sum-table .pos{color:#0F6E56;font-weight:500}
+.sum-table .neg{color:#993C1D;font-weight:500}
+.sum-table .neu{color:#888780}
+
+/* DUPLICATE BTN */
+.btn-sm.dup{color:#854F0B;border-color:#FAC775;background:#FAEEDA}
+.btn-sm.dup:hover{background:#FAC775}
+
+/* PDF REPORT */
+@media print{
+  .tabs,.topbar,.form-card,.toolbar,.pagination,.btns,.btn-sm,
+  .edit-overlay,.modal-overlay,.toast-wrap,.alert-banner,
+  .tab-panel:not(.active){display:none!important}
+  body{background:#fff}
+  .app{max-width:100%;padding:0}
+  .membrete{border:none;padding:.5rem 0}
+  table{min-width:unset!important;font-size:11px}
+  thead th,tbody td{padding:5px 8px}
+  .chart-card{page-break-inside:avoid}
+}
+
+/* FLETE SECTION */
+.flete-section{display:none;grid-column:1/-1;background:#f7f6f3;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:1rem;margin-top:4px}
+.flete-section.show{display:block}
+.flete-section-title{font-size:11px;font-weight:500;color:#185FA5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.flete-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.flete-divider{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;grid-column:1/-1;border-top:0.5px solid rgba(0,0,0,.08);padding-top:10px}
+.badge-tipo{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;margin-left:6px}
+.badge-flete{background:#E6F1FB;color:#0C447C}
+.badge-servicio{background:#F1EFE8;color:#444441}
+
+/* EDIT MODAL */
+.edit-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
+.edit-overlay.show{display:flex}
+.edit-modal{background:#fff;border-radius:16px;padding:1.5rem;width:92%;max-width:680px;display:flex;flex-direction:column;gap:14px;margin-bottom:40px}
+.edit-modal-header{display:flex;align-items:center;justify-content:space-between}
+.edit-modal-title{font-size:15px;font-weight:500}
+.edit-close{background:none;border:none;cursor:pointer;font-size:18px;color:#888780;padding:2px 6px;border-radius:6px}
+.edit-close:hover{background:rgba(0,0,0,.06)}
+.edit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.edit-footer{display:flex;gap:8px;justify-content:flex-end}
+
+/* ESTADO SELECTOR INLINE */
+.estado-select{font-size:11px;padding:3px 7px;border:0.5px solid rgba(0,0,0,.2);border-radius:6px;background:transparent;cursor:pointer;font-family:inherit}
+
+@media(max-width:600px){
+  .app{padding:.75rem}
+  .membrete img{height:38px}
+  .tab{font-size:12px;padding:8px 10px}
+}
+</style>
+<!-- OAuth2 implicit flow — no external library needed -->
+</head>
+<body>
+<div class="app">
+
+  <!-- MEMBRETE -->
+  <div class="membrete">
+    <img src="https://i.imgur.com/dNpSrLC.png" alt="VAZSE"
+      onerror="this.style.display='none';document.getElementById('logo-txt').style.display='block'">
+    <span id="logo-txt" style="display:none;font-size:18px;font-weight:500;color:#185FA5">VAZSE</span>
+    <div class="membrete-right">
+      <div class="membrete-title">Resolución Estratégica VAZSE</div>
+      <div class="membrete-sub">Sistema de control de viajes y cobranza</div>
+    </div>
+  </div>
+
+  <!-- PESTAÑAS -->
+  <!-- ALERTA VENCIDOS -->
+  <div class="alert-banner" id="alert-vencidos" onclick="irAVencidos()">
+    <span>🔴</span>
+    <span><strong id="alert-vencidos-txt"></strong> — Haz clic para ver</span>
+    <span style="margin-left:auto;font-size:11px">Ver cobranza ›</span>
+  </div>
+
+  <!-- BÚSQUEDA GLOBAL -->
+  <div style="margin-bottom:1rem;position:relative">
+    <input type="text" id="global-buscar" placeholder="🔍  Buscar en viajes y cobranza..." oninput="busquedaGlobal()"
+      style="width:100%;padding:9px 14px;font-size:13px;border:0.5px solid rgba(0,0,0,.22);border-radius:10px;background:#fff;font-family:inherit;color:#1a1a18">
+    <div id="global-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid rgba(0,0,0,.15);border-radius:10px;margin-top:4px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:320px;overflow-y:auto"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="cambiarTab('viajes',this)">
+      <span class="tab-icon">🚚</span> Viajes
+    </button>
+    <button class="tab" onclick="cambiarTab('cobranza',this)">
+      <span class="tab-icon">📋</span> Cobranza
+    </button>
+    <button class="tab" onclick="cambiarTab('reportes',this)">
+      <span class="tab-icon">📊</span> Reportes
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA 1 — VIAJES
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-viajes" class="tab-panel active">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="#185FA5" stroke-width="1.4"/><path d="M6 7h8M6 10h8M6 13h5" stroke="#185FA5" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="brand-title">Viajes</div>
+          <div class="brand-sub"><span class="dot dot-loading" id="v-dot"></span><span id="v-status">Conectando...</span></div>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
+        <button class="btn" id="btn-export-v" onclick="exportarViajes()" disabled>↓ Excel</button>
+        <button class="btn" id="btn-pdf-v" onclick="exportarPDFViajes()" disabled>🖨️ PDF</button>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Total cobrado</div><div class="metric-val pos" id="v-cobrado">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Total costo</div><div class="metric-val neg" id="v-costo">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Utilidad neta</div><div class="metric-val" id="v-utilidad">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Viajes</div><div class="metric-val" id="v-viajes">0</div></div>
+      <div class="metric"><div class="metric-label">Margen %</div><div class="metric-val" id="v-margen">0%</div></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Utilidad por mes</span>
+        <div class="chart-legend">
+          <span class="leg-item"><span class="leg-dot" style="background:#85B7EB"></span>Cobrado</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#F0997B"></span>Costo</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#1D9E75"></span>Utilidad</span>
+        </div>
+      </div>
+      <div style="position:relative;width:100%;height:190px"><canvas id="chart-viajes"></canvas></div>
+    </div>
+
+    <div class="form-card">
+      <div class="section-label">Nuevo registro</div>
+      <div class="form-grid">
+        <div class="fg"><label>Fecha</label><input type="date" id="v-fecha"></div>
+        <div class="fg"><label>Tipo</label>
+          <select id="v-tipo" onchange="toggleFleteSection()">
+<option value="carga">Carga</option>
+            <option value="descarga">Descarga</option>
+            <option value="traslado">Traslado</option>
+            <option value="lavado_sencillo">Lavado sencillo</option>
+            <option value="lavado_especial">Lavado especial</option>
+            <option value="maniobras">Maniobras</option>
+            <option value="flete_full">Flete Full</option>
+            <option value="flete_sencillo">Flete Sencillo</option>
+            <option value="seguro">Seguro</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="fg"><label>Cliente</label><input type="text" id="v-cliente" placeholder="Nombre del cliente"></div>
+        <div class="fg"><label>Unidad</label><input type="text" id="v-unidad" placeholder="Placas o nombre"></div>
+        <div class="fg"><label>Origen</label><input type="text" id="v-origen" placeholder="Ciudad / lugar"></div>
+        <div class="fg"><label>Destino</label><input type="text" id="v-destino" placeholder="Ciudad / lugar"></div>
+        <div class="fg"><label>Costo ($)</label><input type="number" id="v-costo" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="fg"><label>Precio cobrado ($)</label><input type="number" id="v-cobradof" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="fg"><label>Referencia</label><input type="text" id="v-referencia" placeholder="N° orden, contrato, etc."></div>
+        <div class="fg full"><label>Notas</label><textarea id="v-notas" placeholder="Conductor, mercancía, observaciones..."></textarea></div>
+
+        <!-- SECCIÓN EXCLUSIVA PARA FLETES -->
+        <div class="flete-section fg full" id="flete-section">
+          <div class="flete-section-title">🚛 Datos del flete <span class="badge-tipo badge-flete">Flete / Traslado</span></div>
+          <div class="flete-grid">
+            <div class="fg"><label>N° Contenedor</label><input type="text" id="v-contenedor" placeholder="MSCU1234567"></div>
+            <div class="fg"><label>Patio de entrega</label><input type="text" id="v-patio" placeholder="Nombre del patio"></div>
+            <div class="flete-divider">Maniobras (costo separado → genera línea en cobranza)</div>
+            <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="v-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label>Descripción maniobras</label><input type="text" id="v-maniobras-desc" placeholder="Descarga, posicionamiento, etc."></div>
+            <div class="flete-divider">EIR — Equipment Interchange Receipt</div>
+            <div class="fg" style="grid-column:1/-1">
+              <label>Adjuntar EIR</label>
+              <div class="file-zone" onclick="document.getElementById('v-eir-input').click()" id="v-eir-zone">
+                <input type="file" id="v-eir-input" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" onchange="archivoSeleccionado('eir',this)">
+                <div class="file-zone-text">📋 <strong>Seleccionar EIR</strong> o arrastra aquí</div>
+              </div>
+              <div id="eir-attached" style="display:none"></div>
+              <div class="upload-progress" id="eir-progress"><div class="spinner"></div><span>Subiendo EIR a Drive...</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <button class="btn-add" id="v-btn-add" onclick="agregarViaje()">+ Agregar viaje</button>
+    </div>
+
+    <div class="section-label">Registros</div>
+    <div class="toolbar">
+      <input type="text" id="v-buscar" placeholder="Buscar cliente, unidad, ruta..." oninput="filtrarViajes()">
+      <select id="v-fil-tipo" onchange="filtrarViajes()">
+        <option value="">Todos los tipos</option>
+        <option value="carga">Carga</option>
+        <option value="descarga">Descarga</option>
+        <option value="traslado">Traslado</option>
+        <option value="lavado_sencillo">Lavado sencillo</option>
+        <option value="lavado_especial">Lavado especial</option>
+        <option value="maniobras">Maniobras</option>
+        <option value="flete_full">Flete Full</option>
+        <option value="flete_sencillo">Flete Sencillo</option>
+        <option value="seguro">Seguro</option>
+        <option value="otro">Otro</option>
+      </select>
+      <input type="date" id="v-fil-desde" onchange="filtrarViajes()" title="Desde">
+      <input type="date" id="v-fil-hasta" onchange="filtrarViajes()" title="Hasta">
+      <button class="btn-clear" onclick="limpiarFiltrosV()">✕ Limpiar</button>
+      <span class="results-info" id="v-info"></span>
+    </div>
+    <div class="table-outer">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="ordenarV('fecha')">Fecha <span class="sort-arrow" id="va-fecha">↕</span></th>
+              <th onclick="ordenarV('referencia')">Referencia <span class="sort-arrow" id="va-referencia">↕</span></th>
+              <th>Tipo</th>
+              <th onclick="ordenarV('cliente')">Cliente <span class="sort-arrow" id="va-cliente">↕</span></th>
+              <th>Unidad</th>
+              <th>Ruta</th>
+              <th onclick="ordenarV('costo')">Costo <span class="sort-arrow" id="va-costo">↕</span></th>
+              <th onclick="ordenarV('cobrado')">Cobrado <span class="sort-arrow" id="va-cobrado">↕</span></th>
+              <th onclick="ordenarV('utilidad')">Utilidad <span class="sort-arrow" id="va-utilidad">↕</span></th>
+              <th onclick="ordenarV('margen')">Margen <span class="sort-arrow" id="va-margen">↕</span></th>
+              <th>Notas</th>
+              <th class="no-sort"></th>
+            </tr>
+          </thead>
+          <tbody id="v-tbody"><tr><td colspan="12"><div class="empty-state"><p>Cargando...</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="pagination" id="v-pag"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA 2 — COBRANZA
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-cobranza" class="tab-panel">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="#185FA5" stroke-width="1.4"/><path d="M6 8h8M6 12h5" stroke="#185FA5" stroke-width="1.4" stroke-linecap="round"/><circle cx="14" cy="12" r="2.5" stroke="#1D9E75" stroke-width="1.3"/></svg>
+        </div>
+        <div>
+          <div class="brand-title">Cobranza</div>
+          <div class="brand-sub"><span class="dot dot-loading" id="c-dot"></span><span id="c-status">Conectando...</span></div>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
+        <button class="btn" id="btn-export-c" onclick="exportarCobranza()" disabled>↓ Excel</button>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Total facturado</div><div class="metric-val pos" id="c-total">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Cobrado</div><div class="metric-val pos" id="c-cobrado">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Pendiente</div><div class="metric-val warn" id="c-pendiente">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Vencido</div><div class="metric-val neg" id="c-vencido">$0.00</div></div>
+    </div>
+
+    <div class="form-card">
+      <div class="section-label">Nueva factura / cobranza</div>
+      <div class="form-grid">
+        <div class="fg"><label>Folio / N° factura</label><input type="text" id="c-folio" placeholder="FAC-001"></div>
+        <div class="fg"><label>Cliente</label><input type="text" id="c-cliente" placeholder="Nombre del cliente"></div>
+        <div class="fg"><label>Monto ($)</label><input type="number" id="c-monto" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="fg"><label>Estado</label>
+          <select id="c-estado">
+            <option value="pendiente">Pendiente</option>
+            <option value="pagado">Pagado</option>
+            <option value="vencido">Vencido</option>
+            <option value="parcial">Parcial</option>
+          </select>
+        </div>
+        <div class="fg"><label>Fecha emisión</label><input type="date" id="c-femision"></div>
+        <div class="fg"><label>Fecha vencimiento</label><input type="date" id="c-fvencimiento"></div>
+        <div class="fg"><label>Referencia</label><input type="text" id="c-referencia" placeholder="N° transferencia, cheque, etc."></div>
+
+        <!-- PDF FACTURA -->
+        <div class="fg">
+          <label>PDF Factura</label>
+          <div class="file-zone" onclick="document.getElementById('c-pdf-input').click()" id="pdf-zone">
+            <input type="file" id="c-pdf-input" accept=".pdf,application/pdf" onchange="archivoSeleccionado('pdf',this)">
+            <div class="file-zone-text">📄 <strong>Seleccionar PDF</strong> o arrastra aquí</div>
+          </div>
+          <div id="pdf-attached" style="display:none"></div>
+          <div class="upload-progress" id="pdf-progress"><div class="spinner"></div><span>Subiendo factura a Drive...</span></div>
+        </div>
+
+        <!-- EVIDENCIA DE PAGO -->
+        <div class="fg">
+          <label>Evidencia de pago</label>
+          <div class="file-zone" onclick="document.getElementById('c-evi-input').click()" id="evi-zone">
+            <input type="file" id="c-evi-input" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" onchange="archivoSeleccionado('evidencia',this)">
+            <div class="file-zone-text">🧾 <strong>Seleccionar archivo</strong> o arrastra aquí</div>
+          </div>
+          <div id="evi-attached" style="display:none"></div>
+          <div class="upload-progress" id="evi-progress"><div class="spinner"></div><span>Subiendo evidencia a Drive...</span></div>
+        </div>
+
+        <div class="fg full"><label>Notas</label><textarea id="c-notas" placeholder="Observaciones, referencia de pago, etc."></textarea></div>
+      </div>
+      <button class="btn-add" id="c-btn-add" onclick="agregarCobranza()">+ Registrar factura</button>
+    </div>
+
+    <div class="section-label">Facturas registradas</div>
+    <div class="toolbar">
+      <input type="text" id="c-buscar" placeholder="Buscar folio, cliente..." oninput="filtrarCobranza()">
+      <select id="c-fil-estado" onchange="filtrarCobranza()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="pagado">Pagado</option>
+        <option value="vencido">Vencido</option>
+        <option value="parcial">Parcial</option>
+      </select>
+      <input type="date" id="c-fil-desde" onchange="filtrarCobranza()" title="Desde">
+      <input type="date" id="c-fil-hasta" onchange="filtrarCobranza()" title="Hasta">
+      <button class="btn-clear" onclick="limpiarFiltrosC()">✕ Limpiar</button>
+      <span class="results-info" id="c-info"></span>
+    </div>
+    <div class="table-outer">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="ordenarC('folio')">Folio <span class="sort-arrow" id="ca-folio">↕</span></th>
+              <th onclick="ordenarC('cliente')">Cliente <span class="sort-arrow" id="ca-cliente">↕</span></th>
+              <th onclick="ordenarC('monto')">Monto <span class="sort-arrow" id="ca-monto">↕</span></th>
+              <th onclick="ordenarC('fechaEmision')">Emisión <span class="sort-arrow" id="ca-fechaEmision">↕</span></th>
+              <th onclick="ordenarC('fechaVencimiento')">Vencimiento <span class="sort-arrow" id="ca-fechaVencimiento">↕</span></th>
+              <th>Estado</th>
+              <th onclick="ordenarC('referencia')">Referencia <span class="sort-arrow" id="ca-referencia">↕</span></th>
+              <th class="no-sort">Factura</th>
+              <th class="no-sort">Evidencia</th>
+              <th>Notas</th>
+              <th class="no-sort"></th>
+            </tr>
+          </thead>
+          <tbody id="c-tbody"><tr><td colspan="12"><div class="empty-state"><p>Cargando...</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="pagination" id="c-pag"></div>
+  </div>
+
+</div>
+
+
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA 3 — REPORTES
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-reportes" class="tab-panel">
+
+    <div class="topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="#185FA5" stroke-width="1.4"/><path d="M5 14l3-4 3 2 3-5" stroke="#1D9E75" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div><div class="brand-title">Reportes y análisis</div></div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / PDF</button>
+      </div>
+    </div>
+
+    <!-- REPORT TABS -->
+    <div class="report-tabs">
+      <button class="report-tab active" onclick="cambiarReporte('clientes',this)">Por cliente</button>
+      <button class="report-tab" onclick="cambiarReporte('unidades',this)">Por unidad</button>
+      <button class="report-tab" onclick="cambiarReporte('tipos',this)">Por tipo</button>
+    </div>
+
+    <!-- POR CLIENTE -->
+    <div id="rep-clientes" class="report-panel active">
+      <div class="chart-card" style="margin-bottom:1rem">
+        <div class="chart-header"><span class="chart-title">Cobrado vs costo por cliente</span></div>
+        <div style="position:relative;width:100%;height:220px"><canvas id="chart-clientes"></canvas></div>
+      </div>
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr>
+              <th>Cliente</th><th class="num">Viajes</th>
+              <th class="num">Cobrado</th><th class="num">Costo</th>
+              <th class="num">Utilidad</th><th class="num">Margen</th>
+            </tr></thead>
+            <tbody id="rep-clientes-tbody"><tr><td colspan="6" class="empty-state"><p>Sin datos</p></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- POR UNIDAD -->
+    <div id="rep-unidades" class="report-panel">
+      <div class="chart-card" style="margin-bottom:1rem">
+        <div class="chart-header"><span class="chart-title">Utilidad por unidad</span></div>
+        <div style="position:relative;width:100%;height:220px"><canvas id="chart-unidades"></canvas></div>
+      </div>
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr>
+              <th>Unidad</th><th class="num">Viajes</th>
+              <th class="num">Cobrado</th><th class="num">Costo</th>
+              <th class="num">Utilidad</th><th class="num">Margen</th>
+            </tr></thead>
+            <tbody id="rep-unidades-tbody"><tr><td colspan="6" class="empty-state"><p>Sin datos</p></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- POR TIPO -->
+    <div id="rep-tipos" class="report-panel">
+      <div class="chart-card" style="margin-bottom:1rem">
+        <div class="chart-header"><span class="chart-title">Distribución por tipo de servicio</span></div>
+        <div style="position:relative;width:100%;height:220px"><canvas id="chart-tipos"></canvas></div>
+      </div>
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr>
+              <th>Tipo</th><th class="num">Viajes</th>
+              <th class="num">Cobrado</th><th class="num">Costo</th>
+              <th class="num">Utilidad</th><th class="num">Margen</th>
+            </tr></thead>
+            <tbody id="rep-tipos-tbody"><tr><td colspan="6" class="empty-state"><p>Sin datos</p></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+<!-- EDIT MODAL VIAJES -->
+<div class="edit-overlay" id="ev-overlay" onclick="cerrarEditViaje(event)">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <span class="edit-modal-title">Editar viaje</span>
+      <button class="edit-close" onclick="document.getElementById('ev-overlay').classList.remove('show')">✕</button>
+    </div>
+    <input type="hidden" id="ev-id">
+    <div class="edit-grid">
+      <div class="fg"><label>Fecha</label><input type="date" id="ev-fecha"></div>
+      <div class="fg"><label>Tipo</label>
+        <select id="ev-tipo">
+          <option value="carga">Carga</option><option value="descarga">Descarga</option>
+          <option value="traslado">Traslado</option>
+          <option value="lavado_sencillo">Lavado sencillo</option>
+          <option value="lavado_especial">Lavado especial</option>
+          <option value="maniobras">Maniobras</option>
+          <option value="flete_full">Flete Full</option>
+          <option value="flete_sencillo">Flete Sencillo</option>
+          <option value="seguro">Seguro</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="fg"><label>Cliente</label><input type="text" id="ev-cliente"></div>
+      <div class="fg"><label>Unidad</label><input type="text" id="ev-unidad"></div>
+      <div class="fg"><label>Origen</label><input type="text" id="ev-origen"></div>
+      <div class="fg"><label>Destino</label><input type="text" id="ev-destino"></div>
+      <div class="fg"><label>Costo ($)</label><input type="number" id="ev-costo" min="0" step="0.01"></div>
+      <div class="fg"><label>Precio cobrado ($)</label><input type="number" id="ev-cobrado" min="0" step="0.01"></div>
+      <div class="fg"><label>Referencia</label><input type="text" id="ev-referencia"></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notas</label><textarea id="ev-notas" style="min-height:52px"></textarea></div>
+    </div>
+    <div class="edit-footer">
+      <button class="btn" onclick="document.getElementById('ev-overlay').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" id="ev-save" onclick="guardarEditViaje()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL COBRANZA -->
+<div class="edit-overlay" id="ec-overlay" onclick="cerrarEditCobranza(event)">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <span class="edit-modal-title">Editar cobranza</span>
+      <button class="edit-close" onclick="document.getElementById('ec-overlay').classList.remove('show')">✕</button>
+    </div>
+    <input type="hidden" id="ec-id">
+    <div class="edit-grid">
+      <div class="fg"><label>Folio</label><input type="text" id="ec-folio"></div>
+      <div class="fg"><label>Cliente</label><input type="text" id="ec-cliente"></div>
+      <div class="fg"><label>Monto ($)</label><input type="number" id="ec-monto" min="0" step="0.01"></div>
+      <div class="fg"><label>Estado</label>
+        <select id="ec-estado">
+          <option value="pendiente">⏳ Pendiente</option><option value="pagado">✅ Pagado</option>
+          <option value="vencido">🔴 Vencido</option><option value="parcial">🔵 Parcial</option>
+        </select>
+      </div>
+      <div class="fg"><label>Fecha emisión</label><input type="date" id="ec-femision"></div>
+      <div class="fg"><label>Fecha vencimiento</label><input type="date" id="ec-fvencimiento"></div>
+      <div class="fg"><label>Referencia</label><input type="text" id="ec-referencia"></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notas</label><textarea id="ec-notas" style="min-height:52px"></textarea></div>
+
+      <!-- PDF FACTURA EDIT -->
+      <div class="fg">
+        <label>PDF Factura</label>
+        <div id="ec-pdf-current" style="display:none;margin-bottom:6px">
+          <span style="font-size:11px;color:#888780">Actual: </span>
+          <button class="btn-sm view" id="ec-pdf-view-btn" onclick="verDocEdit('pdf')">📄 Ver actual</button>
+          <button class="btn-sm del" onclick="quitarArchivoEdit('pdf')" style="margin-left:4px">✕ Quitar</button>
+        </div>
+        <div class="file-zone" onclick="document.getElementById('ec-pdf-input').click()" id="ec-pdf-zone">
+          <input type="file" id="ec-pdf-input" accept=".pdf,application/pdf" onchange="archivoSeleccionadoEdit('pdf',this)">
+          <div class="file-zone-text">📄 <strong>Reemplazar PDF</strong> o arrastra aquí</div>
+        </div>
+        <div id="ec-pdf-attached" style="display:none"></div>
+        <div class="upload-progress" id="ec-pdf-progress"><div class="spinner"></div><span>Subiendo factura...</span></div>
+      </div>
+
+      <!-- EVIDENCIA EDIT -->
+      <div class="fg">
+        <label>Evidencia de pago</label>
+        <div id="ec-evi-current" style="display:none;margin-bottom:6px">
+          <span style="font-size:11px;color:#888780">Actual: </span>
+          <button class="btn-sm view" id="ec-evi-view-btn" onclick="verDocEdit('evi')">🧾 Ver actual</button>
+          <button class="btn-sm del" onclick="quitarArchivoEdit('evi')" style="margin-left:4px">✕ Quitar</button>
+        </div>
+        <div class="file-zone" onclick="document.getElementById('ec-evi-input').click()" id="ec-evi-zone">
+          <input type="file" id="ec-evi-input" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" onchange="archivoSeleccionadoEdit('evi',this)">
+          <div class="file-zone-text">🧾 <strong>Reemplazar evidencia</strong> o arrastra aquí</div>
+        </div>
+        <div id="ec-evi-attached" style="display:none"></div>
+        <div class="upload-progress" id="ec-evi-progress"><div class="spinner"></div><span>Subiendo evidencia...</span></div>
+      </div>
+
+    </div>
+    <div class="edit-footer">
+      <button class="btn" onclick="document.getElementById('ec-overlay').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" id="ec-save" onclick="guardarEditCobranza()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PREVIEW -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Vista previa</span>
+      <button class="modal-close" onclick="cerrarModalBtn()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <a id="modal-link" href="#" target="_blank" class="btn btn-primary" style="text-decoration:none">Abrir en Drive ↗</a>
+      <button class="btn" onclick="cerrarModalBtn()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbzZrIi-g_4GMQ9G1zDrP_g8RlN4R31SiN7u4ceP6YAG79cArYaDP70iNI_uizSp3cBg/exec';
+const GDRIVE_CLIENT_ID = '98142569707-lpufpcp974g1532u3i7egide9fk91st1.apps.googleusercontent.com';
+const GDRIVE_FOLDER_ID  = '1rpt3ifuAlQYYjWn9IUp6lv-OsSoZ2vjN';
+const GDRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
+let   gdriveToken       = null;
+let   gdriveTokenExpiry = 0;
+
+// ── OAUTH2 IMPLICIT FLOW ──────────────────────────────
+// Checks URL hash for token after redirect
+function checkOAuthToken() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.replace('#','?').slice(1));
+  const token = params.get('access_token');
+  const expiresIn = parseInt(params.get('expires_in') || '3600');
+  if (token) {
+    gdriveToken = token;
+    gdriveTokenExpiry = Date.now() + expiresIn * 1000;
+    sessionStorage.setItem('gdrive_token', token);
+    sessionStorage.setItem('gdrive_token_expiry', String(gdriveTokenExpiry));
+    // Clean URL
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    toast('Google Drive autorizado ✓', 'ok');
+    // Resume pending upload if any
+    if (window._pendingUpload) {
+      const {file, progressId, resolve, reject} = window._pendingUpload;
+      window._pendingUpload = null;
+      subirArchivoConToken(file, progressId, token).then(resolve).catch(reject);
+    }
+  }
+}
+
+// Restore token from session
+function restoreToken() {
+  const t = sessionStorage.getItem('gdrive_token');
+  const exp = parseInt(sessionStorage.getItem('gdrive_token_expiry') || '0');
+  if (t && exp > Date.now() + 60000) {
+    gdriveToken = t;
+    gdriveTokenExpiry = exp;
+  }
+}
+
+function solicitarToken() {
+  const params = new URLSearchParams({
+    client_id: GDRIVE_CLIENT_ID,
+    redirect_uri: window.location.origin + window.location.pathname,
+    response_type: 'token',
+    scope: GDRIVE_SCOPE,
+    include_granted_scopes: 'true',
+    prompt: 'select_account'
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+async function getGdriveToken() {
+  restoreToken();
+  if (gdriveToken && Date.now() < gdriveTokenExpiry - 60000) return gdriveToken;
+  // Need to redirect for auth — save context first
+  return new Promise((resolve, reject) => {
+    // Store callback intent in sessionStorage
+    sessionStorage.setItem('gdrive_pending', '1');
+    solicitarToken();
+    // This promise won't resolve — page will redirect and come back
+    setTimeout(() => reject('Redirigiendo a Google para autorizar...'), 1000);
+  });
+}
+
+window.addEventListener('load', () => {
+  restoreToken();
+  checkOAuthToken();
+});
+const POR_PAGINA = 15;
+
+// ── STATE ─────────────────────────────────────────────
+let viajes = [], vFiltrados = [], vPag = 1, vSortCol = 'fecha', vSortDir = -1;
+let cobranzas = [], cFiltrados = [], cPag = 1, cSortCol = 'fechaEmision', cSortDir = -1;
+let graficaV = null;
+let archivoPdf = null, archivoEvi = null, archivoEir = null;
+let urlPdfSubido = '', urlEviSubido = '', urlEirSubido = '';
+
+// ── INIT ──────────────────────────────────────────────
+document.getElementById('v-fecha').value = new Date().toISOString().split('T')[0];
+document.getElementById('c-femision').value = new Date().toISOString().split('T')[0];
+
+function generarFolioAuto() {
+  const d = new Date();
+  const yyyymmdd = d.toISOString().split('T')[0].replace(/-/g,'');
+  const rand = String(Math.floor(Math.random()*900)+100);
+  return 'VJ-' + yyyymmdd + '-' + rand;
+}
+// Auto-fill referencia on date change
+document.getElementById('v-fecha').addEventListener('change', function() {
+  const ref = document.getElementById('v-referencia');
+  if (!ref.value) ref.value = generarFolioAuto();
+});
+// Generate on load
+document.getElementById('v-referencia').value = generarFolioAuto();
+
+// ── TABS ──────────────────────────────────────────────
+function cambiarTab(id, btn) {
+  document.querySelectorAll('.tabs > .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'reportes') setTimeout(renderReporteClientes, 50);
+}
+
+// ── TOAST ─────────────────────────────────────────────
+function toast(msg, tipo = 'ok') {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + tipo;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => { el.classList.add('show'); });
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+// ── STATUS ────────────────────────────────────────────
+function setStatus(panel, tipo, msg) {
+  const dot = document.getElementById(panel + '-dot');
+  const txt = document.getElementById(panel + '-status');
+  if (dot) dot.className = 'dot dot-' + tipo;
+  if (txt) txt.textContent = msg;
+}
+
+// ── FORMAT ────────────────────────────────────────────
+function fmt(n) { n = parseFloat(n) || 0; return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+function badgeViaje(tipo) {
+  const m = {
+    carga:'b-carga', descarga:'b-descarga', traslado:'b-traslado',
+    lavado_sencillo:'b-lavado', lavado_especial:'b-lavado-esp',
+    maniobras:'b-maniobras', flete_full:'b-flete-full',
+    flete_sencillo:'b-flete-sen', seguro:'b-seguro', otro:'b-otro'
+  };
+  return `<span class="badge ${m[tipo]||'b-otro'}"><span class="badge-dot"></span>${tipo}</span>`;
+}
+
+function badgeEstado(estado) {
+  const m = { pendiente:'b-pendiente', pagado:'b-pagado', vencido:'b-vencido', parcial:'b-parcial' };
+  return `<span class="badge ${m[estado]||'b-pendiente'}"><span class="badge-dot"></span>${estado}</span>`;
+}
+
+function fmtFecha(f) {
+  if (!f) return '—';
+  // If it's already a proper date object or timestamp
+  if (f instanceof Date) {
+    return f.getFullYear() + '-' +
+      String(f.getMonth()+1).padStart(2,'0') + '-' +
+      String(f.getDate()).padStart(2,'0');
+  }
+  const s = String(f).trim();
+  // ISO format: 2025-03-25T00:00:00.000Z
+  if (s.includes('T')) return s.substring(0, 10);
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Try parsing as date
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+  }
+  return s.substring(0, 10);
+}
+
+// ── CARGA DATOS ───────────────────────────────────────
+async function cargar() {
+  setStatus('v', 'loading', 'Sincronizando...');
+  setStatus('c', 'loading', 'Sincronizando...');
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const data = await res.json();
+
+    viajes = (data.registros || []).map((r, i) => ({
+      ...r, id: i,
+      costo: parseFloat(r.costo) || 0,
+      cobrado: parseFloat(r.cobrado) || 0
+    }));
+
+    cobranzas = (data.cobranzas || []).map((r, i) => ({
+      ...r, id: i,
+      monto: parseFloat(r.monto) || 0
+    }));
+
+    filtrarViajes(); actualizarGraficaV();
+    filtrarCobranza();
+    setStatus('v', 'ok', 'Conectado a Google Sheets');
+    setStatus('c', 'ok', 'Conectado a Google Sheets');
+    verificarVencidos();
+    toast('Datos sincronizados', 'ok');
+  } catch(e) {
+    setStatus('v', 'err', 'Error de conexión');
+    setStatus('c', 'err', 'Error de conexión');
+    toast('No se pudo conectar', 'err');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  VIAJES
+// ══════════════════════════════════════════════════════
+function filtrarViajes() {
+  const q = document.getElementById('v-buscar').value.toLowerCase();
+  const tipo = document.getElementById('v-fil-tipo').value;
+  const desde = document.getElementById('v-fil-desde').value;
+  const hasta = document.getElementById('v-fil-hasta').value;
+  vFiltrados = viajes.filter(r => {
+    const txt = [r.cliente,r.unidad,r.origen,r.destino,r.notas].join(' ').toLowerCase();
+    if (q && !txt.includes(q)) return false;
+    if (tipo && r.tipo !== tipo) return false;
+    if (desde && fmtFecha(r.fecha) < desde) return false;
+    if (hasta && fmtFecha(r.fecha) > hasta) return false;
+    return true;
+  });
+  vFiltrados.sort((a, b) => {
+    let va = vSortCol === 'utilidad' ? (a.cobrado-a.costo) : a[vSortCol];
+    let vb = vSortCol === 'utilidad' ? (b.cobrado-b.costo) : b[vSortCol];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    return va < vb ? vSortDir : va > vb ? -vSortDir : 0;
+  });
+  vPag = 1; renderViajes(); actualizarMetricasV();
+}
+
+function ordenarV(col) {
+  if (vSortCol === col) vSortDir *= -1; else { vSortCol = col; vSortDir = -1; }
+  document.querySelectorAll('[id^="va-"]').forEach(e => e.textContent = '↕');
+  const a = document.getElementById('va-' + col); if (a) a.textContent = vSortDir === -1 ? '↓' : '↑';
+  filtrarViajes();
+}
+
+function limpiarFiltrosV() {
+  ['v-buscar','v-fil-tipo','v-fil-desde','v-fil-hasta'].forEach(id => document.getElementById(id).value = '');
+  filtrarViajes();
+}
+
+function actualizarMetricasV() {
+  const tc = vFiltrados.reduce((s,r)=>s+r.cobrado,0);
+  const tk = vFiltrados.reduce((s,r)=>s+r.costo,0);
+  const tu = tc-tk;
+  document.getElementById('v-cobrado').textContent = fmt(tc);
+  document.getElementById('v-costo').textContent = fmt(tk);
+  const mu = document.getElementById('v-utilidad');
+  mu.textContent = fmt(tu); mu.className = 'metric-val '+(tu>=0?'pos':'neg');
+  document.getElementById('v-viajes').textContent = vFiltrados.length;
+  const margen = tc > 0 ? ((tu/tc)*100).toFixed(1) : 0;
+  const mm = document.getElementById('v-margen');
+  mm.textContent = margen + '%';
+  mm.className = 'metric-val ' + (margen>=50?'pos':margen>=20?'warn':'neg');
+  document.getElementById('btn-export-v').disabled = viajes.length === 0;
+  const btnPdf = document.getElementById('btn-pdf-v');
+  if(btnPdf) btnPdf.disabled = viajes.length === 0;
+}
+
+function renderViajes() {
+  const tbody = document.getElementById('v-tbody');
+  const total = vFiltrados.length;
+  const totalPag = Math.ceil(total / POR_PAGINA) || 1;
+  if (vPag > totalPag) vPag = totalPag;
+  const pagina = vFiltrados.slice((vPag-1)*POR_PAGINA, vPag*POR_PAGINA);
+  document.getElementById('v-info').textContent = total + ' resultado' + (total!==1?'s':'');
+  if (!pagina.length) {
+    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><p>No hay registros que coincidan.</p></div></td></tr>';
+  } else {
+    tbody.innerHTML = pagina.map(r => {
+      const util = r.cobrado - r.costo;
+      const margenPct = r.cobrado > 0 ? (util / r.cobrado) * 100 : 0;
+      const ruta = [r.origen, r.destino].filter(Boolean).join(' → ') || '—';
+      return `<tr>
+        <td style="white-space:nowrap;color:#888780;font-size:12px">${fmtFecha(r.fecha)}</td>
+        <td style="font-size:12px;white-space:nowrap;color:#185FA5;font-weight:500">${r.referencia||'<span class="muted">—</span>'}</td>
+        <td>${badgeViaje(r.tipo)}</td>
+        <td class="trunc">${r.cliente||'<span class="muted">—</span>'}</td>
+        <td style="font-size:12px;white-space:nowrap">${r.unidad||'<span class="muted">—</span>'}</td>
+        <td class="trunc" style="max-width:140px;color:#888780;font-size:12px">${ruta}</td>
+        <td style="white-space:nowrap">${fmt(r.costo)}</td>
+        <td style="white-space:nowrap">${fmt(r.cobrado)}</td>
+        <td style="white-space:nowrap" class="${util>=0?'util-pos':'util-neg'}">${fmt(util)}</td>
+        <td style="white-space:nowrap">
+          ${r.cobrado>0?`<span style="font-size:11px;font-weight:500;color:${margenPct>=50?'#0F6E56':margenPct>=20?'#854F0B':'#993C1D'}">${margenPct.toFixed(1)}%</span><span class="margin-bar" style="background:${margenPct>=50?'#1D9E75':margenPct>=20?'#EF9F27':'#E24B4A'};width:${Math.min(margenPct,100)*0.4}px"></span>`:'<span class="muted">—</span>'}
+        </td>
+        <td class="trunc muted" style="font-size:12px">${r.contenedor?'<span style="color:#185FA5;font-weight:500">'+r.contenedor+'</span> ':''}${r.patio?'📍'+r.patio+' ':''}${r.notas||''}</td>
+        <td style="white-space:nowrap;display:flex;gap:4px">
+          <button class="btn-sm dup" onclick="duplicarViaje(${r.id})" title="Duplicar">⧉</button>
+          <button class="btn-sm view" onclick="abrirEditViaje(${r.id})" title="Editar">✏️</button>
+          <button class="btn-sm del" onclick="eliminarViaje(${r.id},'${fmtFecha(r.fecha)}','${r.tipo}',${r.costo})" title="Eliminar">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+  renderPag('v-pag', totalPag, vPag, n => { vPag = n; renderViajes(); });
+}
+
+function actualizarGraficaV() {
+  const porMes = {};
+  viajes.forEach(r => {
+    const mes = fmtFecha(r.fecha).substring(0,7);
+    if (!porMes[mes]) porMes[mes] = {cobrado:0, costo:0};
+    porMes[mes].cobrado += r.cobrado; porMes[mes].costo += r.costo;
+  });
+  const meses = Object.keys(porMes).sort();
+  const meses_label = meses.map(m => { const [y,mo]=m.split('-'); return ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]+' '+y.slice(2); });
+  const cobrado = meses.map(m => +porMes[m].cobrado.toFixed(2));
+  const costo = meses.map(m => +porMes[m].costo.toFixed(2));
+  const utilidad = meses.map((m,i) => +(cobrado[i]-costo[i]).toFixed(2));
+  if (graficaV) graficaV.destroy();
+  graficaV = new Chart(document.getElementById('chart-viajes'), {
+    type:'bar',
+    data:{labels:meses_label,datasets:[
+      {label:'Cobrado',data:cobrado,backgroundColor:'#85B7EB',borderRadius:3,borderSkipped:false},
+      {label:'Costo',data:costo,backgroundColor:'#F0997B',borderRadius:3,borderSkipped:false},
+      {type:'line',label:'Utilidad',data:utilidad,borderColor:'#1D9E75',backgroundColor:'transparent',borderWidth:2,pointBackgroundColor:'#1D9E75',pointRadius:3,tension:.3,yAxisID:'y'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11},color:'#888780'}},
+              y:{grid:{color:'rgba(0,0,0,.06)'},ticks:{font:{size:11},color:'#888780',callback:v=>'$'+v.toLocaleString('es-MX')},beginAtZero:true}}}
+  });
+}
+
+const TIPOS_FLETE = ['flete_full','flete_sencillo','traslado'];
+
+function toggleFleteSection() {
+  const tipo = document.getElementById('v-tipo').value;
+  const sec  = document.getElementById('flete-section');
+  if (TIPOS_FLETE.includes(tipo)) sec.classList.add('show');
+  else sec.classList.remove('show');
+}
+
+async function agregarViaje() {
+  const fecha = document.getElementById('v-fecha').value;
+  if (!fecha) { toast('Ingresa la fecha','err'); return; }
+  const tipo = document.getElementById('v-tipo').value;
+  const esFlete = TIPOS_FLETE.includes(tipo);
+  const registro = {
+    fecha, tipo,
+    cliente:    document.getElementById('v-cliente').value.trim(),
+    unidad:     document.getElementById('v-unidad').value.trim(),
+    origen:     document.getElementById('v-origen').value.trim(),
+    destino:    document.getElementById('v-destino').value.trim(),
+    costo:      parseFloat(document.getElementById('v-costo').value)||0,
+    cobrado:    parseFloat(document.getElementById('v-cobradof').value)||0,
+    referencia: document.getElementById('v-referencia').value.trim(),
+    notas:      document.getElementById('v-notas').value.trim(),
+    contenedor: esFlete ? document.getElementById('v-contenedor').value.trim() : '',
+    patio:      esFlete ? document.getElementById('v-patio').value.trim() : '',
+    maniobrasDesc:  esFlete ? document.getElementById('v-maniobras-desc').value.trim() : '',
+    maniobras:  esFlete ? (parseFloat(document.getElementById('v-maniobras-costo').value)||0) : 0,
+    urlEir: ''
+  };
+  const btn = document.getElementById('v-btn-add');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  setStatus('v','loading','Guardando...');
+  try {
+    // Subir EIR si hay
+    if (esFlete && archivoEir && !urlEirSubido) {
+      toast('Subiendo EIR a Drive...','inf');
+      urlEirSubido = await subirArchivo(archivoEir, 'eir-progress');
+    }
+    registro.urlEir = urlEirSubido || '';
+
+    // 1. Guardar viaje
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'append', registro})});
+    viajes.unshift({...registro, id:Date.now()});
+
+    // 2. Cobranza principal del flete
+    const _ts    = Date.now();
+    const _folio = 'VJ-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
+    const _ruta  = [registro.origen, registro.destino].filter(Boolean).join(' - ');
+    const notaBase = 'Auto: '+tipo.replace('_',' ')+(registro.contenedor?' · '+registro.contenedor:'')+(_ruta?' · '+_ruta:'')+(registro.unidad?' · '+registro.unidad:'');
+    const _cob = { folio:_folio, cliente:registro.cliente, monto:registro.cobrado,
+      fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
+      referencia:registro.referencia, urlFactura:'', urlEvidencia:'', notas:notaBase };
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'cobranza_append', cobranza:_cob})});
+    cobranzas.unshift({..._cob, id:_ts+1, monto:_cob.monto});
+
+    // 3. Cobranza de maniobras (si aplica)
+    if (esFlete && registro.maniobras > 0) {
+      const _folio2 = 'MAN-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
+      const _cob2 = { folio:_folio2, cliente:registro.cliente, monto:registro.maniobras,
+        fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
+        referencia:registro.referencia,
+        urlFactura:'', urlEvidencia:'',
+        notas:'Maniobras'+(registro.maniobrasDesc?' · '+registro.maniobrasDesc:'')+(registro.contenedor?' · '+registro.contenedor:'') };
+      await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'cobranza_append', cobranza:_cob2})});
+      cobranzas.unshift({..._cob2, id:_ts+2, monto:_cob2.monto});
+    }
+
+    // Limpiar formulario
+    ['v-cliente','v-unidad','v-origen','v-destino','v-costo','v-cobradof',
+     'v-referencia','v-notas','v-contenedor','v-patio','v-maniobras-costo','v-maniobras-desc']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    archivoEir = null; urlEirSubido = '';
+    document.getElementById('eir-attached').style.display = 'none';
+    document.getElementById('v-referencia').value = generarFolioAuto();
+
+    filtrarViajes(); actualizarGraficaV(); filtrarCobranza();
+    setStatus('v','ok','Guardado');
+    const msg = esFlete && registro.maniobras > 0
+      ? '¡Flete registrado + 2 líneas en cobranza (flete + maniobras)!'
+      : '¡Viaje y cobranza registrados!';
+    toast(msg,'ok');
+  } catch(e) {
+    console.error(e);
+    setStatus('v','err','Error'); toast('No se pudo guardar: '+e,'err');
+  }
+  btn.disabled = false; btn.textContent = '+ Agregar viaje';
+}
+
+async function eliminarViaje(id, fecha, tipo, costo) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  // Find the original index in viajes array (1-based for Sheets, +2 for header)
+  const r = viajes.find(v => v.id === id);
+  if (!r) { toast('Registro no encontrado','err'); return; }
+  const fechaNorm = fmtFecha(r.fecha);
+  const costoNum  = parseFloat(r.costo);
+  console.log('Eliminando:', { fecha: fechaNorm, tipo: r.tipo, costo: costoNum });
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'delete', fecha: fechaNorm, tipo: r.tipo, costo: costoNum })
+    });
+    viajes = viajes.filter(v => v.id !== id);
+    filtrarViajes(); actualizarGraficaV();
+    toast('Registro eliminado','ok');
+  } catch(e) {
+    console.error('Error al eliminar:', e);
+    toast('No se pudo eliminar','err');
+  }
+}
+
+function duplicarViaje(id) {
+  const r = viajes.find(v => v.id === id);
+  if (!r) return;
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('v-fecha').value = hoy;
+  document.getElementById('v-tipo').value = r.tipo || 'carga';
+  document.getElementById('v-cliente').value = r.cliente || '';
+  document.getElementById('v-unidad').value = r.unidad || '';
+  document.getElementById('v-origen').value = r.origen || '';
+  document.getElementById('v-destino').value = r.destino || '';
+  document.getElementById('v-costo').value = r.costo || '';
+  document.getElementById('v-cobradof').value = r.cobrado || '';
+  document.getElementById('v-referencia').value = generarFolioAuto();
+  document.getElementById('v-notas').value = r.notas || '';
+  // Switch to viajes tab and scroll to form
+  document.querySelectorAll('.tabs > .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-viajes').classList.add('active');
+  document.querySelector('.tabs > .tab[onclick*="viajes"]').classList.add('active');
+  setTimeout(()=>document.getElementById('v-btn-add').scrollIntoView({behavior:'smooth',block:'center'}),100);
+  toast('Registro duplicado — revisa y guarda', 'inf');
+}
+
+function exportarViajes() {
+  const wb = XLSX.utils.book_new();
+  const headers = ['Fecha','Tipo','Cliente','Unidad','Origen','Destino','Costo','Cobrado','Utilidad','Referencia','Notas'];
+  const filas = viajes.map(r=>[fmtFecha(r.fecha),r.tipo,r.cliente||'',r.unidad||'',r.origen||'',r.destino||'',r.costo,r.cobrado,(r.cobrado||0)-(r.costo||0),r.referencia||'',r.notas||'']);
+  const tc = viajes.reduce((s,r)=>s+r.cobrado,0);
+  const tk = viajes.reduce((s,r)=>s+r.costo,0);
+  const ws = XLSX.utils.aoa_to_sheet([headers,...filas,[],['','','','','','TOTALES',tk,tc,tc-tk,'','']]);
+  ws['!cols']=[{wch:12},{wch:11},{wch:20},{wch:14},{wch:18},{wch:18},{wch:12},{wch:12},{wch:12},{wch:18},{wch:28}];
+  XLSX.utils.book_append_sheet(wb,ws,'Viajes');
+  XLSX.writeFile(wb,`viajes_vazse_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+// ══════════════════════════════════════════════════════
+//  COBRANZA
+// ══════════════════════════════════════════════════════
+function archivoSeleccionado(tipo, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) {
+    toast('El archivo supera el límite de 50 MB. Por favor selecciona un archivo más pequeño.', 'err');
+    input.value = '';
+    return;
+  }
+  const attachIds = { pdf:'pdf-attached', evidencia:'evi-attached', eir:'eir-attached' };
+  const el = document.getElementById(attachIds[tipo]);
+  const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+  el.style.display = 'block';
+  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:#888780;font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarArchivo('${tipo}')">✕</button></div>`;
+  if (tipo === 'pdf') archivoPdf = file;
+  else if (tipo === 'evidencia') archivoEvi = file;
+  else if (tipo === 'eir') archivoEir = file;
+}
+
+function quitarArchivo(tipo) {
+  if (tipo === 'pdf') {
+    archivoPdf = null; urlPdfSubido = '';
+    document.getElementById('c-pdf-input').value = '';
+    document.getElementById('pdf-attached').style.display = 'none';
+  } else if (tipo === 'evidencia') {
+    archivoEvi = null; urlEviSubido = '';
+    document.getElementById('c-evi-input').value = '';
+    document.getElementById('evi-attached').style.display = 'none';
+  } else if (tipo === 'eir') {
+    archivoEir = null; urlEirSubido = '';
+    document.getElementById('v-eir-input').value = '';
+    document.getElementById('eir-attached').style.display = 'none';
+  }
+}
+
+// getGdriveToken defined above in OAuth section
+
+async function subirArchivo(file, progressId) {
+  if (file.size > 50 * 1024 * 1024) {
+    throw 'El archivo supera el límite de 50 MB. Por favor selecciona un archivo más pequeño.';
+  }
+  restoreToken();
+  if (!gdriveToken || Date.now() >= gdriveTokenExpiry - 60000) {
+    // Save file reference and redirect to auth
+    toast('Redirigiendo a Google para autorizar Drive...', 'inf');
+    await new Promise(r => setTimeout(r, 1200));
+    const params = new URLSearchParams({
+      client_id: GDRIVE_CLIENT_ID,
+      redirect_uri: window.location.origin + window.location.pathname,
+      response_type: 'token',
+      scope: GDRIVE_SCOPE,
+      include_granted_scopes: 'true'
+    });
+    window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+    return; // page will redirect
+  }
+  return subirArchivoConToken(file, progressId, gdriveToken);
+}
+
+async function subirArchivoConToken(file, progressId, token) {
+  const progress = document.getElementById(progressId);
+  if (progress) progress.classList.add('show');
+  try {    // Build multipart request
+    const metadata = JSON.stringify({ name: file.name, parents: [GDRIVE_FOLDER_ID] });
+    const boundary = '-------vazse_boundary_' + Date.now();
+    const delimiter = '\r\n--' + boundary + '\r\n';
+    const closeDelim = '\r\n--' + boundary + '--';
+    // Read file as ArrayBuffer for multipart
+    const fileData = await file.arrayBuffer();
+    // Build body using Blob
+    const bodyBlob = new Blob([
+      delimiter,
+      'Content-Type: application/json\r\n\r\n',
+      metadata,
+      delimiter,
+      'Content-Type: ' + file.type + '\r\n\r\n',
+      fileData,
+      closeDelim
+    ]);
+    const res = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'multipart/related; boundary=' + boundary
+        },
+        body: bodyBlob
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw err.error?.message || 'Error al subir a Drive';
+    }
+    const data = await res.json();
+    const fileId = data.id;
+    // Make file publicly readable
+    await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '/permissions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' })
+    });
+    if (progress) progress.classList.remove('show');
+    return 'https://drive.google.com/file/d/' + fileId + '/view';
+  } catch(err) {
+    if (progress) progress.classList.remove('show');
+    throw err;
+  }
+}
+
+async function agregarCobranza() {
+  const folio = document.getElementById('c-folio').value.trim();
+  const cliente = document.getElementById('c-cliente').value.trim();
+  const monto = parseFloat(document.getElementById('c-monto').value) || 0;
+  if (!folio) { toast('Ingresa el folio de factura','err'); return; }
+  if (!cliente) { toast('Ingresa el nombre del cliente','err'); return; }
+
+  const btn = document.getElementById('c-btn-add');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  setStatus('c','loading','Guardando...');
+
+  try {
+    // Subir PDF si hay
+    if (archivoPdf && !urlPdfSubido) {
+      toast('Subiendo PDF a Drive...','inf');
+      urlPdfSubido = await subirArchivo(archivoPdf, 'pdf-progress');
+    }
+    // Subir evidencia si hay
+    if (archivoEvi && !urlEviSubido) {
+      toast('Subiendo evidencia a Drive...','inf');
+      urlEviSubido = await subirArchivo(archivoEvi, 'evi-progress');
+    }
+
+    const cobranza = {
+      folio, cliente, monto,
+      fechaEmision: document.getElementById('c-femision').value,
+      fechaVencimiento: document.getElementById('c-fvencimiento').value,
+      estado: document.getElementById('c-estado').value,
+      referencia: document.getElementById('c-referencia').value.trim(),
+      urlFactura: urlPdfSubido || '',
+      urlEvidencia: urlEviSubido || '',
+      notas: document.getElementById('c-notas').value.trim()
+    };
+
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cobranza_append',cobranza})});
+    cobranzas.unshift({...cobranza,id:Date.now()});
+
+    // Limpiar form
+    ['c-folio','c-cliente','c-monto','c-fvencimiento','c-referencia','c-notas'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('c-estado').value='pendiente';
+    quitarArchivo('pdf'); quitarArchivo('evidencia');
+    urlPdfSubido=''; urlEviSubido='';
+
+    filtrarCobranza();
+    setStatus('c','ok','Guardado'); toast('Factura registrada','ok');
+  } catch(e) {
+    setStatus('c','err','Error'); toast('No se pudo guardar: '+e,'err');
+  }
+  btn.disabled=false; btn.textContent='+ Registrar factura';
+}
+
+async function cambiarEstado(folio, nuevoEstado) {
+  try {
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cobranza_update_estado',folio,estado:nuevoEstado})});
+    const r = cobranzas.find(c=>String(c.folio)===String(folio));
+    if (r) r.estado = nuevoEstado;
+    filtrarCobranza(); toast('Estado actualizado','ok');
+  } catch(e){ toast('No se pudo actualizar','err'); }
+}
+
+async function eliminarCobranza(id, folio) {
+  if (!confirm('¿Eliminar esta factura?')) return;
+  try {
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cobranza_delete',folio})});
+    cobranzas = cobranzas.filter(r=>r.id!==id);
+    filtrarCobranza(); toast('Factura eliminada','ok');
+  } catch(e){ toast('No se pudo eliminar','err'); }
+}
+
+function filtrarCobranza() {
+  const q = document.getElementById('c-buscar').value.toLowerCase();
+  const estado = document.getElementById('c-fil-estado').value;
+  const desde = document.getElementById('c-fil-desde').value;
+  const hasta = document.getElementById('c-fil-hasta').value;
+  cFiltrados = cobranzas.filter(r => {
+    const txt = [r.folio,r.cliente,r.notas].join(' ').toLowerCase();
+    if (q && !txt.includes(q)) return false;
+    if (estado && r.estado !== estado) return false;
+    if (desde && fmtFecha(r.fechaEmision) < desde) return false;
+    if (hasta && fmtFecha(r.fechaEmision) > hasta) return false;
+    return true;
+  });
+  cFiltrados.sort((a,b)=>{
+    let va=a[cSortCol], vb=b[cSortCol];
+    if(typeof va==='string')va=va.toLowerCase();
+    if(typeof vb==='string')vb=vb.toLowerCase();
+    return va<vb?cSortDir:va>vb?-cSortDir:0;
+  });
+  cPag=1; renderCobranza(); actualizarMetricasC();
+}
+
+function ordenarC(col){
+  if(cSortCol===col)cSortDir*=-1;else{cSortCol=col;cSortDir=-1;}
+  document.querySelectorAll('[id^="ca-"]').forEach(e=>e.textContent='↕');
+  const a=document.getElementById('ca-'+col);if(a)a.textContent=cSortDir===-1?'↓':'↑';
+  filtrarCobranza();
+}
+
+function limpiarFiltrosC(){
+  ['c-buscar','c-fil-estado','c-fil-desde','c-fil-hasta'].forEach(id=>document.getElementById(id).value='');
+  filtrarCobranza();
+}
+
+function actualizarMetricasC(){
+  const total=cFiltrados.reduce((s,r)=>s+r.monto,0);
+  const cobrado=cFiltrados.filter(r=>r.estado==='pagado').reduce((s,r)=>s+r.monto,0);
+  const pendiente=cFiltrados.filter(r=>r.estado==='pendiente'||r.estado==='parcial').reduce((s,r)=>s+r.monto,0);
+  const vencido=cFiltrados.filter(r=>r.estado==='vencido').reduce((s,r)=>s+r.monto,0);
+  document.getElementById('c-total').textContent=fmt(total);
+  document.getElementById('c-cobrado').textContent=fmt(cobrado);
+  document.getElementById('c-pendiente').textContent=fmt(pendiente);
+  document.getElementById('c-vencido').textContent=fmt(vencido);
+  document.getElementById('btn-export-c').disabled=cobranzas.length===0;
+}
+
+function renderCobranza(){
+  const tbody=document.getElementById('c-tbody');
+  const total=cFiltrados.length;
+  const totalPag=Math.ceil(total/POR_PAGINA)||1;
+  if(cPag>totalPag)cPag=totalPag;
+  const pagina=cFiltrados.slice((cPag-1)*POR_PAGINA,cPag*POR_PAGINA);
+  document.getElementById('c-info').textContent=total+' resultado'+(total!==1?'s':'');
+  if(!pagina.length){
+    tbody.innerHTML='<tr><td colspan="11"><div class="empty-state"><p>No hay facturas que coincidan.</p></div></td></tr>';
+  }else{
+    tbody.innerHTML=pagina.map(r=>{
+      const venc=fmtFecha(r.fechaVencimiento);
+      const hoy=new Date().toISOString().split('T')[0];
+      const isVencido=venc&&venc<hoy&&r.estado!=='pagado';
+      const estadoReal=isVencido&&r.estado==='pendiente'?'vencido':r.estado;
+      const facturaBtn=r.urlFactura?`<button class="btn-sm view" onclick="verDoc('${r.urlFactura}','Factura ${r.folio}')">📄 Ver</button>`:'<span class="muted" style="font-size:11px">—</span>';
+      const eviBtn=r.urlEvidencia?`<button class="btn-sm view" onclick="verDoc('${r.urlEvidencia}','Evidencia ${r.folio}')">🧾 Ver</button>`:'<span class="muted" style="font-size:11px">—</span>';
+      return`<tr>
+        <td style="font-size:12px;white-space:nowrap;font-weight:500">${r.folio||'—'}</td>
+        <td class="trunc">${r.cliente||'—'}</td>
+        <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
+        <td style="font-size:12px;white-space:nowrap;color:#888780">${fmtFecha(r.fechaEmision)||'—'}</td>
+        <td style="font-size:12px;white-space:nowrap;color:${isVencido?'#993C1D':'#888780'}">${venc||'—'}</td>
+        <td>
+          <select class="estado-select" onchange="cambiarEstado('${r.folio}',this.value)">
+            <option value="pendiente" ${estadoReal==='pendiente'?'selected':''}>⏳ Pendiente</option>
+            <option value="pagado" ${estadoReal==='pagado'?'selected':''}>✅ Pagado</option>
+            <option value="vencido" ${estadoReal==='vencido'?'selected':''}>🔴 Vencido</option>
+            <option value="parcial" ${estadoReal==='parcial'?'selected':''}>🔵 Parcial</option>
+          </select>
+        </td>
+        <td style="font-size:12px;white-space:nowrap;color:#185FA5;font-weight:500">${r.referencia||'<span class="muted">—</span>'}</td>
+        <td>${facturaBtn}</td>
+        <td>${eviBtn}</td>
+        <td class="trunc muted" style="font-size:12px">${r.notas||'—'}</td>
+        <td style="white-space:nowrap;display:flex;gap:4px"><button class="btn-sm view" onclick="abrirEditCobranza(${r.id})" title="Editar">✏️</button><button class="btn-sm del" onclick="eliminarCobranza(${r.id},'${r.folio}')" title="Eliminar">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+  renderPag('c-pag',totalPag,cPag,n=>{cPag=n;renderCobranza();});
+}
+
+function exportarCobranza(){
+  const wb=XLSX.utils.book_new();
+  const headers=['Folio','Cliente','Monto','Emisión','Vencimiento','Estado','Referencia','URL Factura','URL Evidencia','Notas'];
+  const filas=cobranzas.map(r=>[r.folio,r.cliente,r.monto,fmtFecha(r.fechaEmision),fmtFecha(r.fechaVencimiento),r.estado,r.referencia||'',r.urlFactura||'',r.urlEvidencia||'',r.notas||'']);
+  const ws=XLSX.utils.aoa_to_sheet([headers,...filas]);
+  ws['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:13},{wch:11},{wch:20},{wch:40},{wch:40},{wch:28}];
+  XLSX.utils.book_append_sheet(wb,ws,'Cobranza');
+  XLSX.writeFile(wb,`cobranza_vazse_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+// ── MODAL PREVIEW ─────────────────────────────────────
+function verDoc(url,titulo){
+  document.getElementById('modal-title').textContent=titulo;
+  document.getElementById('modal-link').href=url;
+  const body=document.getElementById('modal-body');
+  const esImagen=/\.(jpg|jpeg|png|gif|webp)/i.test(url)||(url.includes('drive.google.com')&&!url.includes('.pdf'));
+  if(esImagen){
+    body.innerHTML=`<img src="${url}" alt="${titulo}" style="max-width:100%;max-height:500px;border-radius:8px;object-fit:contain">`;
+  }else{
+    const embedUrl=url.replace('/view','/preview');
+    body.innerHTML=`<iframe src="${embedUrl}" style="width:100%;height:520px;border:none;border-radius:8px"></iframe>`;
+  }
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function cerrarModal(e){ if(e.target===document.getElementById('modal-overlay'))cerrarModalBtn(); }
+function cerrarModalBtn(){
+  document.getElementById('modal-overlay').classList.remove('show');
+  document.getElementById('modal-body').innerHTML='';
+}
+
+// ── PAGINACIÓN ────────────────────────────────────────
+function renderPag(containerId,totalPag,actual,onChange){
+  const pg=document.getElementById(containerId);
+  if(totalPag<=1){pg.innerHTML='';return;}
+  let html=`<button class="pg-btn" onclick="(${onChange.toString()})(${actual-1})" ${actual===1?'disabled':''}>‹</button>`;
+  for(let i=1;i<=totalPag;i++){
+    if(totalPag>7&&i>2&&i<totalPag-1&&Math.abs(i-actual)>1){if(i===3||i===totalPag-2)html+=`<span class="pg-info">…</span>`;continue;}
+    html+=`<button class="pg-btn${i===actual?' active':''}" onclick="(${onChange.toString()})(${i})">${i}</button>`;
+  }
+  html+=`<button class="pg-btn" onclick="(${onChange.toString()})(${actual+1})" ${actual===totalPag?'disabled':''}>›</button>`;
+  pg.innerHTML=html;
+}
+
+// ── DRAG & DROP ───────────────────────────────────────
+['pdf-zone','evi-zone'].forEach(zoneId=>{
+  const zone=document.getElementById(zoneId);
+  const tipo=zoneId==='pdf-zone'?'pdf':'evidencia';
+  const inputId=zoneId==='pdf-zone'?'c-pdf-input':'c-evi-input';
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='#378ADD';});
+  zone.addEventListener('dragleave',()=>{zone.style.borderColor='';});
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();zone.style.borderColor='';
+    const file=e.dataTransfer.files[0];
+    if(file){const input=document.getElementById(inputId);const dt=new DataTransfer();dt.items.add(file);input.files=dt.files;archivoSeleccionado(tipo,input);}
+  });
+});
+
+
+// ══════════════════════════════════════════════════════
+//  EDITAR VIAJES
+// ══════════════════════════════════════════════════════
+function abrirEditViaje(id) {
+  const r = viajes.find(v => v.id === id);
+  if (!r) return;
+  document.getElementById('ev-id').value = id;
+  document.getElementById('ev-fecha').value = fmtFecha(r.fecha);
+  document.getElementById('ev-tipo').value = r.tipo || 'carga';
+  document.getElementById('ev-cliente').value = r.cliente || '';
+  document.getElementById('ev-unidad').value = r.unidad || '';
+  document.getElementById('ev-origen').value = r.origen || '';
+  document.getElementById('ev-destino').value = r.destino || '';
+  document.getElementById('ev-costo').value = r.costo || '';
+  document.getElementById('ev-cobrado').value = r.cobrado || '';
+  document.getElementById('ev-referencia').value = r.referencia || '';
+  document.getElementById('ev-notas').value = r.notas || '';
+  document.getElementById('ev-overlay').classList.add('show');
+}
+
+function cerrarEditViaje(e) { if(e.target===document.getElementById('ev-overlay')) document.getElementById('ev-overlay').classList.remove('show'); }
+
+async function guardarEditViaje() {
+  const id = parseInt(document.getElementById('ev-id').value);
+  const r = viajes.find(v => v.id === id);
+  if (!r) return;
+  const btn = document.getElementById('ev-save');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const updated = {
+    id,
+    fecha: document.getElementById('ev-fecha').value,
+    tipo: document.getElementById('ev-tipo').value,
+    cliente: document.getElementById('ev-cliente').value.trim(),
+    unidad: document.getElementById('ev-unidad').value.trim(),
+    origen: document.getElementById('ev-origen').value.trim(),
+    destino: document.getElementById('ev-destino').value.trim(),
+    costo: parseFloat(document.getElementById('ev-costo').value) || 0,
+    cobrado: parseFloat(document.getElementById('ev-cobrado').value) || 0,
+    referencia: document.getElementById('ev-referencia').value.trim(),
+    notas: document.getElementById('ev-notas').value.trim()
+  };
+  try {
+    // Delete old + append new (Apps Script approach)
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'delete', fecha:fmtFecha(r.fecha), tipo:r.tipo, costo:r.costo})});
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'append', registro:updated})});
+    const idx = viajes.findIndex(v => v.id === id);
+    if (idx !== -1) viajes[idx] = updated;
+    filtrarViajes(); actualizarGraficaV();
+    document.getElementById('ev-overlay').classList.remove('show');
+    toast('Viaje actualizado', 'ok');
+  } catch(e) { toast('No se pudo guardar', 'err'); }
+  btn.disabled = false; btn.textContent = 'Guardar cambios';
+}
+
+// ══════════════════════════════════════════════════════
+//  EDITAR COBRANZA
+// ══════════════════════════════════════════════════════
+// Estado temporal de archivos en edición
+let ecPdfFile = null, ecEviFile = null;
+let ecUrlPdfNuevo = '', ecUrlEviNuevo = '';
+let ecUrlPdfActual = '', ecUrlEviActual = '';
+
+function abrirEditCobranza(id) {
+  const r = cobranzas.find(c => c.id === id);
+  if (!r) return;
+  // Reset estado de archivos
+  ecPdfFile = null; ecEviFile = null;
+  ecUrlPdfNuevo = ''; ecUrlEviNuevo = '';
+  ecUrlPdfActual = r.urlFactura || '';
+  ecUrlEviActual = r.urlEvidencia || '';
+  document.getElementById('ec-pdf-input').value = '';
+  document.getElementById('ec-evi-input').value = '';
+  document.getElementById('ec-pdf-attached').style.display = 'none';
+  document.getElementById('ec-evi-attached').style.display = 'none';
+
+  // Mostrar archivos actuales si existen
+  const pdfCur = document.getElementById('ec-pdf-current');
+  const eviCur = document.getElementById('ec-evi-current');
+  pdfCur.style.display = ecUrlPdfActual ? 'block' : 'none';
+  eviCur.style.display = ecUrlEviActual ? 'block' : 'none';
+
+  document.getElementById('ec-id').value = id;
+  document.getElementById('ec-folio').value = r.folio || '';
+  document.getElementById('ec-cliente').value = r.cliente || '';
+  document.getElementById('ec-monto').value = r.monto || '';
+  document.getElementById('ec-estado').value = r.estado || 'pendiente';
+  document.getElementById('ec-femision').value = fmtFecha(r.fechaEmision) !== '—' ? fmtFecha(r.fechaEmision) : '';
+  document.getElementById('ec-fvencimiento').value = fmtFecha(r.fechaVencimiento) !== '—' ? fmtFecha(r.fechaVencimiento) : '';
+  document.getElementById('ec-referencia').value = r.referencia || '';
+  document.getElementById('ec-notas').value = r.notas || '';
+  document.getElementById('ec-overlay').classList.add('show');
+}
+
+function verDocEdit(tipo) {
+  const url = tipo === 'pdf' ? ecUrlPdfActual : ecUrlEviActual;
+  const titulo = tipo === 'pdf' ? 'Factura actual' : 'Evidencia actual';
+  if (url) verDoc(url, titulo);
+}
+
+function archivoSeleccionadoEdit(tipo, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) {
+    toast('El archivo supera el límite de 50 MB. Por favor selecciona un archivo más pequeño.', 'err');
+    input.value = '';
+    return;
+  }
+  const attachId = tipo === 'pdf' ? 'ec-pdf-attached' : 'ec-evi-attached';
+  const el = document.getElementById(attachId);
+  const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+  el.style.display = 'block';
+  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:#888780;font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarArchivoEdit('${tipo}')">✕</button></div>`;
+  if (tipo === 'pdf') ecPdfFile = file; else ecEviFile = file;
+}
+
+function quitarArchivoEdit(tipo) {
+  if (tipo === 'pdf') {
+    ecPdfFile = null; ecUrlPdfNuevo = '';
+    document.getElementById('ec-pdf-input').value = '';
+    document.getElementById('ec-pdf-attached').style.display = 'none';
+  } else {
+    ecEviFile = null; ecUrlEviNuevo = '';
+    document.getElementById('ec-evi-input').value = '';
+    document.getElementById('ec-evi-attached').style.display = 'none';
+  }
+}
+
+function cerrarEditCobranza(e) { if(e.target===document.getElementById('ec-overlay')) document.getElementById('ec-overlay').classList.remove('show'); }
+
+async function guardarEditCobranza() {
+  const id = parseInt(document.getElementById('ec-id').value);
+  const r = cobranzas.find(c => c.id === id);
+  if (!r) return;
+  const btn = document.getElementById('ec-save');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    // Subir nuevo PDF si se seleccionó
+    if (ecPdfFile && !ecUrlPdfNuevo) {
+      toast('Subiendo PDF a Drive...', 'inf');
+      ecUrlPdfNuevo = await subirArchivo(ecPdfFile, 'ec-pdf-progress');
+    }
+    // Subir nueva evidencia si se seleccionó
+    if (ecEviFile && !ecUrlEviNuevo) {
+      toast('Subiendo evidencia a Drive...', 'inf');
+      ecUrlEviNuevo = await subirArchivo(ecEviFile, 'ec-evi-progress');
+    }
+
+    const updated = {
+      id,
+      folio: document.getElementById('ec-folio').value.trim(),
+      cliente: document.getElementById('ec-cliente').value.trim(),
+      monto: parseFloat(document.getElementById('ec-monto').value) || 0,
+      estado: document.getElementById('ec-estado').value,
+      fechaEmision: document.getElementById('ec-femision').value,
+      fechaVencimiento: document.getElementById('ec-fvencimiento').value,
+      referencia: document.getElementById('ec-referencia').value.trim(),
+      urlFactura: ecUrlPdfNuevo || ecUrlPdfActual,
+      urlEvidencia: ecUrlEviNuevo || ecUrlEviActual,
+      notas: document.getElementById('ec-notas').value.trim()
+    };
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'cobranza_delete', folio:r.folio})});
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'cobranza_append', cobranza:updated})});
+    const idx = cobranzas.findIndex(c => c.id === id);
+    if (idx !== -1) cobranzas[idx] = updated;
+    filtrarCobranza();
+    document.getElementById('ec-overlay').classList.remove('show');
+    toast('Cobranza actualizada', 'ok');
+  } catch(e) { toast('No se pudo guardar: ' + e, 'err'); }
+  btn.disabled = false; btn.textContent = 'Guardar cambios';
+}
+
+
+// ── DRAG & DROP EIR ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const eirZone = document.getElementById('v-eir-zone');
+  if (eirZone) {
+    eirZone.addEventListener('dragover', e=>{e.preventDefault();eirZone.style.borderColor='#378ADD';});
+    eirZone.addEventListener('dragleave', ()=>{eirZone.style.borderColor='';});
+    eirZone.addEventListener('drop', e=>{
+      e.preventDefault(); eirZone.style.borderColor='';
+      const file = e.dataTransfer.files[0];
+      if (file) { const inp=document.getElementById('v-eir-input'); const dt=new DataTransfer(); dt.items.add(file); inp.files=dt.files; archivoSeleccionado('eir',inp); }
+    });
+  }
+});
+
+// ── DRAG & DROP EDIT MODAL ───────────────────────────
+['ec-pdf-zone','ec-evi-zone'].forEach(zoneId=>{
+  const zone=document.getElementById(zoneId);
+  if(!zone)return;
+  const tipo=zoneId==='ec-pdf-zone'?'pdf':'evi';
+  const inputId=zoneId==='ec-pdf-zone'?'ec-pdf-input':'ec-evi-input';
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='#378ADD';});
+  zone.addEventListener('dragleave',()=>{zone.style.borderColor='';});
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();zone.style.borderColor='';
+    const file=e.dataTransfer.files[0];
+    if(file){const input=document.getElementById(inputId);const dt=new DataTransfer();dt.items.add(file);input.files=dt.files;archivoSeleccionadoEdit(tipo,input);}
+  });
+});
+
+// ── BÚSQUEDA GLOBAL ──────────────────────────────────
+function busquedaGlobal() {
+  const q = document.getElementById('global-buscar').value.trim().toLowerCase();
+  const res = document.getElementById('global-results');
+  if (!q || q.length < 2) { res.style.display = 'none'; return; }
+
+  const matchV = viajes.filter(r =>
+    [r.cliente,r.unidad,r.origen,r.destino,r.referencia,r.notas,r.tipo].join(' ').toLowerCase().includes(q)
+  ).slice(0,5);
+
+  const matchC = cobranzas.filter(r =>
+    [r.folio,r.cliente,r.referencia,r.notas].join(' ').toLowerCase().includes(q)
+  ).slice(0,5);
+
+  if (!matchV.length && !matchC.length) {
+    res.style.display = 'block';
+    res.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#888780">Sin resultados</div>';
+    return;
+  }
+
+  let html = '';
+  if (matchV.length) {
+    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em">Viajes</div>';
+    html += matchV.map(r => `<div onclick="irAViaje(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:background .1s" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
+      <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${fmtFecha(r.fecha)}</span>
+      <span style="font-size:12px">${r.cliente||'—'}</span>
+      <span style="font-size:11px;color:#888780;margin-left:auto">${r.referencia||''}</span>
+    </div>`).join('');
+  }
+  if (matchC.length) {
+    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em;border-top:0.5px solid rgba(0,0,0,.06)">Cobranza</div>';
+    html += matchC.map(r => `<div onclick="irACobranza(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:background .1s" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
+      <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${r.folio||'—'}</span>
+      <span style="font-size:12px">${r.cliente||'—'}</span>
+      <span style="font-size:11px;color:#888780;margin-left:auto">${fmt(r.monto)}</span>
+    </div>`).join('');
+  }
+  res.innerHTML = html;
+  res.style.display = 'block';
+}
+
+function irAViaje(id) {
+  document.getElementById('global-buscar').value = '';
+  document.getElementById('global-results').style.display = 'none';
+  document.querySelectorAll('.tabs > .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-viajes').classList.add('active');
+  document.querySelector('.tabs > .tab[onclick*="viajes"]').classList.add('active');
+  const r = viajes.find(v=>v.id===id);
+  if(r){ document.getElementById('v-buscar').value = r.referencia||r.cliente||''; filtrarViajes(); }
+}
+
+function irACobranza(id) {
+  document.getElementById('global-buscar').value = '';
+  document.getElementById('global-results').style.display = 'none';
+  document.querySelectorAll('.tabs > .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-cobranza').classList.add('active');
+  document.querySelector('.tabs > .tab[onclick*="cobranza"]').classList.add('active');
+  const r = cobranzas.find(c=>c.id===id);
+  if(r){ document.getElementById('c-buscar').value = r.folio||r.cliente||''; filtrarCobranza(); }
+}
+
+// Close global search on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('#global-buscar') && !e.target.closest('#global-results'))
+    document.getElementById('global-results').style.display = 'none';
+});
+
+// ── ALERTA VENCIDOS ───────────────────────────────────
+function verificarVencidos() {
+  const hoy = new Date().toISOString().split('T')[0];
+  const vencidos = cobranzas.filter(r => {
+    const v = fmtFecha(r.fechaVencimiento);
+    return v && v !== '—' && v < hoy && r.estado !== 'pagado';
+  });
+  const banner = document.getElementById('alert-vencidos');
+  const txt = document.getElementById('alert-vencidos-txt');
+  if (vencidos.length > 0) {
+    txt.textContent = vencidos.length + ' factura' + (vencidos.length>1?'s':'') + ' vencida' + (vencidos.length>1?'s':'');
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function irAVencidos() {
+  document.querySelectorAll('.tabs > .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-cobranza').classList.add('active');
+  document.querySelector('.tabs > .tab[onclick*="cobranza"]').classList.add('active');
+  document.getElementById('c-fil-estado').value = 'vencido';
+  filtrarCobranza();
+  document.getElementById('alert-vencidos').classList.remove('show');
+}
+
+// ── REPORTES ──────────────────────────────────────────
+let graficaClientes = null, graficaUnidades = null, graficaTipos = null;
+
+function cambiarReporte(id, btn) {
+  document.querySelectorAll('.report-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.report-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('rep-' + id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='clientes') renderReporteClientes();
+  if(id==='unidades') renderReporteUnidades();
+  if(id==='tipos') renderReporteTipos();
+}
+
+function agrupar(campo) {
+  const map = {};
+  viajes.forEach(r => {
+    const key = r[campo] || '(sin ' + campo + ')';
+    if (!map[key]) map[key] = {cobrado:0, costo:0, count:0};
+    map[key].cobrado += r.cobrado||0;
+    map[key].costo += r.costo||0;
+    map[key].count++;
+  });
+  return Object.entries(map)
+    .map(([k,v]) => ({key:k, ...v, util:v.cobrado-v.costo, margen:v.cobrado>0?((v.cobrado-v.costo)/v.cobrado*100):0}))
+    .sort((a,b) => b.cobrado - a.cobrado);
+}
+
+function fmtPct(n) { return n.toFixed(1)+'%'; }
+function colorMargen(m) { return m>=50?'#0F6E56':m>=20?'#854F0B':'#993C1D'; }
+
+function renderResumenTabla(tbody_id, rows) {
+  const tbody = document.getElementById(tbody_id);
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><p>Sin datos</p></div></td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td style="font-weight:500">${r.key}</td>
+    <td class="num neu">${r.count}</td>
+    <td class="num pos">${fmt(r.cobrado)}</td>
+    <td class="num neg">${fmt(r.costo)}</td>
+    <td class="num" style="color:${r.util>=0?'#0F6E56':'#993C1D'};font-weight:500">${fmt(r.util)}</td>
+    <td class="num" style="color:${colorMargen(r.margen)};font-weight:500">${fmtPct(r.margen)}</td>
+  </tr>`).join('');
+}
+
+const CHART_COLORS = ['#378ADD','#1D9E75','#D85A30','#7F77DD','#BA7517','#3B6D11','#A32D2D','#185FA5','#854F0B','#444441'];
+
+function renderReporteClientes() {
+  const rows = agrupar('cliente').slice(0,10);
+  renderResumenTabla('rep-clientes-tbody', rows);
+  if(graficaClientes) graficaClientes.destroy();
+  graficaClientes = new Chart(document.getElementById('chart-clientes'),{
+    type:'bar',
+    data:{labels:rows.map(r=>r.key.length>15?r.key.slice(0,15)+'…':r.key),
+          datasets:[
+            {label:'Cobrado',data:rows.map(r=>+r.cobrado.toFixed(2)),backgroundColor:'#85B7EB',borderRadius:3},
+            {label:'Costo',data:rows.map(r=>+r.costo.toFixed(2)),backgroundColor:'#F0997B',borderRadius:3},
+          ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:12}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#888780'}},
+              y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11},color:'#888780',callback:v=>'$'+v.toLocaleString('es-MX')},beginAtZero:true}}}
+  });
+}
+
+function renderReporteUnidades() {
+  const rows = agrupar('unidad').slice(0,10);
+  renderResumenTabla('rep-unidades-tbody', rows);
+  if(graficaUnidades) graficaUnidades.destroy();
+  graficaUnidades = new Chart(document.getElementById('chart-unidades'),{
+    type:'bar',
+    data:{labels:rows.map(r=>r.key),
+          datasets:[{label:'Utilidad',data:rows.map(r=>+r.util.toFixed(2)),
+            backgroundColor:rows.map(r=>r.util>=0?'#5DCAA5':'#F0997B'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#888780'}},
+              y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11},color:'#888780',callback:v=>'$'+v.toLocaleString('es-MX')},beginAtZero:true}}}
+  });
+}
+
+function renderReporteTipos() {
+  const rows = agrupar('tipo');
+  renderResumenTabla('rep-tipos-tbody', rows);
+  if(graficaTipos) graficaTipos.destroy();
+  graficaTipos = new Chart(document.getElementById('chart-tipos'),{
+    type:'doughnut',
+    data:{labels:rows.map(r=>r.key),
+          datasets:[{data:rows.map(r=>+r.cobrado.toFixed(2)),
+            backgroundColor:CHART_COLORS.slice(0,rows.length),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12,padding:10}}}}
+  });
+}
+
+// Report render handled inside cambiarTab
+
+// ── PDF VIAJES ────────────────────────────────────────
+function exportarPDFViajes() {
+  window.print();
+}
+
+
+// ── ARRANQUE ──────────────────────────────────────────
+cargar();
+</script>
+</body>
+</html>
