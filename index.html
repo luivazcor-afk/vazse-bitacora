@@ -226,6 +226,16 @@ tbody td{padding:9px 12px;vertical-align:middle}
   .chart-card{page-break-inside:avoid}
 }
 
+/* FLETE SECTION */
+.flete-section{display:none;grid-column:1/-1;background:#f7f6f3;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:1rem;margin-top:4px}
+.flete-section.show{display:block}
+.flete-section-title{font-size:11px;font-weight:500;color:#185FA5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.flete-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.flete-divider{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;grid-column:1/-1;border-top:0.5px solid rgba(0,0,0,.08);padding-top:10px}
+.badge-tipo{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;margin-left:6px}
+.badge-flete{background:#E6F1FB;color:#0C447C}
+.badge-servicio{background:#F1EFE8;color:#444441}
+
 /* EDIT MODAL */
 .edit-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
 .edit-overlay.show{display:flex}
@@ -336,7 +346,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
       <div class="form-grid">
         <div class="fg"><label>Fecha</label><input type="date" id="v-fecha"></div>
         <div class="fg"><label>Tipo</label>
-          <select id="v-tipo">
+          <select id="v-tipo" onchange="toggleFleteSection()">
 <option value="carga">Carga</option>
             <option value="descarga">Descarga</option>
             <option value="traslado">Traslado</option>
@@ -357,6 +367,29 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div class="fg"><label>Precio cobrado ($)</label><input type="number" id="v-cobradof" placeholder="0.00" min="0" step="0.01"></div>
         <div class="fg"><label>Referencia</label><input type="text" id="v-referencia" placeholder="N° orden, contrato, etc."></div>
         <div class="fg full"><label>Notas</label><textarea id="v-notas" placeholder="Conductor, mercancía, observaciones..."></textarea></div>
+
+        <!-- SECCIÓN EXCLUSIVA PARA FLETES -->
+        <div class="flete-section fg full" id="flete-section">
+          <div class="flete-section-title">🚛 Datos del flete <span class="badge-tipo badge-flete">Flete / Traslado</span></div>
+          <div class="flete-grid">
+            <div class="fg"><label>N° Contenedor</label><input type="text" id="v-contenedor" placeholder="MSCU1234567"></div>
+            <div class="fg"><label>Patio de entrega</label><input type="text" id="v-patio" placeholder="Nombre del patio"></div>
+            <div class="flete-divider">Maniobras (costo separado → genera línea en cobranza)</div>
+            <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="v-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label>Descripción maniobras</label><input type="text" id="v-maniobras-desc" placeholder="Descarga, posicionamiento, etc."></div>
+            <div class="flete-divider">EIR — Equipment Interchange Receipt</div>
+            <div class="fg" style="grid-column:1/-1">
+              <label>Adjuntar EIR</label>
+              <div class="file-zone" onclick="document.getElementById('v-eir-input').click()" id="v-eir-zone">
+                <input type="file" id="v-eir-input" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" onchange="archivoSeleccionado('eir',this)">
+                <div class="file-zone-text">📋 <strong>Seleccionar EIR</strong> o arrastra aquí</div>
+              </div>
+              <div id="eir-attached" style="display:none"></div>
+              <div class="upload-progress" id="eir-progress"><div class="spinner"></div><span>Subiendo EIR a Drive...</span></div>
+            </div>
+          </div>
+        </div>
+
       </div>
       <button class="btn-add" id="v-btn-add" onclick="agregarViaje()">+ Agregar viaje</button>
     </div>
@@ -810,8 +843,8 @@ const POR_PAGINA = 15;
 let viajes = [], vFiltrados = [], vPag = 1, vSortCol = 'fecha', vSortDir = -1;
 let cobranzas = [], cFiltrados = [], cPag = 1, cSortCol = 'fechaEmision', cSortDir = -1;
 let graficaV = null;
-let archivoPdf = null, archivoEvi = null;
-let urlPdfSubido = '', urlEviSubido = '';
+let archivoPdf = null, archivoEvi = null, archivoEir = null;
+let urlPdfSubido = '', urlEviSubido = '', urlEirSubido = '';
 
 // ── INIT ──────────────────────────────────────────────
 document.getElementById('v-fecha').value = new Date().toISOString().split('T')[0];
@@ -1015,7 +1048,7 @@ function renderViajes() {
         <td style="white-space:nowrap">
           ${r.cobrado>0?`<span style="font-size:11px;font-weight:500;color:${margenPct>=50?'#0F6E56':margenPct>=20?'#854F0B':'#993C1D'}">${margenPct.toFixed(1)}%</span><span class="margin-bar" style="background:${margenPct>=50?'#1D9E75':margenPct>=20?'#EF9F27':'#E24B4A'};width:${Math.min(margenPct,100)*0.4}px"></span>`:'<span class="muted">—</span>'}
         </td>
-        <td class="trunc muted" style="font-size:12px">${r.notas||'—'}</td>
+        <td class="trunc muted" style="font-size:12px">${r.contenedor?'<span style="color:#185FA5;font-weight:500">'+r.contenedor+'</span> ':''}${r.patio?'📍'+r.patio+' ':''}${r.notas||''}</td>
         <td style="white-space:nowrap;display:flex;gap:4px">
           <button class="btn-sm dup" onclick="duplicarViaje(${r.id})" title="Duplicar">⧉</button>
           <button class="btn-sm view" onclick="abrirEditViaje(${r.id})" title="Editar">✏️</button>
@@ -1053,44 +1086,95 @@ function actualizarGraficaV() {
   });
 }
 
+const TIPOS_FLETE = ['flete_full','flete_sencillo','traslado'];
+
+function toggleFleteSection() {
+  const tipo = document.getElementById('v-tipo').value;
+  const sec  = document.getElementById('flete-section');
+  if (TIPOS_FLETE.includes(tipo)) sec.classList.add('show');
+  else sec.classList.remove('show');
+}
+
 async function agregarViaje() {
   const fecha = document.getElementById('v-fecha').value;
   if (!fecha) { toast('Ingresa la fecha','err'); return; }
+  const tipo = document.getElementById('v-tipo').value;
+  const esFlete = TIPOS_FLETE.includes(tipo);
   const registro = {
-    fecha, tipo:document.getElementById('v-tipo').value,
-    cliente:document.getElementById('v-cliente').value.trim(),
-    unidad:document.getElementById('v-unidad').value.trim(),
-    origen:document.getElementById('v-origen').value.trim(),
-    destino:document.getElementById('v-destino').value.trim(),
-    costo:parseFloat(document.getElementById('v-costo').value)||0,
-    cobrado:parseFloat(document.getElementById('v-cobradof').value)||0,
-    referencia:document.getElementById('v-referencia').value.trim(),
-    notas:document.getElementById('v-notas').value.trim()
+    fecha, tipo,
+    cliente:    document.getElementById('v-cliente').value.trim(),
+    unidad:     document.getElementById('v-unidad').value.trim(),
+    origen:     document.getElementById('v-origen').value.trim(),
+    destino:    document.getElementById('v-destino').value.trim(),
+    costo:      parseFloat(document.getElementById('v-costo').value)||0,
+    cobrado:    parseFloat(document.getElementById('v-cobradof').value)||0,
+    referencia: document.getElementById('v-referencia').value.trim(),
+    notas:      document.getElementById('v-notas').value.trim(),
+    contenedor: esFlete ? document.getElementById('v-contenedor').value.trim() : '',
+    patio:      esFlete ? document.getElementById('v-patio').value.trim() : '',
+    maniobrasDesc:  esFlete ? document.getElementById('v-maniobras-desc').value.trim() : '',
+    maniobras:  esFlete ? (parseFloat(document.getElementById('v-maniobras-costo').value)||0) : 0,
+    urlEir: ''
   };
   const btn = document.getElementById('v-btn-add');
   btn.disabled = true; btn.textContent = 'Guardando...';
   setStatus('v','loading','Guardando...');
   try {
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'append',registro})});
-    viajes.unshift({...registro,id:Date.now(),costo:registro.costo,cobrado:registro.cobrado});
-    ['v-cliente','v-unidad','v-origen','v-destino','v-costo','v-cobradof','v-referencia','v-notas'].forEach(id=>document.getElementById(id).value='');
-    filtrarViajes(); actualizarGraficaV();
-    // 2. Auto-registrar en cobranza
-    const _ts = Date.now();
+    // Subir EIR si hay
+    if (esFlete && archivoEir && !urlEirSubido) {
+      toast('Subiendo EIR a Drive...','inf');
+      urlEirSubido = await subirArchivo(archivoEir, 'eir-progress');
+    }
+    registro.urlEir = urlEirSubido || '';
+
+    // 1. Guardar viaje
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'append', registro})});
+    viajes.unshift({...registro, id:Date.now()});
+
+    // 2. Cobranza principal del flete
+    const _ts    = Date.now();
     const _folio = 'VJ-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
-    const _ruta = [registro.origen, registro.destino].filter(Boolean).join(' - ');
+    const _ruta  = [registro.origen, registro.destino].filter(Boolean).join(' - ');
+    const notaBase = 'Auto: '+tipo.replace('_',' ')+(registro.contenedor?' · '+registro.contenedor:'')+(_ruta?' · '+_ruta:'')+(registro.unidad?' · '+registro.unidad:'');
     const _cob = { folio:_folio, cliente:registro.cliente, monto:registro.cobrado,
       fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
-      referencia:registro.referencia, urlFactura:'', urlEvidencia:'',
-      notas:'Auto: viaje '+registro.tipo+(_ruta?' - '+_ruta:'')+
-            (registro.unidad?' - '+registro.unidad:'') };
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'cobranza_append',cobranza:_cob})});
+      referencia:registro.referencia, urlFactura:'', urlEvidencia:'', notas:notaBase };
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'cobranza_append', cobranza:_cob})});
     cobranzas.unshift({..._cob, id:_ts+1, monto:_cob.monto});
-    filtrarCobranza();
-    setStatus('v','ok','Guardado'); toast('¡Viaje y cobranza registrados!','ok');
-  } catch(e){ setStatus('v','err','Error'); toast('No se pudo guardar','err'); }
+
+    // 3. Cobranza de maniobras (si aplica)
+    if (esFlete && registro.maniobras > 0) {
+      const _folio2 = 'MAN-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
+      const _cob2 = { folio:_folio2, cliente:registro.cliente, monto:registro.maniobras,
+        fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
+        referencia:registro.referencia,
+        urlFactura:'', urlEvidencia:'',
+        notas:'Maniobras'+(registro.maniobrasDesc?' · '+registro.maniobrasDesc:'')+(registro.contenedor?' · '+registro.contenedor:'') };
+      await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'cobranza_append', cobranza:_cob2})});
+      cobranzas.unshift({..._cob2, id:_ts+2, monto:_cob2.monto});
+    }
+
+    // Limpiar formulario
+    ['v-cliente','v-unidad','v-origen','v-destino','v-costo','v-cobradof',
+     'v-referencia','v-notas','v-contenedor','v-patio','v-maniobras-costo','v-maniobras-desc']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    archivoEir = null; urlEirSubido = '';
+    document.getElementById('eir-attached').style.display = 'none';
+    document.getElementById('v-referencia').value = generarFolioAuto();
+
+    filtrarViajes(); actualizarGraficaV(); filtrarCobranza();
+    setStatus('v','ok','Guardado');
+    const msg = esFlete && registro.maniobras > 0
+      ? '¡Flete registrado + 2 líneas en cobranza (flete + maniobras)!'
+      : '¡Viaje y cobranza registrados!';
+    toast(msg,'ok');
+  } catch(e) {
+    console.error(e);
+    setStatus('v','err','Error'); toast('No se pudo guardar: '+e,'err');
+  }
   btn.disabled = false; btn.textContent = '+ Agregar viaje';
 }
 
@@ -1164,13 +1248,14 @@ function archivoSeleccionado(tipo, input) {
     input.value = '';
     return;
   }
-  const attachId = tipo === 'pdf' ? 'pdf-attached' : 'evi-attached';
-  const zoneId = tipo === 'pdf' ? 'pdf-zone' : 'evi-zone';
-  const el = document.getElementById(attachId);
+  const attachIds = { pdf:'pdf-attached', evidencia:'evi-attached', eir:'eir-attached' };
+  const el = document.getElementById(attachIds[tipo]);
   const sizeMB = (file.size / 1024 / 1024).toFixed(1);
   el.style.display = 'block';
   el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:#888780;font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarArchivo('${tipo}')">✕</button></div>`;
-  if (tipo === 'pdf') archivoPdf = file; else archivoEvi = file;
+  if (tipo === 'pdf') archivoPdf = file;
+  else if (tipo === 'evidencia') archivoEvi = file;
+  else if (tipo === 'eir') archivoEir = file;
 }
 
 function quitarArchivo(tipo) {
@@ -1178,10 +1263,14 @@ function quitarArchivo(tipo) {
     archivoPdf = null; urlPdfSubido = '';
     document.getElementById('c-pdf-input').value = '';
     document.getElementById('pdf-attached').style.display = 'none';
-  } else {
+  } else if (tipo === 'evidencia') {
     archivoEvi = null; urlEviSubido = '';
     document.getElementById('c-evi-input').value = '';
     document.getElementById('evi-attached').style.display = 'none';
+  } else if (tipo === 'eir') {
+    archivoEir = null; urlEirSubido = '';
+    document.getElementById('v-eir-input').value = '';
+    document.getElementById('eir-attached').style.display = 'none';
   }
 }
 
@@ -1654,6 +1743,20 @@ async function guardarEditCobranza() {
   btn.disabled = false; btn.textContent = 'Guardar cambios';
 }
 
+
+// ── DRAG & DROP EIR ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const eirZone = document.getElementById('v-eir-zone');
+  if (eirZone) {
+    eirZone.addEventListener('dragover', e=>{e.preventDefault();eirZone.style.borderColor='#378ADD';});
+    eirZone.addEventListener('dragleave', ()=>{eirZone.style.borderColor='';});
+    eirZone.addEventListener('drop', e=>{
+      e.preventDefault(); eirZone.style.borderColor='';
+      const file = e.dataTransfer.files[0];
+      if (file) { const inp=document.getElementById('v-eir-input'); const dt=new DataTransfer(); dt.items.add(file); inp.files=dt.files; archivoSeleccionado('eir',inp); }
+    });
+  }
+});
 
 // ── DRAG & DROP EDIT MODAL ───────────────────────────
 ['ec-pdf-zone','ec-evi-zone'].forEach(zoneId=>{
