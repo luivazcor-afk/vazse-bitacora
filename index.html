@@ -656,7 +656,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <div class="edit-grid">
       <div class="fg"><label>Fecha</label><input type="date" id="ev-fecha"></div>
       <div class="fg"><label>Tipo</label>
-        <select id="ev-tipo">
+        <select id="ev-tipo" onchange="toggleFleteSectionEdit()">
           <option value="carga">Carga</option><option value="descarga">Descarga</option>
           <option value="traslado">Traslado</option>
           <option value="lavado_sencillo">Lavado sencillo</option>
@@ -676,6 +676,32 @@ tbody td{padding:9px 12px;vertical-align:middle}
       <div class="fg"><label>Precio cobrado ($)</label><input type="number" id="ev-cobrado" min="0" step="0.01"></div>
       <div class="fg"><label>Referencia</label><input type="text" id="ev-referencia"></div>
       <div class="fg" style="grid-column:1/-1"><label>Notas</label><textarea id="ev-notas" style="min-height:52px"></textarea></div>
+
+      <!-- CAMPOS FLETE EN EDICIÓN -->
+      <div id="ev-flete-section" style="display:none;grid-column:1/-1;background:#f7f6f3;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:1rem">
+        <div style="font-size:11px;font-weight:500;color:#185FA5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🚛 Datos del flete</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+          <div class="fg"><label>N° Contenedor</label><input type="text" id="ev-contenedor" placeholder="MSCU1234567"></div>
+          <div class="fg"><label>Patio de entrega</label><input type="text" id="ev-patio" placeholder="Nombre del patio"></div>
+          <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="ev-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="fg"><label>Descripción maniobras</label><input type="text" id="ev-maniobras-desc" placeholder="Descarga, posicionamiento..."></div>
+          <div class="fg" style="grid-column:1/-1">
+            <label>EIR adjunto</label>
+            <div id="ev-eir-current" style="display:none;margin-bottom:6px">
+              <span style="font-size:11px;color:#888780">Actual: </span>
+              <button class="btn-sm view" onclick="verDoc(evEirActual,'EIR')">📋 Ver EIR actual</button>
+              <button class="btn-sm del" onclick="quitarEirEdit()" style="margin-left:4px">✕ Quitar</button>
+            </div>
+            <div class="file-zone" onclick="document.getElementById('ev-eir-input').click()" id="ev-eir-zone">
+              <input type="file" id="ev-eir-input" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" onchange="selEirEdit(this)">
+              <div class="file-zone-text">📋 <strong>Reemplazar EIR</strong> o arrastra aquí</div>
+            </div>
+            <div id="ev-eir-attached" style="display:none"></div>
+            <div class="upload-progress" id="ev-eir-progress"><div class="spinner"></div><span>Subiendo EIR...</span></div>
+          </div>
+        </div>
+      </div>
+
     </div>
     <div class="edit-footer">
       <button class="btn" onclick="document.getElementById('ev-overlay').classList.remove('show')">Cancelar</button>
@@ -1571,9 +1597,42 @@ function renderPag(containerId,totalPag,actual,onChange){
 // ══════════════════════════════════════════════════════
 //  EDITAR VIAJES
 // ══════════════════════════════════════════════════════
+let evEirFile = null, evEirUrlNuevo = '', evEirActual = '';
+
+function toggleFleteSectionEdit() {
+  const tipo = document.getElementById('ev-tipo').value;
+  const sec  = document.getElementById('ev-flete-section');
+  sec.style.display = TIPOS_FLETE.includes(tipo) ? 'block' : 'none';
+}
+
+function selEirEdit(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 50*1024*1024) { toast('Archivo mayor a 50 MB','err'); input.value=''; return; }
+  evEirFile = file;
+  const sizeMB = (file.size/1024/1024).toFixed(1);
+  const el = document.getElementById('ev-eir-attached');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:#888780;font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarEirEdit()">✕</button></div>`;
+}
+
+function quitarEirEdit() {
+  evEirFile = null; evEirUrlNuevo = '';
+  document.getElementById('ev-eir-input').value = '';
+  document.getElementById('ev-eir-attached').style.display = 'none';
+}
+
 function abrirEditViaje(id) {
   const r = viajes.find(v => v.id === id);
   if (!r) return;
+  // Reset EIR state
+  evEirFile = null; evEirUrlNuevo = '';
+  evEirActual = r.urlEir || '';
+  document.getElementById('ev-eir-input').value = '';
+  document.getElementById('ev-eir-attached').style.display = 'none';
+  const eirCur = document.getElementById('ev-eir-current');
+  eirCur.style.display = evEirActual ? 'block' : 'none';
+
   document.getElementById('ev-id').value = id;
   document.getElementById('ev-fecha').value = fmtFecha(r.fecha);
   document.getElementById('ev-tipo').value = r.tipo || 'carga';
@@ -1585,6 +1644,13 @@ function abrirEditViaje(id) {
   document.getElementById('ev-cobrado').value = r.cobrado || '';
   document.getElementById('ev-referencia').value = r.referencia || '';
   document.getElementById('ev-notas').value = r.notas || '';
+  // Flete fields
+  document.getElementById('ev-contenedor').value = r.contenedor || '';
+  document.getElementById('ev-patio').value = r.patio || '';
+  document.getElementById('ev-maniobras-costo').value = r.maniobras || '';
+  document.getElementById('ev-maniobras-desc').value = r.maniobrasDesc || '';
+  // Show/hide flete section
+  toggleFleteSectionEdit();
   document.getElementById('ev-overlay').classList.add('show');
 }
 
@@ -1596,21 +1662,32 @@ async function guardarEditViaje() {
   if (!r) return;
   const btn = document.getElementById('ev-save');
   btn.disabled = true; btn.textContent = 'Guardando...';
-  const updated = {
-    id,
-    fecha: document.getElementById('ev-fecha').value,
-    tipo: document.getElementById('ev-tipo').value,
-    cliente: document.getElementById('ev-cliente').value.trim(),
-    unidad: document.getElementById('ev-unidad').value.trim(),
-    origen: document.getElementById('ev-origen').value.trim(),
-    destino: document.getElementById('ev-destino').value.trim(),
-    costo: parseFloat(document.getElementById('ev-costo').value) || 0,
-    cobrado: parseFloat(document.getElementById('ev-cobrado').value) || 0,
-    referencia: document.getElementById('ev-referencia').value.trim(),
-    notas: document.getElementById('ev-notas').value.trim()
-  };
+  const tipo = document.getElementById('ev-tipo').value;
+  const esFlete = TIPOS_FLETE.includes(tipo);
   try {
-    // Delete old + append new (Apps Script approach)
+    // Upload new EIR if selected
+    if (esFlete && evEirFile && !evEirUrlNuevo) {
+      toast('Subiendo EIR...','inf');
+      evEirUrlNuevo = await subirArchivo(evEirFile, 'ev-eir-progress');
+    }
+    const updated = {
+      id,
+      fecha:      document.getElementById('ev-fecha').value,
+      tipo,
+      cliente:    document.getElementById('ev-cliente').value.trim(),
+      unidad:     document.getElementById('ev-unidad').value.trim(),
+      origen:     document.getElementById('ev-origen').value.trim(),
+      destino:    document.getElementById('ev-destino').value.trim(),
+      costo:      parseFloat(document.getElementById('ev-costo').value) || 0,
+      cobrado:    parseFloat(document.getElementById('ev-cobrado').value) || 0,
+      referencia: document.getElementById('ev-referencia').value.trim(),
+      notas:      document.getElementById('ev-notas').value.trim(),
+      contenedor: esFlete ? document.getElementById('ev-contenedor').value.trim() : '',
+      patio:      esFlete ? document.getElementById('ev-patio').value.trim() : '',
+      maniobras:  esFlete ? (parseFloat(document.getElementById('ev-maniobras-costo').value)||0) : 0,
+      maniobrasDesc: esFlete ? document.getElementById('ev-maniobras-desc').value.trim() : '',
+      urlEir:     evEirUrlNuevo || evEirActual
+    };
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'delete', fecha:fmtFecha(r.fecha), tipo:r.tipo, costo:r.costo})});
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
@@ -1620,7 +1697,7 @@ async function guardarEditViaje() {
     filtrarViajes(); actualizarGraficaV();
     document.getElementById('ev-overlay').classList.remove('show');
     toast('Viaje actualizado', 'ok');
-  } catch(e) { toast('No se pudo guardar', 'err'); }
+  } catch(e) { console.error(e); toast('No se pudo guardar: '+e, 'err'); }
   btn.disabled = false; btn.textContent = 'Guardar cambios';
 }
 
