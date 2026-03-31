@@ -1154,11 +1154,13 @@ async function agregarViaje() {
     registro.urlEir = urlEirSubido || '';
 
     // 1. Guardar viaje
+    console.log('[VAZSE] Guardando viaje:', registro);
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'append', registro})});
+    console.log('[VAZSE] Viaje enviado OK');
     viajes.unshift({...registro, id:Date.now()});
 
-    // 2. Cobranza principal del flete
+    // 2. Cobranza principal
     const _ts    = Date.now();
     const _folio = 'VJ-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
     const _ruta  = [registro.origen, registro.destino].filter(Boolean).join(' - ');
@@ -1166,8 +1168,10 @@ async function agregarViaje() {
     const _cob = { folio:_folio, cliente:registro.cliente, monto:registro.cobrado,
       fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
       referencia:registro.referencia, urlFactura:'', urlEvidencia:'', notas:notaBase };
+    console.log('[VAZSE] Guardando cobranza:', _cob);
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'cobranza_append', cobranza:_cob})});
+    console.log('[VAZSE] Cobranza enviada OK');
     cobranzas.unshift({..._cob, id:_ts+1, monto:_cob.monto});
 
     // 3. Cobranza de maniobras (si aplica)
@@ -1178,8 +1182,10 @@ async function agregarViaje() {
         referencia:registro.referencia,
         urlFactura:'', urlEvidencia:'',
         notas:'Maniobras'+(registro.maniobrasDesc?' · '+registro.maniobrasDesc:'')+(registro.contenedor?' · '+registro.contenedor:'') };
+      console.log('[VAZSE] Guardando maniobras:', _cob2);
       await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'cobranza_append', cobranza:_cob2})});
+      console.log('[VAZSE] Maniobras enviadas OK');
       cobranzas.unshift({..._cob2, id:_ts+2, monto:_cob2.monto});
     }
 
@@ -1198,8 +1204,8 @@ async function agregarViaje() {
       : '¡Viaje y cobranza registrados!';
     toast(msg,'ok');
   } catch(e) {
-    console.error(e);
-    setStatus('v','err','Error'); toast('No se pudo guardar: '+e,'err');
+    console.error('[VAZSE] ERROR en agregarViaje:', e);
+    setStatus('v','err','Error'); toast('Error: '+String(e),'err');
   }
   btn.disabled = false; btn.textContent = '+ Agregar viaje';
 }
