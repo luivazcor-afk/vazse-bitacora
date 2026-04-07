@@ -19,11 +19,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;color:#1a
 .membrete-sub{font-size:11px;color:#888780;margin-top:2px}
 
 /* TABS */
-.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:#ebe9e4;border-radius:10px;padding:4px}
-.tab{flex:1;padding:9px 16px;font-size:13px;font-weight:500;border:none;background:transparent;border-radius:7px;cursor:pointer;color:#888780;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
-.tab:hover{color:#1a1a18}
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:#ebe9e4;border-radius:10px;padding:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:9px 14px;font-size:12px;font-weight:500;border:none;background:transparent;border-radius:7px;cursor:pointer;color:#888780;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;min-width:0;-webkit-tap-highlight-color:transparent}
+.tab:hover{color:#1a1a18;background:rgba(255,255,255,.5)}
 .tab.active{background:#fff;color:#1a1a18;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.tab-icon{font-size:14px}
+.tab-icon{font-size:13px}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
@@ -1081,13 +1082,21 @@ document.getElementById('v-referencia').value = generarFolioAuto();
 
 // ── TABS ──────────────────────────────────────────────
 function cambiarTab(id, btn) {
-  document.querySelectorAll('.tabs > .tab').forEach(t => t.classList.remove('active'));
+  // Hide all panels
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
-  btn.classList.add('active');
-  if (id === 'reportes') setTimeout(renderReporteClientes, 50);
-  if (id === 'contenedores') setTimeout(() => { buscarContenedor(); }, 50);
-  if (id === 'historial') setTimeout(renderHistorial, 50);
+  // Deactivate all main tabs
+  document.querySelectorAll('.tabs > .tab').forEach(t => t.classList.remove('active'));
+  // Show target panel
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  // Activate clicked tab
+  if (btn) btn.classList.add('active');
+  // Scroll tab into view on mobile
+  if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  // Trigger panel-specific renders
+  if (id === 'reportes') setTimeout(renderReporteClientes, 80);
+  if (id === 'contenedores') setTimeout(buscarContenedor, 80);
+  if (id === 'historial') setTimeout(renderHistorial, 80);
 }
 
 // ── TOAST ─────────────────────────────────────────────
