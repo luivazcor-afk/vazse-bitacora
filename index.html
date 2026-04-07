@@ -2055,45 +2055,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── BÚSQUEDA GLOBAL ──────────────────────────────────
-function busquedaGlobal() {
-  const q = document.getElementById('global-buscar').value.trim().toLowerCase();
-  const res = document.getElementById('global-results');
-  if (!q || q.length < 2) { res.style.display = 'none'; return; }
 
-  const matchV = viajes.filter(r =>
-    [r.cliente,r.unidad,r.origen,r.destino,r.referencia,r.notas,r.tipo].join(' ').toLowerCase().includes(q)
-  ).slice(0,5);
-
-  const matchC = cobranzas.filter(r =>
-    [r.folio,r.cliente,r.referencia,r.notas].join(' ').toLowerCase().includes(q)
-  ).slice(0,5);
-
-  if (!matchV.length && !matchC.length) {
-    res.style.display = 'block';
-    res.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#888780">Sin resultados</div>';
-    return;
-  }
-
-  let html = '';
-  if (matchV.length) {
-    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em">Viajes</div>';
-    html += matchV.map(r => `<div onclick="irAViaje(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:background .1s" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
-      <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${fmtFecha(r.fecha)}</span>
-      <span style="font-size:12px">${r.cliente||'—'}</span>
-      <span style="font-size:11px;color:#888780;margin-left:auto">${r.referencia||''}</span>
-    </div>`).join('');
-  }
-  if (matchC.length) {
-    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em;border-top:0.5px solid rgba(0,0,0,.06)">Cobranza</div>';
-    html += matchC.map(r => `<div onclick="irACobranza(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:background .1s" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
-      <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${r.folio||'—'}</span>
-      <span style="font-size:12px">${r.cliente||'—'}</span>
-      <span style="font-size:11px;color:#888780;margin-left:auto">${fmt(r.monto)}</span>
-    </div>`).join('');
-  }
-  res.innerHTML = html;
-  res.style.display = 'block';
-}
 
 function irAViaje(id) {
   document.getElementById('global-buscar').value = '';
