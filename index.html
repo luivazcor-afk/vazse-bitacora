@@ -1390,8 +1390,9 @@ async function agregarViaje() {
     // Limpiar formulario
     ['v-cliente','v-unidad','v-origen','v-destino','v-costo','v-cobradof',
      'v-referencia','v-notas','v-contenedor','v-patio','v-maniobras-costo','v-maniobras-desc']
-      document.getElementById('v-estado-flete').value = 'en_transito';
       .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    const efEl = document.getElementById('v-estado-flete');
+    if (efEl) efEl.value = 'en_transito';
     archivoEir = null; urlEirSubido = '';
     document.getElementById('eir-attached').style.display = 'none';
     document.getElementById('v-referencia').value = generarFolioAuto();
