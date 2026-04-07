@@ -966,22 +966,19 @@ function postToScript(payload) {
 
 // ── sendPost — use fetch with no-cors, fallback to beacon ────────
 async function sendPost(payload) {
-  const body = JSON.stringify(payload);
+  // Use no-cors fetch — Apps Script accepts this format
+  // sendBeacon sends as text/plain which breaks JSON.parse in Apps Script
   try {
-    // Try navigator.sendBeacon first — fire and forget, no CORS issues
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: 'application/json' });
-      const sent = navigator.sendBeacon(SCRIPT_URL, blob);
-      if (sent) return;
-    }
-  } catch(e) {}
-  // Fallback: no-cors fetch
-  await fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body
-  });
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) {
+    console.error('[VAZSE] sendPost error:', e);
+    throw e;
+  }
 }
 const GDRIVE_CLIENT_ID = '98142569707-lpufpcp974g1532u3i7egide9fk91st1.apps.googleusercontent.com';
 const GDRIVE_FOLDER_ID  = '1rpt3ifuAlQYYjWn9IUp6lv-OsSoZ2vjN';
