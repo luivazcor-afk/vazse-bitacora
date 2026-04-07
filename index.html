@@ -226,6 +226,61 @@ tbody td{padding:9px 12px;vertical-align:middle}
   .chart-card{page-break-inside:avoid}
 }
 
+
+/* ESTADO FLETE */
+.ef-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
+.ef-transito{background:#E6F1FB;color:#0C447C}.ef-transito .badge-dot{background:#185FA5}
+.ef-entregado{background:#EAF3DE;color:#27500A}.ef-entregado .badge-dot{background:#3B6D11}
+.ef-patio{background:#FAEEDA;color:#633806}.ef-patio .badge-dot{background:#BA7517}
+.ef-liberado{background:#F1EFE8;color:#444441}.ef-liberado .badge-dot{background:#5F5E5A}
+.ef-sin-eir{background:#FAECE7;color:#712B13}
+
+/* TIMELINE */
+.timeline-wrap{padding:.5rem 0}
+.tl-item{display:flex;gap:12px;margin-bottom:12px;position:relative}
+.tl-item:not(:last-child)::before{content:'';position:absolute;left:15px;top:30px;bottom:-12px;width:1.5px;background:rgba(0,0,0,.1)}
+.tl-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:2px solid rgba(0,0,0,.08)}
+.tl-content{flex:1;background:var(--color-background-secondary,#f5f5f3);border-radius:8px;padding:8px 12px}
+.tl-date{font-size:11px;color:#888780;margin-bottom:2px}
+.tl-title{font-size:13px;font-weight:500}
+.tl-sub{font-size:12px;color:#888780;margin-top:2px}
+
+/* HISTORIAL COBRANZA */
+.seguimiento-item{padding:8px 0;border-bottom:0.5px solid rgba(0,0,0,.06);font-size:12px}
+.seguimiento-item:last-child{border-bottom:none}
+.seguimiento-fecha{font-size:11px;color:#888780}
+.seguimiento-nota{color:#1a1a18;margin-top:2px}
+
+/* IMPORT EXCEL */
+.import-zone{border:2px dashed rgba(0,0,0,.2);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:all .15s;background:#fafaf8;margin-bottom:1rem}
+.import-zone:hover{border-color:#378ADD;background:#E6F1FB}
+.import-zone input{display:none}
+.import-zone-text{font-size:13px;color:#888780}
+.import-zone-text strong{color:#185FA5;display:block;font-size:15px;margin-bottom:4px}
+
+/* HISTORIAL CAMBIOS */
+.historial-item{display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(0,0,0,.06);font-size:12px;align-items:flex-start}
+.historial-item:last-child{border-bottom:none}
+.historial-badge{font-size:10px;padding:2px 7px;border-radius:20px;white-space:nowrap;font-weight:500}
+.h-edit{background:#E6F1FB;color:#0C447C}
+.h-add{background:#EAF3DE;color:#27500A}
+.h-del{background:#FAECE7;color:#712B13}
+.historial-meta{font-size:11px;color:#888780;margin-top:2px}
+
+/* DIAS CREDITO */
+.dias-badge{font-size:11px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap}
+.dias-ok{background:#EAF3DE;color:#27500A}
+.dias-warn{background:#FAEEDA;color:#633806}
+.dias-venc{background:#FAECE7;color:#712B13}
+
+/* COMPARATIVO */
+.comp-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.comp-cell{background:var(--color-background-secondary,#f5f5f3);border-radius:8px;padding:.75rem;text-align:center}
+.comp-label{font-size:10px;color:#888780;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.comp-val{font-size:16px;font-weight:500}
+.comp-diff{font-size:11px;margin-top:3px}
+.diff-up{color:#0F6E56}.diff-down{color:#993C1D}.diff-flat{color:#888780}
+
 /* FLETE SECTION */
 .flete-section{display:none;grid-column:1/-1;background:#f7f6f3;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:1rem;margin-top:4px}
 .flete-section.show{display:block}
@@ -296,6 +351,12 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </button>
     <button class="tab" onclick="cambiarTab('reportes',this)">
       <span class="tab-icon">📊</span> Reportes
+    </button>
+    <button class="tab" onclick="cambiarTab('contenedores',this)">
+      <span class="tab-icon">🔍</span> Contenedores
+    </button>
+    <button class="tab" onclick="cambiarTab('historial',this)">
+      <span class="tab-icon">🕓</span> Historial
     </button>
   </div>
 
@@ -374,6 +435,14 @@ tbody td{padding:9px 12px;vertical-align:middle}
           <div class="flete-grid">
             <div class="fg"><label>N° Contenedor</label><input type="text" id="v-contenedor" placeholder="MSCU1234567"></div>
             <div class="fg"><label>Patio de entrega</label><input type="text" id="v-patio" placeholder="Nombre del patio"></div>
+            <div class="fg"><label>Estado operativo</label>
+              <select id="v-estado-flete">
+                <option value="en_transito">🚛 En tránsito</option>
+                <option value="en_patio">🏭 En patio</option>
+                <option value="entregado">✅ Entregado</option>
+                <option value="liberado">📋 Liberado</option>
+              </select>
+            </div>
             <div class="flete-divider">Maniobras (costo separado → genera línea en cobranza)</div>
             <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="v-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
             <div class="fg"><label>Descripción maniobras</label><input type="text" id="v-maniobras-desc" placeholder="Descarga, posicionamiento, etc."></div>
@@ -538,6 +607,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
               <th onclick="ordenarC('cliente')">Cliente <span class="sort-arrow" id="ca-cliente">↕</span></th>
               <th onclick="ordenarC('monto')">Monto <span class="sort-arrow" id="ca-monto">↕</span></th>
               <th onclick="ordenarC('fechaEmision')">Emisión <span class="sort-arrow" id="ca-fechaEmision">↕</span></th>
+              <th class="no-sort">Días</th>
               <th onclick="ordenarC('fechaVencimiento')">Vencimiento <span class="sort-arrow" id="ca-fechaVencimiento">↕</span></th>
               <th>Estado</th>
               <th onclick="ordenarC('referencia')">Referencia <span class="sort-arrow" id="ca-referencia">↕</span></th>
@@ -645,6 +715,72 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
 
 
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA 4 — CONTENEDORES
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-contenedores" class="tab-panel">
+    <div class="topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="1" y="5" width="18" height="12" rx="2" stroke="#185FA5" stroke-width="1.4"/><path d="M6 5V4a1 1 0 011-1h6a1 1 0 011 1v1" stroke="#185FA5" stroke-width="1.4"/><path d="M7 10h6M7 13h4" stroke="#1D9E75" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <div><div class="brand-title">Búsqueda por contenedor</div></div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir</button>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      <input type="text" id="cont-buscar" placeholder="Buscar N° contenedor, patio, cliente..."
+        style="flex:1;padding:10px 14px;font-size:13px;border:0.5px solid rgba(0,0,0,.22);border-radius:10px;background:#fff;font-family:inherit"
+        oninput="buscarContenedor()">
+      <select id="cont-fil-estado" onchange="buscarContenedor()"
+        style="padding:8px 12px;font-size:12px;border:0.5px solid rgba(0,0,0,.22);border-radius:10px;background:#fff;font-family:inherit">
+        <option value="">Todos los estados</option>
+        <option value="en_transito">🚛 En tránsito</option>
+        <option value="en_patio">🏭 En patio</option>
+        <option value="entregado">✅ Entregado</option>
+        <option value="liberado">📋 Liberado</option>
+      </select>
+    </div>
+
+    <!-- ALERT EIR faltante -->
+    <div class="alert-banner" id="alert-eir" style="background:#FAEEDA;border-color:#FAC775;color:#633806;margin-bottom:1rem">
+      <span>⚠️</span><span><strong id="alert-eir-txt"></strong> sin EIR adjunto</span>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="cont-results">
+      <div class="empty-state"><p>Escribe un número de contenedor o selecciona un estado para buscar</p></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA 5 — HISTORIAL
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-historial" class="tab-panel">
+    <div class="topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#185FA5" stroke-width="1.4"/><path d="M10 6v4l3 2" stroke="#185FA5" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div><div class="brand-title">Historial de cambios</div></div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-danger" onclick="if(confirm('¿Limpiar historial?')){historial=[];renderHistorial();localStorage.setItem('vazse_historial','[]');}">🗑 Limpiar</button>
+      </div>
+    </div>
+    <div class="table-outer">
+      <div style="padding:.5rem 0" id="historial-list">
+        <div class="empty-state"><p>No hay cambios registrados aún</p></div>
+      </div>
+    </div>
+  </div>
+
+
 <!-- EDIT MODAL VIAJES -->
 <div class="edit-overlay" id="ev-overlay" onclick="cerrarEditViaje(event)">
   <div class="edit-modal">
@@ -683,6 +819,14 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
           <div class="fg"><label>N° Contenedor</label><input type="text" id="ev-contenedor" placeholder="MSCU1234567"></div>
           <div class="fg"><label>Patio de entrega</label><input type="text" id="ev-patio" placeholder="Nombre del patio"></div>
+          <div class="fg"><label>Estado operativo</label>
+            <select id="ev-estado-flete">
+              <option value="en_transito">🚛 En tránsito</option>
+              <option value="en_patio">🏭 En patio</option>
+              <option value="entregado">✅ Entregado</option>
+              <option value="liberado">📋 Liberado</option>
+            </select>
+          </div>
           <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="ev-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
           <div class="fg"><label>Descripción maniobras</label><input type="text" id="ev-maniobras-desc" placeholder="Descarga, posicionamiento..."></div>
           <div class="fg" style="grid-column:1/-1">
@@ -793,6 +937,51 @@ tbody td{padding:9px 12px;vertical-align:middle}
 
 <script>
 const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbzZrIi-g_4GMQ9G1zDrP_g8RlN4R31SiN7u4ceP6YAG79cArYaDP70iNI_uizSp3cBg/exec';
+
+// ── POST helper — usa form oculto para evitar CORS/redirect issues ─
+function postToScript(payload) {
+  return new Promise((resolve) => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = SCRIPT_URL;
+    form.target = '_blank_post_' + Date.now();
+    form.style.display = 'none';
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = 'payload';
+    inp.value = JSON.stringify(payload);
+    form.appendChild(inp);
+    // Also send as postData for Apps Script compatibility
+    const inp2 = document.createElement('input');
+    inp2.type = 'hidden';
+    inp2.name = 'postData';
+    inp2.value = JSON.stringify(payload);
+    form.appendChild(inp2);
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => { form.remove(); resolve(); }, 800);
+  });
+}
+
+// ── sendPost — use fetch with no-cors, fallback to beacon ────────
+async function sendPost(payload) {
+  const body = JSON.stringify(payload);
+  try {
+    // Try navigator.sendBeacon first — fire and forget, no CORS issues
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' });
+      const sent = navigator.sendBeacon(SCRIPT_URL, blob);
+      if (sent) return;
+    }
+  } catch(e) {}
+  // Fallback: no-cors fetch
+  await fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body
+  });
+}
 const GDRIVE_CLIENT_ID = '98142569707-lpufpcp974g1532u3i7egide9fk91st1.apps.googleusercontent.com';
 const GDRIVE_FOLDER_ID  = '1rpt3ifuAlQYYjWn9IUp6lv-OsSoZ2vjN';
 const GDRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
@@ -897,6 +1086,8 @@ function cambiarTab(id, btn) {
   document.getElementById('panel-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'reportes') setTimeout(renderReporteClientes, 50);
+  if (id === 'contenedores') setTimeout(() => { buscarContenedor(); }, 50);
+  if (id === 'historial') setTimeout(renderHistorial, 50);
 }
 
 // ── TOAST ─────────────────────────────────────────────
@@ -1138,6 +1329,7 @@ async function agregarViaje() {
     notas:      document.getElementById('v-notas').value.trim(),
     contenedor: esFlete ? document.getElementById('v-contenedor').value.trim() : '',
     patio:      esFlete ? document.getElementById('v-patio').value.trim() : '',
+    estadoFlete: esFlete ? document.getElementById('v-estado-flete').value : '',
     maniobrasDesc:  esFlete ? document.getElementById('v-maniobras-desc').value.trim() : '',
     maniobras:  esFlete ? (parseFloat(document.getElementById('v-maniobras-costo').value)||0) : 0,
     urlEir: ''
@@ -1155,8 +1347,7 @@ async function agregarViaje() {
 
     // 1. Guardar viaje
     console.log('[VAZSE] Guardando viaje:', registro);
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'append', registro})});
+    await sendPost({action:'append', registro});
     console.log('[VAZSE] Viaje enviado OK');
     viajes.unshift({...registro, id:Date.now()});
 
@@ -1169,8 +1360,7 @@ async function agregarViaje() {
       fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
       referencia:registro.referencia, urlFactura:'', urlEvidencia:'', notas:notaBase };
     console.log('[VAZSE] Guardando cobranza:', _cob);
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'cobranza_append', cobranza:_cob})});
+    await sendPost({action:'cobranza_append', cobranza:_cob});
     console.log('[VAZSE] Cobranza enviada OK');
     cobranzas.unshift({..._cob, id:_ts+1, monto:_cob.monto});
 
@@ -1183,8 +1373,7 @@ async function agregarViaje() {
         urlFactura:'', urlEvidencia:'',
         notas:'Maniobras'+(registro.maniobrasDesc?' · '+registro.maniobrasDesc:'')+(registro.contenedor?' · '+registro.contenedor:'') };
       console.log('[VAZSE] Guardando maniobras:', _cob2);
-      await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({action:'cobranza_append', cobranza:_cob2})});
+      await sendPost({action:'cobranza_append', cobranza:_cob2});
       console.log('[VAZSE] Maniobras enviadas OK');
       cobranzas.unshift({..._cob2, id:_ts+2, monto:_cob2.monto});
     }
@@ -1192,12 +1381,14 @@ async function agregarViaje() {
     // Limpiar formulario
     ['v-cliente','v-unidad','v-origen','v-destino','v-costo','v-cobradof',
      'v-referencia','v-notas','v-contenedor','v-patio','v-maniobras-costo','v-maniobras-desc']
+      document.getElementById('v-estado-flete').value = 'en_transito';
       .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
     archivoEir = null; urlEirSubido = '';
     document.getElementById('eir-attached').style.display = 'none';
     document.getElementById('v-referencia').value = generarFolioAuto();
 
     filtrarViajes(); actualizarGraficaV(); filtrarCobranza();
+    registrarHistorial('agregar','Viaje',registro.cliente+' · '+registro.tipo+' · '+fmtFecha(fecha));
     setStatus('v','ok','Guardado');
     const msg = esFlete && registro.maniobras > 0
       ? '¡Flete registrado + 2 líneas en cobranza (flete + maniobras)!'
@@ -1219,13 +1410,9 @@ async function eliminarViaje(id, fecha, tipo, costo) {
   const costoNum  = parseFloat(r.costo);
   console.log('Eliminando:', { fecha: fechaNorm, tipo: r.tipo, costo: costoNum });
   try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action:'delete', fecha: fechaNorm, tipo: r.tipo, costo: costoNum })
-    });
+    await sendPost({ action:'delete', fecha: fechaNorm, tipo: r.tipo, costo: costoNum });
     viajes = viajes.filter(v => v.id !== id);
+    registrarHistorial('eliminar','Viaje',fmtFecha(r.fecha)+' · '+r.tipo+' · '+r.cliente);
     filtrarViajes(); actualizarGraficaV();
     toast('Registro eliminado','ok');
   } catch(e) {
@@ -1418,8 +1605,9 @@ async function agregarCobranza() {
       notas: document.getElementById('c-notas').value.trim()
     };
 
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cobranza_append',cobranza})});
+    await sendPost({action:'cobranza_append',cobranza});
     cobranzas.unshift({...cobranza,id:Date.now()});
+    registrarHistorial('agregar','Cobranza',cobranza.folio+' · '+cobranza.cliente+' · '+fmt(cobranza.monto));
 
     // Limpiar form
     ['c-folio','c-cliente','c-monto','c-fvencimiento','c-referencia','c-notas'].forEach(id=>document.getElementById(id).value='');
@@ -1437,7 +1625,7 @@ async function agregarCobranza() {
 
 async function cambiarEstado(folio, nuevoEstado) {
   try {
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cobranza_update_estado',folio,estado:nuevoEstado})});
+    await sendPost({action:'cobranza_update_estado',folio,estado:nuevoEstado});
     const r = cobranzas.find(c=>String(c.folio)===String(folio));
     if (r) r.estado = nuevoEstado;
     filtrarCobranza(); toast('Estado actualizado','ok');
@@ -1447,7 +1635,7 @@ async function cambiarEstado(folio, nuevoEstado) {
 async function eliminarCobranza(id, folio) {
   if (!confirm('¿Eliminar esta factura?')) return;
   try {
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cobranza_delete',folio})});
+    await sendPost({action:'cobranza_delete',folio});
     cobranzas = cobranzas.filter(r=>r.id!==id);
     filtrarCobranza(); toast('Factura eliminada','ok');
   } catch(e){ toast('No se pudo eliminar','err'); }
@@ -1507,7 +1695,7 @@ function renderCobranza(){
   const pagina=cFiltrados.slice((cPag-1)*POR_PAGINA,cPag*POR_PAGINA);
   document.getElementById('c-info').textContent=total+' resultado'+(total!==1?'s':'');
   if(!pagina.length){
-    tbody.innerHTML='<tr><td colspan="11"><div class="empty-state"><p>No hay facturas que coincidan.</p></div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="12"><div class="empty-state"><p>No hay facturas que coincidan.</p></div></td></tr>';
   }else{
     tbody.innerHTML=pagina.map(r=>{
       const venc=fmtFecha(r.fechaVencimiento);
@@ -1521,6 +1709,7 @@ function renderCobranza(){
         <td class="trunc">${r.cliente||'—'}</td>
         <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
         <td style="font-size:12px;white-space:nowrap;color:#888780">${fmtFecha(r.fechaEmision)||'—'}</td>
+        <td>${diasBadge(diasCredito(r.fechaEmision), r.estado)}</td>
         <td style="font-size:12px;white-space:nowrap;color:${isVencido?'#993C1D':'#888780'}">${venc||'—'}</td>
         <td>
           <select class="estado-select" onchange="cambiarEstado('${r.folio}',this.value)">
@@ -1655,6 +1844,7 @@ function abrirEditViaje(id) {
   document.getElementById('ev-patio').value = r.patio || '';
   document.getElementById('ev-maniobras-costo').value = r.maniobras || '';
   document.getElementById('ev-maniobras-desc').value = r.maniobrasDesc || '';
+  document.getElementById('ev-estado-flete').value = r.estadoFlete || 'en_transito';
   // Show/hide flete section
   toggleFleteSectionEdit();
   document.getElementById('ev-overlay').classList.add('show');
@@ -1692,15 +1882,15 @@ async function guardarEditViaje() {
       patio:      esFlete ? document.getElementById('ev-patio').value.trim() : '',
       maniobras:  esFlete ? (parseFloat(document.getElementById('ev-maniobras-costo').value)||0) : 0,
       maniobrasDesc: esFlete ? document.getElementById('ev-maniobras-desc').value.trim() : '',
+      estadoFlete: esFlete ? document.getElementById('ev-estado-flete').value : '',
       urlEir:     evEirUrlNuevo || evEirActual
     };
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'delete', fecha:fmtFecha(r.fecha), tipo:r.tipo, costo:r.costo})});
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'append', registro:updated})});
+    await sendPost({action:'delete', fecha:fmtFecha(r.fecha), tipo:r.tipo, costo:r.costo});
+    await sendPost({action:'append', registro:updated});
     const idx = viajes.findIndex(v => v.id === id);
     if (idx !== -1) viajes[idx] = updated;
     filtrarViajes(); actualizarGraficaV();
+    registrarHistorial('editar','Viaje',updated.cliente+' · '+updated.tipo+' · '+updated.fecha);
     document.getElementById('ev-overlay').classList.remove('show');
     toast('Viaje actualizado', 'ok');
   } catch(e) { console.error(e); toast('No se pudo guardar: '+e, 'err'); }
@@ -1813,13 +2003,12 @@ async function guardarEditCobranza() {
       urlEvidencia: ecUrlEviNuevo || ecUrlEviActual,
       notas: document.getElementById('ec-notas').value.trim()
     };
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'cobranza_delete', folio:r.folio})});
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'cobranza_append', cobranza:updated})});
+    await sendPost({action:'cobranza_delete', folio:r.folio});
+    await sendPost({action:'cobranza_append', cobranza:updated});
     const idx = cobranzas.findIndex(c => c.id === id);
     if (idx !== -1) cobranzas[idx] = updated;
     filtrarCobranza();
+    registrarHistorial('editar','Cobranza',updated.folio+' · '+updated.cliente);
     document.getElementById('ec-overlay').classList.remove('show');
     toast('Cobranza actualizada', 'ok');
   } catch(e) { toast('No se pudo guardar: ' + e, 'err'); }
@@ -2051,8 +2240,213 @@ function exportarPDFViajes() {
 }
 
 
+// ── HISTORIAL ────────────────────────────────────────
+let historial = JSON.parse(localStorage.getItem('vazse_historial') || '[]');
+
+function registrarHistorial(accion, tipo, detalle) {
+  const entry = {
+    ts: Date.now(),
+    fecha: new Date().toLocaleString('es-MX'),
+    accion, tipo, detalle
+  };
+  historial.unshift(entry);
+  if (historial.length > 200) historial = historial.slice(0, 200);
+  localStorage.setItem('vazse_historial', JSON.stringify(historial));
+  renderHistorial();
+}
+
+function renderHistorial() {
+  const el = document.getElementById('historial-list');
+  if (!historial.length) {
+    el.innerHTML = '<div class="empty-state"><p>No hay cambios registrados aún</p></div>';
+    return;
+  }
+  el.innerHTML = historial.slice(0, 100).map(h => {
+    const cls = h.accion === 'agregar' ? 'h-add' : h.accion === 'eliminar' ? 'h-del' : 'h-edit';
+    const icon = h.accion === 'agregar' ? '+' : h.accion === 'eliminar' ? '✕' : '✏️';
+    return `<div class="historial-item" style="padding:10px 12px">
+      <span class="historial-badge ${cls}">${icon} ${h.accion}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:500">${h.tipo} — ${h.detalle}</div>
+        <div class="historial-meta">${h.fecha}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CONTENEDORES ──────────────────────────────────────
+function efBadge(estado) {
+  const m = {
+    en_transito:'ef-transito', en_patio:'ef-patio',
+    entregado:'ef-entregado', liberado:'ef-liberado'
+  };
+  const labels = {
+    en_transito:'🚛 En tránsito', en_patio:'🏭 En patio',
+    entregado:'✅ Entregado', liberado:'📋 Liberado'
+  };
+  return `<span class="ef-badge ${m[estado]||'ef-transito'}">${labels[estado]||estado}</span>`;
+}
+
+function buscarContenedor() {
+  const q = (document.getElementById('cont-buscar').value || '').toLowerCase().trim();
+  const estFil = document.getElementById('cont-fil-estado').value;
+  const el = document.getElementById('cont-results');
+
+  // Filter fletes
+  const fletes = viajes.filter(r => {
+    if (!TIPOS_FLETE.includes(r.tipo)) return false;
+    if (estFil && r.estadoFlete !== estFil) return false;
+    if (q) {
+      const txt = [r.contenedor,r.patio,r.cliente,r.referencia,r.unidad].join(' ').toLowerCase();
+      if (!txt.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Alert EIR faltante
+  const sinEir = fletes.filter(r => !r.urlEir);
+  const alertEl = document.getElementById('alert-eir');
+  const alertTxt = document.getElementById('alert-eir-txt');
+  if (sinEir.length > 0) {
+    alertTxt.textContent = sinEir.length + ' flete' + (sinEir.length > 1 ? 's' : '') + ' sin EIR';
+    alertEl.classList.add('show');
+  } else {
+    alertEl.classList.remove('show');
+  }
+
+  if (!fletes.length) {
+    el.innerHTML = '<div class="empty-state"><p>No se encontraron fletes con esos criterios</p></div>';
+    return;
+  }
+
+  el.innerHTML = fletes.map(r => {
+    // Get related cobranza entries
+    const cobs = cobranzas.filter(c =>
+      c.referencia === r.referencia ||
+      (r.contenedor && c.notas && c.notas.includes(r.contenedor))
+    );
+    const totalCob = cobs.reduce((s,c) => s + (c.monto||0), 0);
+    const cobPagado = cobs.filter(c=>c.estado==='pagado').reduce((s,c)=>s+(c.monto||0),0);
+
+    return `<div class="chart-card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-size:16px;font-weight:500;color:#185FA5">${r.contenedor||'Sin N° contenedor'}</div>
+          <div style="font-size:12px;color:#888780;margin-top:2px">${r.cliente||'—'} · ${fmtFecha(r.fecha)} · ${r.unidad||'—'}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${efBadge(r.estadoFlete||'en_transito')}
+          ${r.urlEir ? '<a href="'+r.urlEir+'" target="_blank" class="btn-sm view">📋 EIR</a>' : '<span class="ef-badge ef-sin-eir">⚠️ Sin EIR</span>'}
+          <button class="btn-sm view" onclick="abrirEditViaje(${r.id})">✏️ Editar</button>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="timeline-wrap">
+        <div class="tl-item">
+          <div class="tl-icon" style="background:#E6F1FB">🚛</div>
+          <div class="tl-content">
+            <div class="tl-date">${fmtFecha(r.fecha)}</div>
+            <div class="tl-title">${r.tipo.replace('_',' ')} — ${[r.origen,r.destino].filter(Boolean).join(' → ')||'—'}</div>
+            <div class="tl-sub">Costo: ${fmt(r.costo)} · Cobrado: ${fmt(r.cobrado)}</div>
+          </div>
+        </div>
+        ${r.patio ? `<div class="tl-item">
+          <div class="tl-icon" style="background:#FAEEDA">🏭</div>
+          <div class="tl-content">
+            <div class="tl-date">Patio de entrega</div>
+            <div class="tl-title">${r.patio}</div>
+          </div>
+        </div>` : ''}
+        ${r.maniobras > 0 ? `<div class="tl-item">
+          <div class="tl-icon" style="background:#EEEDFE">⚙️</div>
+          <div class="tl-content">
+            <div class="tl-date">Maniobras</div>
+            <div class="tl-title">${r.maniobrasDesc||'Maniobras'} — ${fmt(r.maniobras)}</div>
+          </div>
+        </div>` : ''}
+        ${cobs.length ? cobs.map(cb => `<div class="tl-item">
+          <div class="tl-icon" style="background:${cb.estado==='pagado'?'#EAF3DE':'#f1efeb'}">💰</div>
+          <div class="tl-content">
+            <div class="tl-date">Cobranza · ${cb.folio}</div>
+            <div class="tl-title">${fmt(cb.monto)} — <span class="badge b-${cb.estado||'pendiente'}"><span class="badge-dot"></span>${cb.estado||'pendiente'}</span></div>
+            ${cb.urlFactura?'<a href="'+cb.urlFactura+'" target="_blank" style="font-size:11px;color:#185FA5">📄 Ver factura</a>':''}
+            ${cb.urlEvidencia?'<a href="'+cb.urlEvidencia+'" target="_blank" style="font-size:11px;color:#185FA5;margin-left:8px">🧾 Ver evidencia</a>':''}
+          </div>
+        </div>`).join('') : ''}
+      </div>
+
+      ${cobs.length ? `<div style="display:flex;gap:8px;padding-top:8px;border-top:0.5px solid rgba(0,0,0,.06);font-size:12px">
+        <span style="color:#888780">Total cobranza:</span>
+        <strong>${fmt(totalCob)}</strong>
+        <span style="color:#888780;margin-left:8px">Cobrado:</span>
+        <strong style="color:#0F6E56">${fmt(cobPagado)}</strong>
+        <strong style="color:${totalCob-cobPagado>0?'#993C1D':'#0F6E56'};margin-left:8px">Pendiente: ${fmt(totalCob-cobPagado)}</strong>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── DÍAS DE CRÉDITO en cobranza ───────────────────────
+function diasCredito(fechaEmision) {
+  if (!fechaEmision || fechaEmision === '—') return null;
+  const f = fmtFecha(fechaEmision);
+  if (!f || f === '—') return null;
+  const diff = Math.floor((Date.now() - new Date(f).getTime()) / 86400000);
+  return diff;
+}
+
+function diasBadge(dias, estado) {
+  if (dias === null || estado === 'pagado') return '';
+  const cls = dias < 15 ? 'dias-ok' : dias < 30 ? 'dias-warn' : 'dias-venc';
+  return `<span class="dias-badge ${cls}">${dias}d</span>`;
+}
+
+// ── BÚSQUEDA GLOBAL actualizada ────────────────────────
+function busquedaGlobal() {
+  const q = document.getElementById('global-buscar').value.trim().toLowerCase();
+  const res = document.getElementById('global-results');
+  if (!q || q.length < 2) { res.style.display = 'none'; return; }
+
+  const matchV = viajes.filter(r =>
+    [r.cliente,r.unidad,r.origen,r.destino,r.referencia,r.notas,r.tipo,r.contenedor,r.patio].join(' ').toLowerCase().includes(q)
+  ).slice(0,5);
+
+  const matchC = cobranzas.filter(r =>
+    [r.folio,r.cliente,r.referencia,r.notas].join(' ').toLowerCase().includes(q)
+  ).slice(0,5);
+
+  if (!matchV.length && !matchC.length) {
+    res.style.display = 'block';
+    res.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#888780">Sin resultados</div>';
+    return;
+  }
+
+  let html = '';
+  if (matchV.length) {
+    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em">Viajes</div>';
+    html += matchV.map(r => `<div onclick="irAViaje(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
+      <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${fmtFecha(r.fecha)}</span>
+      <span style="font-size:12px">${r.cliente||'—'}${r.contenedor?' · '+r.contenedor:''}</span>
+      <span style="font-size:11px;color:#888780;margin-left:auto">${r.referencia||''}</span>
+    </div>`).join('');
+  }
+  if (matchC.length) {
+    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em;border-top:0.5px solid rgba(0,0,0,.06)">Cobranza</div>';
+    html += matchC.map(r => `<div onclick="irACobranza(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
+      <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${r.folio||'—'}</span>
+      <span style="font-size:12px">${r.cliente||'—'}</span>
+      <span style="font-size:11px;color:#888780;margin-left:auto">${fmt(r.monto)}</span>
+    </div>`).join('');
+  }
+  res.innerHTML = html;
+  res.style.display = 'block';
+}
+
+
 // ── ARRANQUE ──────────────────────────────────────────
 cargar();
+renderHistorial();
 </script>
 </body>
 </html>
