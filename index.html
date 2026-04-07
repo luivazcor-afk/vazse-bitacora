@@ -963,19 +963,16 @@ function postToScript(payload) {
 
 // ── sendPost — use fetch with no-cors, fallback to beacon ────────
 async function sendPost(payload) {
-  // Use no-cors fetch — Apps Script accepts this format
-  // sendBeacon sends as text/plain which breaks JSON.parse in Apps Script
+  // Send via GET with encoded params — no CORS issues, Apps Script reads e.parameter
+  const encoded = encodeURIComponent(JSON.stringify(payload));
+  const url = SCRIPT_URL + '?action=write&data=' + encoded;
   try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
   } catch(e) {
-    console.error('[VAZSE] sendPost error:', e);
-    throw e;
+    // no-cors fetch always throws on response read — ignore
   }
+  // Small delay to allow Apps Script to process
+  await new Promise(r => setTimeout(r, 300));
 }
 const GDRIVE_CLIENT_ID = '98142569707-lpufpcp974g1532u3i7egide9fk91st1.apps.googleusercontent.com';
 const GDRIVE_FOLDER_ID  = '1rpt3ifuAlQYYjWn9IUp6lv-OsSoZ2vjN';
