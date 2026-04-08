@@ -228,6 +228,18 @@ tbody td{padding:9px 12px;vertical-align:middle}
 }
 
 
+
+/* OFFLINE MODE */
+.offline-banner{display:none;background:#FAEEDA;border:0.5px solid #FAC775;border-radius:10px;
+  padding:10px 16px;margin-bottom:12px;font-size:12px;color:#633806;
+  align-items:center;gap:10px}
+.offline-banner.show{display:flex}
+.offline-banner strong{font-weight:500}
+.offline-dot{width:8px;height:8px;border-radius:50%;background:#BA7517;flex-shrink:0;animation:blink 1s infinite}
+.sync-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;
+  border-radius:20px;background:#FAEEDA;color:#633806;font-weight:500;cursor:pointer}
+.sync-badge:hover{background:#FAC775}
+
 /* ESTADO FLETE */
 .ef-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
 .ef-transito{background:#E6F1FB;color:#0C447C}.ef-transito .badge-dot{background:#185FA5}
@@ -329,6 +341,15 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
 
   <!-- PESTAÑAS -->
+  <!-- OFFLINE BANNER -->
+  <div class="offline-banner" id="offline-banner">
+    <span class="offline-dot"></span>
+    <span><strong>Sin conexión</strong> — Los cambios se guardan localmente</span>
+    <span id="cola-count" class="sync-badge" onclick="sincronizarCola()" style="margin-left:auto;display:none">
+      ⏳ <span id="cola-num">0</span> pendiente(s) — Tap para sincronizar
+    </span>
+  </div>
+
   <!-- ALERTA VENCIDOS -->
   <div class="alert-banner" id="alert-vencidos" onclick="irAVencidos()">
     <span>🔴</span>
@@ -1041,17 +1062,101 @@ function postToScript(payload) {
 }
 
 // ── sendPost — use fetch with no-cors, fallback to beacon ────────
-async function sendPost(payload) {
-  // Send via GET with encoded params — no CORS issues, Apps Script reads e.parameter
-  const encoded = encodeURIComponent(JSON.stringify(payload));
-  const url = SCRIPT_URL + '?action=write&data=' + encoded;
-  try {
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
-  } catch(e) {
-    // no-cors fetch always throws on response read — ignore
+// ── OFFLINE QUEUE ────────────────────────────────────
+const COLA_KEY = 'vazse_cola_sync';
+
+function getCola() {
+  try { return JSON.parse(localStorage.getItem(COLA_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveCola(cola) {
+  localStorage.setItem(COLA_KEY, JSON.stringify(cola));
+  actualizarEstadoOffline();
+}
+
+function actualizarEstadoOffline() {
+  const cola = getCola();
+  const colaBadge = document.getElementById('cola-count');
+  const colaNum = document.getElementById('cola-num');
+  if (colaBadge && colaNum) {
+    if (cola.length > 0) {
+      colaBadge.style.display = 'inline-flex';
+      colaNum.textContent = cola.length;
+    } else {
+      colaBadge.style.display = 'none';
+    }
   }
-  // Small delay to allow Apps Script to process
-  await new Promise(r => setTimeout(r, 300));
+}
+
+function estaOnline() {
+  return navigator.onLine;
+}
+
+function mostrarEstadoConexion() {
+  const banner = document.getElementById('offline-banner');
+  if (!banner) return;
+  if (!estaOnline()) {
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+    // Try to sync queue when back online
+    const cola = getCola();
+    if (cola.length > 0) sincronizarCola();
+  }
+}
+
+async function sincronizarCola() {
+  const cola = getCola();
+  if (!cola.length) return;
+  if (!estaOnline()) { toast('Sin conexión — reintenta cuando tengas internet', 'err'); return; }
+
+  toast('Sincronizando ' + cola.length + ' registro(s)...', 'inf');
+  let exito = 0;
+  const fallidos = [];
+
+  for (const item of cola) {
+    try {
+      const encoded = encodeURIComponent(JSON.stringify(item));
+      const url = SCRIPT_URL + '?action=write&data=' + encoded;
+      await fetch(url, { method: 'GET', mode: 'no-cors' });
+      await new Promise(r => setTimeout(r, 400));
+      exito++;
+    } catch(e) {
+      fallidos.push(item);
+    }
+  }
+
+  saveCola(fallidos);
+  if (fallidos.length === 0) {
+    toast('✓ ' + exito + ' registro(s) sincronizados con Google Sheets', 'ok');
+  } else {
+    toast(exito + ' OK, ' + fallidos.length + ' fallaron — reintenta', 'err');
+  }
+}
+
+async function sendPost(payload) {
+  if (estaOnline()) {
+    // Online: send directly
+    try {
+      const encoded = encodeURIComponent(JSON.stringify(payload));
+      const url = SCRIPT_URL + '?action=write&data=' + encoded;
+      await fetch(url, { method: 'GET', mode: 'no-cors' });
+      await new Promise(r => setTimeout(r, 300));
+    } catch(e) {
+      // If fetch fails despite being "online", queue it
+      console.warn('[VAZSE] sendPost failed, queuing:', e);
+      const cola = getCola();
+      cola.push(payload);
+      saveCola(cola);
+      toast('Error de red — guardado en cola offline', 'inf');
+    }
+  } else {
+    // Offline: save to queue
+    const cola = getCola();
+    cola.push(payload);
+    saveCola(cola);
+    console.log('[VAZSE] Offline — queued:', payload.action);
+  }
 }
 const GDRIVE_CLIENT_ID = '98142569707-lpufpcp974g1532u3i7egide9fk91st1.apps.googleusercontent.com';
 const GDRIVE_FOLDER_ID  = '1rpt3ifuAlQYYjWn9IUp6lv-OsSoZ2vjN';
@@ -1232,9 +1337,58 @@ function fmtFecha(f) {
 }
 
 // ── CARGA DATOS ───────────────────────────────────────
+const CACHE_KEY = 'vazse_cache_datos';
+
+function guardarCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      ts: Date.now(),
+      data
+    }));
+  } catch(e) { console.warn('Cache save failed:', e); }
+}
+
+function cargarCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    return obj.data || null;
+  } catch(e) { return null; }
+}
+
 async function cargar() {
   setStatus('v', 'loading', 'Sincronizando...');
   setStatus('c', 'loading', 'Sincronizando...');
+
+  if (!estaOnline()) {
+    // Load from cache
+    const cached = cargarCache();
+    if (cached) {
+      viajes = (cached.registros || []).map((r, i) => ({
+        ...r, id: i,
+        costo: parseFloat(r.costo) || 0,
+        cobrado: parseFloat(r.cobrado) || 0
+      }));
+      cobranzas = (cached.cobranzas || []).map((r, i) => ({
+        ...r, id: i,
+        monto: parseFloat(r.monto) || 0
+      }));
+      filtrarViajes(); actualizarGraficaV();
+      filtrarCobranza();
+      setStatus('v', 'err', 'Modo offline — datos en caché');
+      setStatus('c', 'err', 'Modo offline — datos en caché');
+      verificarVencidos();
+      actualizarEstadoOffline();
+      toast('Sin conexión — mostrando datos guardados', 'inf');
+    } else {
+      setStatus('v', 'err', 'Sin conexión y sin caché');
+      setStatus('c', 'err', 'Sin conexión y sin caché');
+      toast('Sin conexión y sin datos en caché', 'err');
+    }
+    return;
+  }
+
   try {
     const res = await fetch(SCRIPT_URL);
     const data = await res.json();
@@ -1250,16 +1404,45 @@ async function cargar() {
       monto: parseFloat(r.monto) || 0
     }));
 
+    // Save to cache
+    guardarCache(data);
+
     filtrarViajes(); actualizarGraficaV();
     filtrarCobranza();
     setStatus('v', 'ok', 'Conectado a Google Sheets');
     setStatus('c', 'ok', 'Conectado a Google Sheets');
     verificarVencidos();
-    toast('Datos sincronizados', 'ok');
+    actualizarEstadoOffline();
+
+    const cola = getCola();
+    if (cola.length > 0) {
+      toast('Hay ' + cola.length + ' cambio(s) pendiente(s) de sincronizar', 'inf');
+    } else {
+      toast('Datos sincronizados', 'ok');
+    }
   } catch(e) {
-    setStatus('v', 'err', 'Error de conexión');
-    setStatus('c', 'err', 'Error de conexión');
-    toast('No se pudo conectar', 'err');
+    // Try cache on error
+    const cached = cargarCache();
+    if (cached) {
+      viajes = (cached.registros || []).map((r, i) => ({
+        ...r, id: i,
+        costo: parseFloat(r.costo) || 0,
+        cobrado: parseFloat(r.cobrado) || 0
+      }));
+      cobranzas = (cached.cobranzas || []).map((r, i) => ({
+        ...r, id: i,
+        monto: parseFloat(r.monto) || 0
+      }));
+      filtrarViajes(); actualizarGraficaV();
+      filtrarCobranza();
+      setStatus('v', 'err', 'Error — mostrando caché');
+      setStatus('c', 'err', 'Error — mostrando caché');
+      toast('Error de conexión — mostrando datos guardados', 'inf');
+    } else {
+      setStatus('v', 'err', 'Error de conexión');
+      setStatus('c', 'err', 'Error de conexión');
+      toast('No se pudo conectar', 'err');
+    }
   }
 }
 
@@ -2841,8 +3024,24 @@ function renderReporteCobClientes() {
 
 
 // ── ARRANQUE ──────────────────────────────────────────
+// Listen for online/offline events
+window.addEventListener('online', () => {
+  mostrarEstadoConexion();
+  toast('Conexión restaurada ✓', 'ok');
+  const cola = getCola();
+  if (cola.length > 0) {
+    setTimeout(sincronizarCola, 1000);
+  }
+});
+window.addEventListener('offline', () => {
+  mostrarEstadoConexion();
+  toast('Sin conexión — modo offline activado', 'inf');
+});
+
 cargar();
 renderHistorial();
+actualizarEstadoOffline();
+mostrarEstadoConexion();
 </script>
 </body>
 </html>
