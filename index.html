@@ -450,8 +450,12 @@ tbody td{padding:9px 12px;vertical-align:middle}
             <div class="flete-divider">EIR — Equipment Interchange Receipt</div>
             <div class="fg" style="grid-column:1/-1">
               <label>Adjuntar EIR</label>
-              <div class="file-zone" onclick="document.getElementById('v-eir-input').click()" id="v-eir-zone">
-                <input type="file" id="v-eir-input" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" onchange="archivoSeleccionado('eir',this)">
+              <div id="v-drive-auth-needed" style="display:none;margin-bottom:8px;padding:8px 12px;background:#FAEEDA;border-radius:8px;font-size:12px;color:#633806;display:flex;align-items:center;gap:8px">
+                <span>⚠️ Necesitas autorizar Google Drive para subir el EIR</span>
+                <button onclick="autorizarDriveYVolver()" style="padding:4px 12px;font-size:11px;font-weight:500;border:0.5px solid #854F0B;border-radius:6px;background:#FAC775;color:#412402;cursor:pointer;margin-left:auto">Autorizar Drive</button>
+              </div>
+              <div class="file-zone" onclick="verificarTokenAntesDeSeleccionar()" id="v-eir-zone">
+                <input type="file" id="v-eir-input" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" onchange="archivoSeleccionado('eir',this)" style="display:none">
                 <div class="file-zone-text">📋 <strong>Seleccionar EIR</strong> o arrastra aquí</div>
               </div>
               <div id="eir-attached" style="display:none"></div>
@@ -1043,6 +1047,8 @@ async function getGdriveToken() {
 window.addEventListener('load', () => {
   restoreToken();
   checkOAuthToken();
+  // Restore form if we redirected for Drive auth
+  setTimeout(restaurarFormularioSiHayBackup, 300);
 });
 const POR_PAGINA = 15;
 
@@ -2404,6 +2410,78 @@ function busquedaGlobal() {
   }
   res.innerHTML = html;
   res.style.display = 'block';
+}
+
+
+// ── DRIVE AUTH HELPERS ───────────────────────────────
+function verificarTokenAntesDeSeleccionar() {
+  restoreToken();
+  if (gdriveToken && Date.now() < gdriveTokenExpiry - 60000) {
+    // Token válido — abrir selector de archivo
+    document.getElementById('v-eir-input').click();
+  } else {
+    // Sin token — mostrar aviso
+    const aviso = document.getElementById('v-drive-auth-needed');
+    if (aviso) aviso.style.display = 'flex';
+    toast('Autoriza Google Drive primero para poder subir el EIR', 'inf');
+  }
+}
+
+function autorizarDriveYVolver() {
+  // Guardar datos del formulario antes de redirigir
+  const formData = {
+    fecha: document.getElementById('v-fecha').value,
+    tipo: document.getElementById('v-tipo').value,
+    cliente: document.getElementById('v-cliente').value,
+    unidad: document.getElementById('v-unidad').value,
+    origen: document.getElementById('v-origen').value,
+    destino: document.getElementById('v-destino').value,
+    costo: document.getElementById('v-costo').value,
+    cobrado: document.getElementById('v-cobradof').value,
+    referencia: document.getElementById('v-referencia').value,
+    notas: document.getElementById('v-notas').value,
+    contenedor: document.getElementById('v-contenedor').value,
+    patio: document.getElementById('v-patio').value,
+    estadoFlete: document.getElementById('v-estado-flete').value,
+    maniobras: document.getElementById('v-maniobras-costo').value,
+    maniobrasDesc: document.getElementById('v-maniobras-desc').value,
+  };
+  sessionStorage.setItem('vazse_form_backup', JSON.stringify(formData));
+  sessionStorage.setItem('vazse_pending_eir', '1');
+  solicitarToken();
+}
+
+function restaurarFormularioSiHayBackup() {
+  const backup = sessionStorage.getItem('vazse_form_backup');
+  const pendingEir = sessionStorage.getItem('vazse_pending_eir');
+  if (!backup) return;
+  try {
+    const d = JSON.parse(backup);
+    if (d.fecha) document.getElementById('v-fecha').value = d.fecha;
+    if (d.tipo) { document.getElementById('v-tipo').value = d.tipo; toggleFleteSection(); }
+    if (d.cliente) document.getElementById('v-cliente').value = d.cliente;
+    if (d.unidad) document.getElementById('v-unidad').value = d.unidad;
+    if (d.origen) document.getElementById('v-origen').value = d.origen;
+    if (d.destino) document.getElementById('v-destino').value = d.destino;
+    if (d.costo) document.getElementById('v-costo').value = d.costo;
+    if (d.cobrado) document.getElementById('v-cobradof').value = d.cobrado;
+    if (d.referencia) document.getElementById('v-referencia').value = d.referencia;
+    if (d.notas) document.getElementById('v-notas').value = d.notas;
+    if (d.contenedor) document.getElementById('v-contenedor').value = d.contenedor;
+    if (d.patio) document.getElementById('v-patio').value = d.patio;
+    if (d.estadoFlete) document.getElementById('v-estado-flete').value = d.estadoFlete;
+    if (d.maniobras) document.getElementById('v-maniobras-costo').value = d.maniobras;
+    if (d.maniobrasDesc) document.getElementById('v-maniobras-desc').value = d.maniobrasDesc;
+    sessionStorage.removeItem('vazse_form_backup');
+    if (pendingEir) {
+      sessionStorage.removeItem('vazse_pending_eir');
+      // Token recién autorizado — abrir selector de EIR
+      setTimeout(() => {
+        toast('Drive autorizado ✓ — ahora selecciona el EIR', 'ok');
+        document.getElementById('v-eir-input').click();
+      }, 500);
+    }
+  } catch(e) { console.error('Error restaurando formulario:', e); }
 }
 
 
