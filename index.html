@@ -3368,14 +3368,38 @@ function abrirEditPago(id) {
 }
 
 function exportarProveedores() {
+  // Aseguramos que la librería XLSX esté disponible
+  if (typeof XLSX === 'undefined') {
+    alert('La librería de Excel aún no ha cargado. Reintenta en un momento.');
+    return;
+  }
+
   const wb = XLSX.utils.book_new();
-  const headers=['Folio','Proveedor','Monto','Fecha','Fecha Pago','Estado','Ref. Viaje','Concepto','Notas'];
-  const filas = pagos.map(r=>[r.folio,r.proveedor,r.monto,fmtFecha(r.fecha),
-    r.fechaPago?fmtFecha(r.fechaPago):'',r.estado,r.referencia||'',r.concepto||'',r.notas||'']);
-  const ws = XLSX.utils.aoa_to_sheet([headers,...filas]);
-  ws['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:12},{wch:11},{wch:18},{wch:18},{wch:28}];
-  XLSX.utils.book_append_sheet(wb,ws,'Proveedores');
-  XLSX.writeFile(wb,`pagos_proveedores_${new Date().toISOString().split('T')[0]}.xlsx`);
+  const headers = ['Folio', 'Proveedor', 'Monto', 'Fecha', 'Fecha Pago', 'Estado', 'Ref. Viaje', 'Concepto', 'Notas'];
+  
+  // Validamos que 'pagos' exista y no esté vacío
+  const filas = (pagos || []).map(r => [
+    r.folio || '',
+    r.proveedor || '',
+    r.monto || 0,
+    r.fecha ? fmtFecha(r.fecha) : '',
+    r.fechaPago ? fmtFecha(r.fechaPago) : '',
+    r.estado || '',
+    r.referencia || '',
+    r.concepto || '',
+    r.notas || ''
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...filas]);
+  
+  // Ancho de columnas optimizado
+  ws['!cols'] = [{wch:12}, {wch:22}, {wch:12}, {wch:12}, {wch:12}, {wch:11}, {wch:18}, {wch:18}, {wch:28}];
+  
+  XLSX.utils.book_append_sheet(wb, ws, 'Proveedores');
+  
+  // Formato de fecha seguro para el nombre del archivo
+  const fechaHoy = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `pagos_proveedores_${fechaHoy}.xlsx`);
 }
 
 
