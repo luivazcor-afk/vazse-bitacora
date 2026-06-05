@@ -380,6 +380,9 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="tab" onclick="cambiarTab('historial',this)">
       <span class="tab-icon">🕓</span> Historial
     </button>
+    <button class="tab" onclick="cambiarTab('proveedores',this)">
+      <span class="tab-icon">🏢</span> Proveedores
+    </button>
   </div>
 
   <!-- ════════════════════════════════════════════
@@ -443,7 +446,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
           </select>
         </div>
         <div class="fg"><label>Cliente</label><input type="text" id="v-cliente" placeholder="Nombre del cliente"></div>
-        <div class="fg"><label>Unidad</label><input type="text" id="v-unidad" placeholder="Placas o nombre"></div>
+        <div class="fg"><label>Proveedor principal</label><input type="text" id="v-unidad" placeholder="Nombre del proveedor"></div>
         <div class="fg"><label>Origen</label><input type="text" id="v-origen" placeholder="Ciudad / lugar"></div>
         <div class="fg"><label>Destino</label><input type="text" id="v-destino" placeholder="Ciudad / lugar"></div>
         <div class="fg"><label>Costo ($)</label><input type="number" id="v-costo" placeholder="0.00" min="0" step="0.01"></div>
@@ -465,8 +468,9 @@ tbody td{padding:9px 12px;vertical-align:middle}
                 <option value="liberado">📋 Liberado</option>
               </select>
             </div>
-            <div class="flete-divider">Maniobras (costo separado → genera línea en cobranza)</div>
+            <div class="flete-divider">Maniobras (genera línea separada en cobranza)</div>
             <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="v-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label>Cobrado maniobras ($)</label><input type="number" id="v-maniobras-cobrado" placeholder="0.00" min="0" step="0.01"></div>
             <div class="fg"><label>Descripción maniobras</label><input type="text" id="v-maniobras-desc" placeholder="Descarga, posicionamiento, etc."></div>
             <div class="flete-divider">EIR — Equipment Interchange Receipt</div>
             <div class="fg" style="grid-column:1/-1">
@@ -519,7 +523,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
               <th onclick="ordenarV('referencia')">Referencia <span class="sort-arrow" id="va-referencia">↕</span></th>
               <th>Tipo</th>
               <th onclick="ordenarV('cliente')">Cliente <span class="sort-arrow" id="va-cliente">↕</span></th>
-              <th>Unidad</th>
+              <th>Proveedor</th>
               <th>Ruta</th>
               <th onclick="ordenarV('costo')">Costo <span class="sort-arrow" id="va-costo">↕</span></th>
               <th onclick="ordenarV('cobrado')">Cobrado <span class="sort-arrow" id="va-cobrado">↕</span></th>
@@ -674,7 +678,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
       <button class="report-tab" onclick="cambiarReporte('comparativo',this)">📈 Comparativo</button>
       <button class="report-tab" onclick="cambiarReporte('top5',this)">🏆 Top 5</button>
       <button class="report-tab" onclick="cambiarReporte('clientes',this)">Por cliente</button>
-      <button class="report-tab" onclick="cambiarReporte('unidades',this)">Por unidad</button>
+      <button class="report-tab" onclick="cambiarReporte('unidades',this)">Por proveedor</button>
       <button class="report-tab" onclick="cambiarReporte('tipos',this)">Por tipo</button>
       <button class="report-tab" onclick="cambiarReporte('cob-clientes',this)">Cobranza</button>
     </div>
@@ -709,7 +713,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div class="table-wrap">
           <table class="sum-table">
             <thead><tr>
-              <th>Unidad</th><th class="num">Viajes</th>
+              <th>Proveedor</th><th class="num">Viajes</th>
               <th class="num">Cobrado</th><th class="num">Costo</th>
               <th class="num">Utilidad</th><th class="num">Margen</th>
             </tr></thead>
@@ -868,6 +872,98 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </div>
 
 
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA — PROVEEDORES
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-proveedores" class="tab-panel">
+
+    <div class="topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="12" rx="2" stroke="#185FA5" stroke-width="1.4"/><path d="M6 6V5a2 2 0 014 0v1" stroke="#185FA5" stroke-width="1.4"/><circle cx="14" cy="12" r="2" stroke="#1D9E75" stroke-width="1.3"/></svg>
+        </div>
+        <div><div class="brand-title">Control de pagos a proveedores</div></div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
+        <button class="btn" onclick="exportarProveedores()">↓ Excel</button>
+      </div>
+    </div>
+
+    <!-- MÉTRICAS -->
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Total a pagar</div><div class="metric-val neg" id="p-total">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Pagado</div><div class="metric-val pos" id="p-pagado">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Pendiente</div><div class="metric-val warn" id="p-pendiente">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Registros</div><div class="metric-val" id="p-count">0</div></div>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="form-card">
+      <div class="section-label">Nuevo pago a proveedor</div>
+      <div class="form-grid">
+        <div class="fg"><label>Folio</label><input type="text" id="p-folio" placeholder="PAG-001"></div>
+        <div class="fg"><label>Proveedor</label><input type="text" id="p-proveedor" placeholder="Nombre del proveedor"></div>
+        <div class="fg"><label>Monto ($)</label><input type="number" id="p-monto" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="fg"><label>Estado</label>
+          <select id="p-estado">
+            <option value="pendiente">⏳ Pendiente</option>
+            <option value="pagado">✅ Pagado</option>
+            <option value="parcial">🔵 Parcial</option>
+          </select>
+        </div>
+        <div class="fg"><label>Fecha</label><input type="date" id="p-fecha"></div>
+        <div class="fg"><label>Fecha pago</label><input type="date" id="p-fechapago"></div>
+        <div class="fg"><label>Referencia viaje</label><input type="text" id="p-referencia" placeholder="VJ-20260101-001"></div>
+        <div class="fg"><label>Concepto</label><input type="text" id="p-concepto" placeholder="Flete, maniobras, etc."></div>
+        <div class="fg full"><label>Notas</label><textarea id="p-notas" placeholder="Observaciones, datos bancarios..."></textarea></div>
+      </div>
+      <button class="btn-add" id="p-btn-add" onclick="agregarPago()">+ Registrar pago</button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="section-label">Registros</div>
+    <div class="toolbar">
+      <input type="text" id="p-buscar" placeholder="Buscar proveedor, folio, referencia..." oninput="filtrarPagos()">
+      <select id="p-fil-estado" onchange="filtrarPagos()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">⏳ Pendiente</option>
+        <option value="pagado">✅ Pagado</option>
+        <option value="parcial">🔵 Parcial</option>
+      </select>
+      <input type="date" id="p-fil-desde" onchange="filtrarPagos()" title="Desde">
+      <input type="date" id="p-fil-hasta" onchange="filtrarPagos()" title="Hasta">
+      <button class="btn-clear" onclick="limpiarFiltrosP()">✕ Limpiar</button>
+      <span class="results-info" id="p-info"></span>
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-outer">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="ordenarP('folio')">Folio <span class="sort-arrow" id="pa-folio">↕</span></th>
+              <th onclick="ordenarP('proveedor')">Proveedor <span class="sort-arrow" id="pa-proveedor">↕</span></th>
+              <th onclick="ordenarP('monto')">Monto <span class="sort-arrow" id="pa-monto">↕</span></th>
+              <th onclick="ordenarP('fecha')">Fecha <span class="sort-arrow" id="pa-fecha">↕</span></th>
+              <th>Fecha pago</th>
+              <th>Estado</th>
+              <th onclick="ordenarP('referencia')">Ref. viaje <span class="sort-arrow" id="pa-referencia">↕</span></th>
+              <th>Concepto</th>
+              <th>Notas</th>
+              <th class="no-sort"></th>
+            </tr>
+          </thead>
+          <tbody id="p-tbody"><tr><td colspan="10"><div class="empty-state"><p>Cargando...</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="pagination" id="p-pag"></div>
+  </div>
+
+
 </div><!-- end .app -->
 
 <!-- EDIT MODAL VIAJES -->
@@ -894,7 +990,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
         </select>
       </div>
       <div class="fg"><label>Cliente</label><input type="text" id="ev-cliente"></div>
-      <div class="fg"><label>Unidad</label><input type="text" id="ev-unidad"></div>
+      <div class="fg"><label>Proveedor principal</label><input type="text" id="ev-unidad"></div>
       <div class="fg"><label>Origen</label><input type="text" id="ev-origen"></div>
       <div class="fg"><label>Destino</label><input type="text" id="ev-destino"></div>
       <div class="fg"><label>Costo ($)</label><input type="number" id="ev-costo" min="0" step="0.01"></div>
@@ -917,6 +1013,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
             </select>
           </div>
           <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="ev-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="fg"><label>Cobrado maniobras ($)</label><input type="number" id="ev-maniobras-cobrado" placeholder="0.00" min="0" step="0.01"></div>
           <div class="fg"><label>Descripción maniobras</label><input type="text" id="ev-maniobras-desc" placeholder="Descarga, posicionamiento..."></div>
           <div class="fg" style="grid-column:1/-1">
             <label>EIR adjunto</label>
@@ -1242,6 +1339,7 @@ let urlPdfSubido = '', urlEviSubido = '', urlEirSubido = '';
 // ── INIT ──────────────────────────────────────────────
 document.getElementById('v-fecha').value = new Date().toISOString().split('T')[0];
 document.getElementById('c-femision').value = new Date().toISOString().split('T')[0];
+document.getElementById('p-fecha').value = new Date().toISOString().split('T')[0];
 
 function generarFolioAuto() {
   const d = new Date();
@@ -1274,6 +1372,7 @@ function cambiarTab(id, btn) {
   if (id === 'reportes') setTimeout(renderReporteMensual, 80);
   if (id === 'contenedores') setTimeout(buscarContenedor, 80);
   if (id === 'historial') setTimeout(renderHistorial, 80);
+  if (id === 'proveedores') setTimeout(filtrarPagos, 80);
 }
 
 // ── TOAST ─────────────────────────────────────────────
@@ -1404,11 +1503,17 @@ async function cargar() {
       monto: parseFloat(r.monto) || 0
     }));
 
+    pagos = (data.pagos || []).map((r, i) => ({
+      ...r, id: i,
+      monto: parseFloat(r.monto) || 0
+    }));
+
     // Save to cache
     guardarCache(data);
 
     filtrarViajes(); actualizarGraficaV();
     filtrarCobranza();
+    filtrarPagos();
     setStatus('v', 'ok', 'Conectado a Google Sheets');
     setStatus('c', 'ok', 'Conectado a Google Sheets');
     verificarVencidos();
@@ -1485,8 +1590,8 @@ function limpiarFiltrosV() {
 }
 
 function actualizarMetricasV() {
-  const tc = vFiltrados.reduce((s,r)=>s+r.cobrado,0);
-  const tk = vFiltrados.reduce((s,r)=>s+r.costo,0);
+  const tc = vFiltrados.reduce((s,r)=>s+(r.cobrado||0)+(r.maniobrasCobrado||0),0);
+  const tk = vFiltrados.reduce((s,r)=>s+(r.costo||0)+(r.maniobras||0),0);
   const tu = tc-tk;
   document.getElementById('v-cobrado').textContent = fmt(tc);
   document.getElementById('v-costo').textContent = fmt(tk);
@@ -1513,8 +1618,10 @@ function renderViajes() {
     tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><p>No hay registros que coincidan.</p></div></td></tr>';
   } else {
     tbody.innerHTML = pagina.map(r => {
-      const util = r.cobrado - r.costo;
-      const margenPct = r.cobrado > 0 ? (util / r.cobrado) * 100 : 0;
+      const totalCobrado = (r.cobrado||0) + (r.maniobrasCobrado||0);
+      const totalCosto   = (r.costo||0) + (r.maniobras||0);
+      const util = totalCobrado - totalCosto;
+      const margenPct = totalCobrado > 0 ? (util / totalCobrado) * 100 : 0;
       const ruta = [r.origen, r.destino].filter(Boolean).join(' → ') || '—';
       return `<tr>
         <td style="white-space:nowrap;color:#888780;font-size:12px">${fmtFecha(r.fecha)}</td>
@@ -1523,8 +1630,8 @@ function renderViajes() {
         <td class="trunc">${r.cliente||'<span class="muted">—</span>'}</td>
         <td style="font-size:12px;white-space:nowrap">${r.unidad||'<span class="muted">—</span>'}</td>
         <td class="trunc" style="max-width:140px;color:#888780;font-size:12px">${ruta}</td>
-        <td style="white-space:nowrap">${fmt(r.costo)}</td>
-        <td style="white-space:nowrap">${fmt(r.cobrado)}</td>
+        <td style="white-space:nowrap">${fmt((r.costo||0)+(r.maniobras||0))}${r.maniobras>0?'<span style="font-size:10px;color:#888780;display:block">Flete: '+fmt(r.costo)+' + Man: '+fmt(r.maniobras)+'</span>':''}</td>
+        <td style="white-space:nowrap">${fmt((r.cobrado||0)+(r.maniobrasCobrado||0))}${r.maniobrasCobrado>0?'<span style="font-size:10px;color:#888780;display:block">Flete: '+fmt(r.cobrado)+' + Man: '+fmt(r.maniobrasCobrado)+'</span>':''}</td>
         <td style="white-space:nowrap" class="${util>=0?'util-pos':'util-neg'}">${fmt(util)}</td>
         <td style="white-space:nowrap">
           ${r.cobrado>0?`<span style="font-size:11px;font-weight:500;color:${margenPct>=50?'#0F6E56':margenPct>=20?'#854F0B':'#993C1D'}">${margenPct.toFixed(1)}%</span><span class="margin-bar" style="background:${margenPct>=50?'#1D9E75':margenPct>=20?'#EF9F27':'#E24B4A'};width:${Math.min(margenPct,100)*0.4}px"></span>`:'<span class="muted">—</span>'}
@@ -1595,7 +1702,8 @@ async function agregarViaje() {
     patio:      esFlete ? document.getElementById('v-patio').value.trim() : '',
     estadoFlete: esFlete ? document.getElementById('v-estado-flete').value : '',
     maniobrasDesc:  esFlete ? document.getElementById('v-maniobras-desc').value.trim() : '',
-    maniobras:  esFlete ? (parseFloat(document.getElementById('v-maniobras-costo').value)||0) : 0,
+    maniobras:      esFlete ? (parseFloat(document.getElementById('v-maniobras-costo').value)||0) : 0,
+    maniobrasCobrado: esFlete ? (parseFloat(document.getElementById('v-maniobras-cobrado').value)||0) : 0,
     urlEir: ''
   };
   const btn = document.getElementById('v-btn-add');
@@ -1631,7 +1739,7 @@ async function agregarViaje() {
     // 3. Cobranza de maniobras (si aplica)
     if (esFlete && registro.maniobras > 0) {
       const _folio2 = 'MAN-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
-      const _cob2 = { folio:_folio2, cliente:registro.cliente, monto:registro.maniobras,
+      const _cob2 = { folio:_folio2, cliente:registro.cliente, monto:registro.maniobrasCobrado||registro.maniobras,
         fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
         referencia:registro.referencia,
         urlFactura:'', urlEvidencia:'',
@@ -1642,9 +1750,44 @@ async function agregarViaje() {
       cobranzas.unshift({..._cob2, id:_ts+2, monto:_cob2.monto});
     }
 
+    // 4. Pago proveedor automático (si hay costo > 0)
+    if (registro.costo > 0 && registro.unidad) {
+      const _folioPago = 'PAG-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
+      const _pago = {
+        folio: _folioPago,
+        proveedor: registro.unidad,
+        monto: registro.costo,
+        fecha: fecha,
+        fechaPago: '',
+        estado: 'pendiente',
+        referencia: registro.referencia,
+        concepto: tipo.replace('_',' ') + (_ruta ? ' · ' + _ruta : ''),
+        notas: 'Auto: '+registro.cliente+(registro.contenedor?' · '+registro.contenedor:'')
+      };
+      await sendPost({action:'pago_append', pago:_pago});
+      pagos.unshift({..._pago, id:_ts+3, monto:_pago.monto});
+    }
+    // Pago maniobras proveedor automático (si aplica)
+    if (esFlete && registro.maniobras > 0 && registro.unidad) {
+      const _folioPagoMan = 'PAG-MAN-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
+      const _pagoMan = {
+        folio: _folioPagoMan,
+        proveedor: registro.unidad,
+        monto: registro.maniobras,
+        fecha: fecha,
+        fechaPago: '',
+        estado: 'pendiente',
+        referencia: registro.referencia,
+        concepto: 'Maniobras' + (registro.maniobrasDesc ? ' · ' + registro.maniobrasDesc : ''),
+        notas: 'Auto: '+registro.cliente+(registro.contenedor?' · '+registro.contenedor:'')
+      };
+      await sendPost({action:'pago_append', pago:_pagoMan});
+      pagos.unshift({..._pagoMan, id:_ts+4, monto:_pagoMan.monto});
+    }
+
     // Limpiar formulario
     ['v-cliente','v-unidad','v-origen','v-destino','v-costo','v-cobradof',
-     'v-referencia','v-notas','v-contenedor','v-patio','v-maniobras-costo','v-maniobras-desc']
+     'v-referencia','v-notas','v-contenedor','v-patio','v-maniobras-costo','v-maniobras-cobrado','v-maniobras-desc']
       .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
     const efEl = document.getElementById('v-estado-flete');
     if (efEl) efEl.value = 'en_transito';
@@ -1652,12 +1795,14 @@ async function agregarViaje() {
     document.getElementById('eir-attached').style.display = 'none';
     document.getElementById('v-referencia').value = generarFolioAuto();
 
-    filtrarViajes(); actualizarGraficaV(); filtrarCobranza();
+    filtrarViajes(); actualizarGraficaV(); filtrarCobranza(); filtrarPagos();
     registrarHistorial('agregar','Viaje',registro.cliente+' · '+registro.tipo+' · '+fmtFecha(fecha));
     setStatus('v','ok','Guardado');
     const msg = esFlete && registro.maniobras > 0
-      ? '¡Flete registrado + 2 líneas en cobranza (flete + maniobras)!'
-      : '¡Viaje y cobranza registrados!';
+      ? '¡Flete + cobranza + pago a proveedor registrados!'
+      : registro.costo > 0 && registro.unidad
+        ? '¡Viaje, cobranza y pago a proveedor registrados!'
+        : '¡Viaje y cobranza registrados!';
     toast(msg,'ok');
   } catch(e) {
     console.error('[VAZSE] ERROR en agregarViaje:', e);
@@ -1711,7 +1856,7 @@ function duplicarViaje(id) {
 
 function exportarViajes() {
   const wb = XLSX.utils.book_new();
-  const headers = ['Fecha','Tipo','Cliente','Unidad','Origen','Destino','Costo','Cobrado','Utilidad','Referencia','Notas'];
+  const headers = ['Fecha','Tipo','Cliente','Proveedor','Origen','Destino','Costo','Cobrado','Utilidad','Referencia','Notas'];
   const filas = viajes.map(r=>[fmtFecha(r.fecha),r.tipo,r.cliente||'',r.unidad||'',r.origen||'',r.destino||'',r.costo,r.cobrado,(r.cobrado||0)-(r.costo||0),r.referencia||'',r.notas||'']);
   const tc = viajes.reduce((s,r)=>s+r.cobrado,0);
   const tk = viajes.reduce((s,r)=>s+r.costo,0);
@@ -2110,6 +2255,7 @@ function abrirEditViaje(id) {
   document.getElementById('ev-contenedor').value = r.contenedor || '';
   document.getElementById('ev-patio').value = r.patio || '';
   document.getElementById('ev-maniobras-costo').value = r.maniobras || '';
+  document.getElementById('ev-maniobras-cobrado').value = r.maniobrasCobrado || '';
   document.getElementById('ev-maniobras-desc').value = r.maniobrasDesc || '';
   document.getElementById('ev-estado-flete').value = r.estadoFlete || 'en_transito';
   // Show/hide flete section
@@ -2147,8 +2293,9 @@ async function guardarEditViaje() {
       notas:      document.getElementById('ev-notas').value.trim(),
       contenedor: esFlete ? document.getElementById('ev-contenedor').value.trim() : '',
       patio:      esFlete ? document.getElementById('ev-patio').value.trim() : '',
-      maniobras:  esFlete ? (parseFloat(document.getElementById('ev-maniobras-costo').value)||0) : 0,
-      maniobrasDesc: esFlete ? document.getElementById('ev-maniobras-desc').value.trim() : '',
+      maniobras:         esFlete ? (parseFloat(document.getElementById('ev-maniobras-costo').value)||0) : 0,
+      maniobrasCobrado:  esFlete ? (parseFloat(document.getElementById('ev-maniobras-cobrado').value)||0) : 0,
+      maniobrasDesc:     esFlete ? document.getElementById('ev-maniobras-desc').value.trim() : '',
       estadoFlete: esFlete ? document.getElementById('ev-estado-flete').value : '',
       urlEir:     evEirUrlNuevo || evEirActual
     };
@@ -2156,7 +2303,7 @@ async function guardarEditViaje() {
     await sendPost({action:'append', registro:updated});
     const idx = viajes.findIndex(v => v.id === id);
     if (idx !== -1) viajes[idx] = updated;
-    filtrarViajes(); actualizarGraficaV();
+    filtrarViajes(); actualizarGraficaV(); filtrarPagos();
     registrarHistorial('editar','Viaje',updated.cliente+' · '+updated.tipo+' · '+updated.fecha);
     document.getElementById('ev-overlay').classList.remove('show');
     toast('Viaje actualizado', 'ok');
@@ -2716,6 +2863,7 @@ function autorizarDriveYVolver() {
     estadoFlete: document.getElementById('v-estado-flete').value,
     maniobras: document.getElementById('v-maniobras-costo').value,
     maniobrasDesc: document.getElementById('v-maniobras-desc').value,
+    maniobrasCobrdo: document.getElementById('v-maniobras-cobrado') ? document.getElementById('v-maniobras-cobrado').value : '',
   };
   sessionStorage.setItem('vazse_form_backup', JSON.stringify(formData));
   sessionStorage.setItem('vazse_pending_eir', '1');
@@ -2742,6 +2890,7 @@ function restaurarFormularioSiHayBackup() {
     if (d.patio) document.getElementById('v-patio').value = d.patio;
     if (d.estadoFlete) document.getElementById('v-estado-flete').value = d.estadoFlete;
     if (d.maniobras) document.getElementById('v-maniobras-costo').value = d.maniobras;
+    if (d.maniobrasCobrdo) { const el=document.getElementById('v-maniobras-cobrado'); if(el) el.value=d.maniobrasCobrdo; }
     if (d.maniobrasDesc) document.getElementById('v-maniobras-desc').value = d.maniobrasDesc;
     sessionStorage.removeItem('vazse_form_backup');
     if (pendingEir) {
@@ -3020,6 +3169,187 @@ function renderReporteCobClientes() {
       scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:'#888780'}},
               y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11},color:'#888780',callback:v=>'$'+v.toLocaleString('es-MX')},beginAtZero:true}}}
   });
+}
+
+
+// ══════════════════════════════════════════════════════
+//  PROVEEDORES
+// ══════════════════════════════════════════════════════
+let pagos = [], pFiltrados = [], pPag = 1, pSortCol = 'fecha', pSortDir = -1;
+
+function filtrarPagos() {
+  const q = (document.getElementById('p-buscar').value||'').toLowerCase();
+  const est = document.getElementById('p-fil-estado').value;
+  const desde = document.getElementById('p-fil-desde').value;
+  const hasta = document.getElementById('p-fil-hasta').value;
+  pFiltrados = pagos.filter(r => {
+    const txt = [r.folio,r.proveedor,r.referencia,r.concepto,r.notas].join(' ').toLowerCase();
+    if (q && !txt.includes(q)) return false;
+    if (est && r.estado !== est) return false;
+    if (desde && fmtFecha(r.fecha) < desde) return false;
+    if (hasta && fmtFecha(r.fecha) > hasta) return false;
+    return true;
+  });
+  pFiltrados.sort((a,b)=>{
+    let va=a[pSortCol], vb=b[pSortCol];
+    if(typeof va==='string')va=va.toLowerCase();
+    if(typeof vb==='string')vb=vb.toLowerCase();
+    return va<vb?pSortDir:va>vb?-pSortDir:0;
+  });
+  pPag=1; renderPagos(); actualizarMetricasP();
+}
+
+function ordenarP(col){
+  if(pSortCol===col)pSortDir*=-1;else{pSortCol=col;pSortDir=-1;}
+  document.querySelectorAll('[id^="pa-"]').forEach(e=>e.textContent='↕');
+  const a=document.getElementById('pa-'+col);if(a)a.textContent=pSortDir===-1?'↓':'↑';
+  filtrarPagos();
+}
+
+function limpiarFiltrosP(){
+  ['p-buscar','p-fil-estado','p-fil-desde','p-fil-hasta'].forEach(id=>document.getElementById(id).value='');
+  filtrarPagos();
+}
+
+function actualizarMetricasP() {
+  const total = pFiltrados.reduce((s,r)=>s+(r.monto||0),0);
+  const pagado = pFiltrados.filter(r=>r.estado==='pagado').reduce((s,r)=>s+(r.monto||0),0);
+  const pendiente = pFiltrados.filter(r=>r.estado!=='pagado').reduce((s,r)=>s+(r.monto||0),0);
+  document.getElementById('p-total').textContent = fmt(total);
+  document.getElementById('p-pagado').textContent = fmt(pagado);
+  document.getElementById('p-pendiente').textContent = fmt(pendiente);
+  document.getElementById('p-count').textContent = pFiltrados.length;
+}
+
+function renderPagos() {
+  const tbody = document.getElementById('p-tbody');
+  const total = pFiltrados.length;
+  const totalPag = Math.ceil(total/POR_PAGINA)||1;
+  if(pPag>totalPag)pPag=totalPag;
+  const pagina = pFiltrados.slice((pPag-1)*POR_PAGINA, pPag*POR_PAGINA);
+  document.getElementById('p-info').textContent = total+' resultado'+(total!==1?'s':'');
+  if(!pagina.length){
+    tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><p>No hay pagos que coincidan.</p></div></td></tr>';
+  } else {
+    const estBadge = {
+      pendiente:'<span class="badge b-pendiente"><span class="badge-dot"></span>Pendiente</span>',
+      pagado:   '<span class="badge b-pagado"><span class="badge-dot"></span>Pagado</span>',
+      parcial:  '<span class="badge b-parcial"><span class="badge-dot"></span>Parcial</span>'
+    };
+    tbody.innerHTML = pagina.map(r => `<tr>
+      <td style="font-size:12px;font-weight:500;white-space:nowrap">${r.folio||'—'}</td>
+      <td style="font-weight:500">${r.proveedor||'—'}</td>
+      <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
+      <td style="font-size:12px;color:#888780;white-space:nowrap">${fmtFecha(r.fecha)||'—'}</td>
+      <td style="font-size:12px;color:#888780;white-space:nowrap">${r.fechaPago?fmtFecha(r.fechaPago):'—'}</td>
+      <td>
+        <select class="estado-select" onchange="cambiarEstadoPago('${r.folio}',this.value)">
+          <option value="pendiente" ${r.estado==='pendiente'?'selected':''}>⏳ Pendiente</option>
+          <option value="pagado" ${r.estado==='pagado'?'selected':''}>✅ Pagado</option>
+          <option value="parcial" ${r.estado==='parcial'?'selected':''}>🔵 Parcial</option>
+        </select>
+      </td>
+      <td style="font-size:12px;color:#185FA5;font-weight:500">${r.referencia||'—'}</td>
+      <td style="font-size:12px">${r.concepto||'—'}</td>
+      <td class="trunc muted" style="font-size:12px">${r.notas||'—'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn-sm view" onclick="abrirEditPago(${r.id})">✏️</button>
+        <button class="btn-sm del" onclick="eliminarPago(${r.id},'${r.folio}')">✕</button>
+      </td>
+    </tr>`).join('');
+  }
+  renderPag('p-pag', totalPag, pPag, n=>{pPag=n;renderPagos();});
+}
+
+async function agregarPago() {
+  const folio = document.getElementById('p-folio').value.trim();
+  const proveedor = document.getElementById('p-proveedor').value.trim();
+  const monto = parseFloat(document.getElementById('p-monto').value)||0;
+  if (!proveedor) { toast('Ingresa el nombre del proveedor','err'); return; }
+  if (!folio) { toast('Ingresa el folio','err'); return; }
+  const pago = {
+    folio, proveedor, monto,
+    fecha: document.getElementById('p-fecha').value,
+    fechaPago: document.getElementById('p-fechapago').value,
+    estado: document.getElementById('p-estado').value,
+    referencia: document.getElementById('p-referencia').value.trim(),
+    concepto: document.getElementById('p-concepto').value.trim(),
+    notas: document.getElementById('p-notas').value.trim()
+  };
+  const btn = document.getElementById('p-btn-add');
+  btn.disabled=true; btn.textContent='Guardando...';
+  try {
+    await sendPost({action:'pago_append', pago});
+    pagos.unshift({...pago, id:Date.now()});
+    ['p-folio','p-proveedor','p-monto','p-fechapago','p-referencia','p-concepto','p-notas'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('p-estado').value='pendiente';
+    filtrarPagos();
+    registrarHistorial('agregar','Pago proveedor',pago.proveedor+' · '+fmt(pago.monto));
+    toast('Pago registrado','ok');
+  } catch(e){ toast('Error al guardar','err'); }
+  btn.disabled=false; btn.textContent='+ Registrar pago';
+}
+
+async function cambiarEstadoPago(folio, estado) {
+  try {
+    await sendPost({action:'pago_update_estado', folio, estado});
+    const r = pagos.find(p=>String(p.folio)===String(folio));
+    if(r) r.estado = estado;
+    filtrarPagos(); toast('Estado actualizado','ok');
+  } catch(e){ toast('No se pudo actualizar','err'); }
+}
+
+async function eliminarPago(id, folio) {
+  if(!confirm('¿Eliminar este pago?')) return;
+  try {
+    await sendPost({action:'pago_delete', folio});
+    pagos = pagos.filter(p=>p.id!==id);
+    filtrarPagos(); toast('Pago eliminado','ok');
+  } catch(e){ toast('Error al eliminar','err'); }
+}
+
+// Edit pago modal (reuse existing edit-overlay mechanism)
+let _editPagoId = null;
+
+function abrirEditPago(id) {
+  const r = pagos.find(p=>p.id===id);
+  if(!r) return;
+  _editPagoId = id;
+  // Reuse prompt-based edit for simplicity
+  const nuevoMonto = prompt('Monto ($):', r.monto);
+  if(nuevoMonto===null) return;
+  const nuevoEstado = prompt('Estado (pendiente/pagado/parcial):', r.estado);
+  if(nuevoEstado===null) return;
+  const nuevaFechaPago = prompt('Fecha de pago (YYYY-MM-DD):', r.fechaPago||'');
+  if(nuevaFechaPago===null) return;
+  const nuevasNotas = prompt('Notas:', r.notas||'');
+  if(nuevasNotas===null) return;
+
+  const updated = {...r,
+    monto: parseFloat(nuevoMonto)||r.monto,
+    estado: nuevoEstado||r.estado,
+    fechaPago: nuevaFechaPago,
+    notas: nuevasNotas
+  };
+  sendPost({action:'pago_delete', folio:r.folio}).then(()=>{
+    sendPost({action:'pago_append', pago:updated}).then(()=>{
+      const idx = pagos.findIndex(p=>p.id===id);
+      if(idx!==-1) pagos[idx]=updated;
+      filtrarPagos(); toast('Pago actualizado','ok');
+      registrarHistorial('editar','Pago proveedor',updated.proveedor+' · '+fmt(updated.monto));
+    });
+  });
+}
+
+function exportarProveedores() {
+  const wb = XLSX.utils.book_new();
+  const headers=['Folio','Proveedor','Monto','Fecha','Fecha Pago','Estado','Ref. Viaje','Concepto','Notas'];
+  const filas = pagos.map(r=>[r.folio,r.proveedor,r.monto,fmtFecha(r.fecha),
+    r.fechaPago?fmtFecha(r.fechaPago):'',r.estado,r.referencia||'',r.concepto||'',r.notas||'']);
+  const ws = XLSX.utils.aoa_to_sheet([headers,...filas]);
+  ws['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:12},{wch:11},{wch:18},{wch:18},{wch:28}];
+  XLSX.utils.book_append_sheet(wb,ws,'Proveedores');
+  XLSX.writeFile(wb,`pagos_proveedores_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
 
