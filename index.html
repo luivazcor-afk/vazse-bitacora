@@ -1231,16 +1231,43 @@ async function sincronizarCola() {
   }
 }
 
+function sendPostJsonp(payload) {
+  return new Promise((resolve) => {
+    const cbName = '_vazse_cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    const url = SCRIPT_URL + '?action=write&data=' + encoded + '&cb=' + cbName;
+    window[cbName] = function(resp) {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timer);
+      console.log('[VAZSE] JSONP OK:', payload.action);
+      resolve(resp);
+    };
+    const script = document.createElement('script');
+    script.src = url;
+    script.onerror = function() {
+      delete window[cbName];
+      clearTimeout(timer);
+      console.warn('[VAZSE] JSONP error, trying no-cors fetch');
+      // Fallback to no-cors fetch
+      fetch(url, {mode:'no-cors'}).catch(()=>{});
+      resolve();
+    };
+    const timer = setTimeout(function() {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      console.warn('[VAZSE] JSONP timeout for:', payload.action);
+      resolve();
+    }, 8000);
+    document.head.appendChild(script);
+  });
+}
+
 async function sendPost(payload) {
   if (estaOnline()) {
-    // Online: send directly
     try {
-      const encoded = encodeURIComponent(JSON.stringify(payload));
-      const url = SCRIPT_URL + '?action=write&data=' + encoded;
-      await fetch(url, { method: 'GET', mode: 'no-cors' });
-      await new Promise(r => setTimeout(r, 300));
+      await sendPostJsonp(payload);
     } catch(e) {
-      // If fetch fails despite being "online", queue it
       console.warn('[VAZSE] sendPost failed, queuing:', e);
       const cola = getCola();
       cola.push(payload);
@@ -1248,7 +1275,6 @@ async function sendPost(payload) {
       toast('Error de red — guardado en cola offline', 'inf');
     }
   } else {
-    // Offline: save to queue
     const cola = getCola();
     cola.push(payload);
     saveCola(cola);
