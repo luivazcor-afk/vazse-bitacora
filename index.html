@@ -1131,7 +1131,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <script>
-const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbx4GvILsnj4aUKyaUZeslm0-BB-_5Iuq3gSlbPDAZBu6ckvdE-Vzu39k5rMNk_jzB4Z/exec';
+const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycby1Xjz26HKKubuPQ4vPwEOp8ejEr5HKcUyG6lOQTAShpBsELtxuBR4AZCwa_yrT7013/exec';
 
 // ── POST helper — usa form oculto para evitar CORS/redirect issues ─
 function postToScript(payload) {
@@ -1487,6 +1487,7 @@ async function cargar() {
   setStatus('c', 'loading', 'Sincronizando...');
 
   if (!estaOnline()) {
+    // Load from cache
     const cached = cargarCache();
     if (cached) {
       viajes = (cached.registros || []).map((r, i) => ({
@@ -1513,22 +1514,9 @@ async function cargar() {
     return;
   }
 
-  // Usamos JSONP para la lectura inicial saltando la restricción CORS del navegador
-  const cbName = '_vazse_load_' + Date.now();
-  const url = SCRIPT_URL + '?action=read&cb=' + cbName;
-
-  const script = document.createElement('script');
-  script.src = url;
-
-  window[cbName] = function(data) {
-    delete window[cbName];
-    if (script.parentNode) script.parentNode.removeChild(script);
-
-    if (!data) {
-      setStatus('v', 'err', 'Error en formato de datos');
-      setStatus('c', 'err', 'Error en formato de datos');
-      return;
-    }
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const data = await res.json();
 
     viajes = (data.registros || []).map((r, i) => ({
       ...r, id: i,
@@ -1546,6 +1534,7 @@ async function cargar() {
       monto: parseFloat(r.monto) || 0
     }));
 
+    // Save to cache
     guardarCache(data);
 
     filtrarViajes(); actualizarGraficaV();
@@ -1562,26 +1551,30 @@ async function cargar() {
     } else {
       toast('Datos sincronizados', 'ok');
     }
-  };
-
-  script.onerror = function() {
-    delete window[cbName];
-    if (script.parentNode) script.parentNode.removeChild(script);
-    
+  } catch(e) {
+    // Try cache on error
     const cached = cargarCache();
     if (cached) {
-      viajes = (cached.registros || []).map((r, i) => ({ ...r, id: i, costo: parseFloat(r.costo)||0, cobrado: parseFloat(r.cobrado)||0 }));
-      cobranzas = (cached.cobranzas || []).map((r, i) => ({ ...r, id: i, monto: parseFloat(r.monto)||0 }));
-      filtrarViajes(); actualizarGraficaV(); filtrarCobranza();
-      setStatus('v', 'err', 'Error de red — mostrando caché');
-      setStatus('c', 'err', 'Error de red — mostrando caché');
+      viajes = (cached.registros || []).map((r, i) => ({
+        ...r, id: i,
+        costo: parseFloat(r.costo) || 0,
+        cobrado: parseFloat(r.cobrado) || 0
+      }));
+      cobranzas = (cached.cobranzas || []).map((r, i) => ({
+        ...r, id: i,
+        monto: parseFloat(r.monto) || 0
+      }));
+      filtrarViajes(); actualizarGraficaV();
+      filtrarCobranza();
+      setStatus('v', 'err', 'Error — mostrando caché');
+      setStatus('c', 'err', 'Error — mostrando caché');
+      toast('Error de conexión — mostrando datos guardados', 'inf');
     } else {
       setStatus('v', 'err', 'Error de conexión');
       setStatus('c', 'err', 'Error de conexión');
+      toast('No se pudo conectar', 'err');
     }
-  };
-
-  document.head.appendChild(script);
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -3375,38 +3368,14 @@ function abrirEditPago(id) {
 }
 
 function exportarProveedores() {
-  // Aseguramos que la librería XLSX esté disponible
-  if (typeof XLSX === 'undefined') {
-    alert('La librería de Excel aún no ha cargado. Reintenta en un momento.');
-    return;
-  }
-
   const wb = XLSX.utils.book_new();
-  const headers = ['Folio', 'Proveedor', 'Monto', 'Fecha', 'Fecha Pago', 'Estado', 'Ref. Viaje', 'Concepto', 'Notas'];
-  
-  // Validamos que 'pagos' exista y no esté vacío
-  const filas = (pagos || []).map(r => [
-    r.folio || '',
-    r.proveedor || '',
-    r.monto || 0,
-    r.fecha ? fmtFecha(r.fecha) : '',
-    r.fechaPago ? fmtFecha(r.fechaPago) : '',
-    r.estado || '',
-    r.referencia || '',
-    r.concepto || '',
-    r.notas || ''
-  ]);
-
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...filas]);
-  
-  // Ancho de columnas optimizado
-  ws['!cols'] = [{wch:12}, {wch:22}, {wch:12}, {wch:12}, {wch:12}, {wch:11}, {wch:18}, {wch:18}, {wch:28}];
-  
-  XLSX.utils.book_append_sheet(wb, ws, 'Proveedores');
-  
-  // Formato de fecha seguro para el nombre del archivo
-  const fechaHoy = new Date().toISOString().split('T')[0];
-  XLSX.writeFile(wb, `pagos_proveedores_${fechaHoy}.xlsx`);
+  const headers=['Folio','Proveedor','Monto','Fecha','Fecha Pago','Estado','Ref. Viaje','Concepto','Notas'];
+  const filas = pagos.map(r=>[r.folio,r.proveedor,r.monto,fmtFecha(r.fecha),
+    r.fechaPago?fmtFecha(r.fechaPago):'',r.estado,r.referencia||'',r.concepto||'',r.notas||'']);
+  const ws = XLSX.utils.aoa_to_sheet([headers,...filas]);
+  ws['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:12},{wch:11},{wch:18},{wch:18},{wch:28}];
+  XLSX.utils.book_append_sheet(wb,ws,'Proveedores');
+  XLSX.writeFile(wb,`pagos_proveedores_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
 
