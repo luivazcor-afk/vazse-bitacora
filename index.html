@@ -1,37 +1,1112 @@
-// 1. Asegúrate de que al inicio de tu script (o donde definas tus constantes) 
-// la variable URL_API tenga tu nuevo enlace de ejecución limpio:
-const URL_API = 'https://script.google.com/macros/s/TU_NUEVO_ID_DE_DESPLIEGUE_AQUI/exec';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAZSE - Bitácora Logística Integrada</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active {
+            border-bottom-width: 2px;
+            border-color: #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        /* Estilos para que las tablas sean responsivas y scrolleables */
+        .table-container {
+            overflow-x: auto;
+            max-height: 650px;
+            overflow-y: auto;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #f8fafc;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
 
-// 2. Reemplaza tu función ejecutarAPI por esta versión moderna y optimizada:
-async function ejecutarAPI(data) {
-    console.log("[VAZSE] Iniciando petición a la API...", data.action);
-    
-    // Configuración limpia para Google Apps Script (Sin Content-Type personalizado para evitar preflight OPTIONS)
-    const opcionesFetch = {
-        method: 'POST',
-        mode: 'cors',
-        body: JSON.stringify(data)
-    };
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg text-white shadow-inner">
+                    <i class="fa-solid fa-truck-ramp-box text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">VAZSE LOGÍSTICA</h1>
+                    <p class="text-xs text-slate-400">Panel de Control Operativo e Importaciones</p>
+                </div>
+            </div>
+            
+            <nav class="flex flex-wrap bg-slate-800 p-1 rounded-lg gap-1 shadow-inner">
+                <button onclick="switchTab('bitacora')" id="btn-bitacora" class="tab-btn active px-4 py-1.5 rounded-md text-sm font-medium hover:bg-slate-700 transition cursor-pointer">
+                    <i class="fa-solid fa-list-check mr-1.5"></i>Bitácora
+                </button>
+                <button onclick="switchTab('cobranza')" id="btn-cobranza" class="tab-btn px-4 py-1.5 rounded-md text-sm font-medium hover:bg-slate-700 transition cursor-pointer">
+                    <i class="fa-solid fa-file-invoice-dollar mr-1.5"></i>Cobranza
+                </button>
+                <button onclick="switchTab('proveedores')" id="btn-proveedores" class="tab-btn px-4 py-1.5 rounded-md text-sm font-medium hover:bg-slate-700 transition cursor-pointer">
+                    <i class="fa-solid fa-handshake mr-1.5"></i>Proveedores
+                </button>
+                <button onclick="switchTab('resumen')" id="btn-resumen" class="tab-btn px-4 py-1.5 rounded-md text-sm font-medium hover:bg-slate-700 transition cursor-pointer">
+                    <i class="fa-solid fa-chart-pie mr-1.5"></i>Resumen Financiero
+                </button>
+            </nav>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="cargarDatos()" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow transition flex items-center gap-2 cursor-pointer">
+                    <i id="sync-icon" class="fa-solid fa-rotate"></i> Sincronizar
+                </button>
+            </div>
+        </div>
+    </header>
 
-    try {
-        // Usamos la constante global URL_API para que siempre esté actualizada
-        const respuesta = await fetch(URL_API, opcionesFetch);
+    <main class="max-w-7xl mx-auto px-4 py-6">
         
-        if (!respuesta.ok) {
-            throw new Error(`Error en el servidor de Google (Código: ${respuesta.status})`);
+        <div id="loading-overlay" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50">
+            <div class="bg-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-600"></i>
+                <span class="font-medium text-gray-700" id="loading-text">Procesando con Google Sheets...</span>
+            </div>
+        </div>
+
+        <section id="tab-bitacora" class="tab-content active space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Viajes Totales</p>
+                        <h3 class="text-2xl font-black mt-1 text-slate-800" id="kpi-viajes-totales">0</h3>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg text-blue-600"><i class="fa-solid fa-route text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Ingreso Proyectado</p>
+                        <h3 class="text-2xl font-black mt-1 text-emerald-600" id="kpi-ingreso-bitacora">$0.00</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-lg text-emerald-600"><i class="fa-solid fa-wallet text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Costo Fletes</p>
+                        <h3 class="text-2xl font-black mt-1 text-rose-600" id="kpi-costo-bitacora">$0.00</h3>
+                    </div>
+                    <div class="bg-rose-50 p-3 rounded-lg text-rose-600"><i class="fa-solid fa-money-bill-transfer text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Utilidad Operativa</p>
+                        <h3 class="text-2xl font-black mt-1 text-indigo-600" id="kpi-utilidad-bitacora">$0.00</h3>
+                    </div>
+                    <div class="bg-indigo-50 p-3 rounded-lg text-indigo-600"><i class="fa-solid fa-hand-holding-dollar text-xl"></i></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:flex-initial">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" id="filter-bitacora" oninput="filtrarBitacora()" placeholder="Buscar cliente, contenedor, referencia..." class="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full md:w-72 focus:outline-hidden focus:border-blue-500 focus:bg-white transition">
+                    </div>
+                    <select id="filter-tipo-flete" onchange="filtrarBitacora()" class="bg-gray-50 border border-gray-200 rounded-lg text-sm px-3 py-2 focus:outline-hidden focus:border-blue-500">
+                        <option value="">Todos los tipos</option>
+                        <option value="Sencillo">Sencillo</option>
+                        <option value="Full">Full</option>
+                        <option value="Torton">Torton</option>
+                        <option value="Consolidado">Consolidado</option>
+                    </select>
+                </div>
+                <button onclick="openModal('modal-registro')" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow flex items-center gap-2 w-full md:w-auto justify-center cursor-pointer transition">
+                    <i class="fa-solid fa-plus text-xs"></i> Registrar Flete / Maniobra
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden">
+                <div class="table-container">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-gray-100 uppercase tracking-wider">
+                                <th class="p-3 pl-4">Fecha</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Cliente</th>
+                                <th class="p-3">Proveedor / Unidad</th>
+                                <th class="p-3">Ruta (Origen - Destino)</th>
+                                <th class="p-3 text-right">Costo ($)</th>
+                                <th class="p-3 text-right">Cobrado ($)</th>
+                                <th class="p-3 text-right">Utilidad ($)</th>
+                                <th class="p-3">Maniobras (C/C)</th>
+                                <th class="p-3">Detalles Contenedor</th>
+                                <th class="p-3">Estado</th>
+                                <th class="p-3 text-center pr-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-bitacora" class="divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-cobranza" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Por Cobrar (Pendiente)</p>
+                        <h3 class="text-2xl font-black mt-1 text-amber-600" id="kpi-cobranza-pendiente">$0.00</h3>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-lg text-amber-600"><i class="fa-solid fa-clock-rotate-left text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Cobrado (Este Mes)</p>
+                        <h3 class="text-2xl font-black mt-1 text-emerald-600" id="kpi-cobranza-pagado">$0.00</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-lg text-emerald-600"><i class="fa-solid fa-circle-check text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Vencido / Alerta</p>
+                        <h3 class="text-2xl font-black mt-1 text-rose-600" id="kpi-cobranza-vencido">$0.00</h3>
+                    </div>
+                    <div class="bg-rose-50 p-3 rounded-lg text-rose-600"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold font-bold">Total Facturado</p>
+                        <h3 class="text-2xl font-black mt-1 text-slate-800" id="kpi-cobranza-total">$0.00</h3>
+                    </div>
+                    <div class="bg-slate-100 p-3 rounded-lg text-slate-700"><i class="fa-solid fa-receipt text-xl"></i></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:flex-initial">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" id="filter-cobranza" oninput="filtrarCobranza()" placeholder="Buscar folio, cliente..." class="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full md:w-72 focus:outline-hidden focus:border-blue-500 focus:bg-white transition">
+                    </div>
+                    <select id="filter-estado-cobranza" onchange="filtrarCobranza()" class="bg-gray-50 border border-gray-200 rounded-lg text-sm px-3 py-2 focus:outline-hidden focus:border-blue-500">
+                        <option value="">Todos los estados</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Pagado">Pagado</option>
+                        <option value="Vencido">Vencido</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <button onclick="openModal('modal-cobranza')" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow flex items-center gap-2 w-full md:w-auto justify-center cursor-pointer transition">
+                    <i class="fa-solid fa-plus text-xs"></i> Agregar Cuenta por Cobrar
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden">
+                <div class="table-container">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-gray-100 uppercase tracking-wider">
+                                <th class="p-3 pl-4">Folio Factura</th>
+                                <th class="p-3">Cliente</th>
+                                <th class="p-3 text-right">Monto ($)</th>
+                                <th class="p-3">Fecha Emisión</th>
+                                <th class="p-3">Vencimiento</th>
+                                <th class="p-3">Estado</th>
+                                <th class="p-3">Referencia Interna</th>
+                                <th class="p-3">Documentación</th>
+                                <th class="p-3">Notas / Seguimiento</th>
+                                <th class="p-3 text-center pr-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-cobranza" class="divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-proveedores" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Por Pagar a Proveedores</p>
+                        <h3 class="text-2xl font-black mt-1 text-rose-600" id="kpi-proveedores-pendiente">$0.00</h3>
+                    </div>
+                    <div class="bg-rose-50 p-3 rounded-lg text-rose-600"><i class="fa-solid fa-hand-holding-hand text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Liquidado Reciente</p>
+                        <h3 class="text-2xl font-black mt-1 text-emerald-600" id="kpi-proveedores-pagado">$0.00</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-lg text-emerald-600"><i class="fa-solid fa-money-check-dollar text-xl"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Total Compromisos</p>
+                        <h3 class="text-2xl font-black mt-1 text-slate-800" id="kpi-proveedores-total">$0.00</h3>
+                    </div>
+                    <div class="bg-slate-100 p-3 rounded-lg text-slate-700"><i class="fa-solid fa-tags text-xl"></i></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 md:flex-initial">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" id="filter-proveedores" oninput="filtrarProveedores()" placeholder="Buscar proveedor, concepto..." class="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-full md:w-72 focus:outline-hidden focus:border-blue-500 focus:bg-white transition">
+                    </div>
+                </div>
+                <button onclick="openModal('modal-pago')" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow flex items-center gap-2 w-full md:w-auto justify-center cursor-pointer transition">
+                    <i class="fa-solid fa-plus text-xs"></i> Registrar Cuenta por Pagar
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden">
+                <div class="table-container">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-gray-100 uppercase tracking-wider">
+                                <th class="p-3 pl-4">Folio / Ref</th>
+                                <th class="p-3">Proveedor</th>
+                                <th class="p-3 text-right">Monto ($)</th>
+                                <th class="p-3">Fecha Solicitud</th>
+                                <th class="p-3">Fecha Pago</th>
+                                <th class="p-3">Estado</th>
+                                <th class="p-3">Concepto / Descripción</th>
+                                <th class="p-3">Notas</th>
+                                <th class="p-3 text-center pr-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-proveedores" class="divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-resumen" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-xs border border-gray-100 max-w-2xl mx-auto space-y-6">
+                <div class="border-b border-gray-100 pb-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-blue-600"></i> Balance Consolidado de Operaciones
+                    </h2>
+                    <p class="text-xs text-gray-500">Cálculo en tiempo real cruzando Bitácora, Cobranza y Proveedores</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-emerald-50 rounded-lg text-emerald-900">
+                        <span class="text-sm font-medium flex items-center gap-2"><i class="fa-solid fa-arrow-trend-up"></i> Total Cobrado Efectivo (Ingresos Reales)</span>
+                        <span class="text-lg font-black" id="resumen-ingresos-reales">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-rose-50 rounded-lg text-rose-900">
+                        <span class="text-sm font-medium flex items-center gap-2"><i class="fa-solid fa-arrow-trend-down"></i> Total Pagado a Proveedores (Egresos Reales)</span>
+                        <span class="text-lg font-black" id="resumen-egresos-reales">$0.00</span>
+                    </div>
+                    <div class="border-t border-dashed border-gray-200 my-4 pt-4 flex justify-between items-center px-3">
+                        <span class="text-base font-bold text-slate-700">Flujo de Caja Neto (Caja Actual)</span>
+                        <span class="text-xl font-black text-slate-900" id="resumen-flujo-neto">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl space-y-3 text-xs border border-slate-100">
+                    <h4 class="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Cartera y Compromisos Futuros</h4>
+                    <div class="flex justify-between text-gray-600">
+                        <span>Por cobrar pendiente en Facturas:</span>
+                        <span class="font-bold text-amber-600" id="resumen-por-cobrar">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-gray-600">
+                        <span>Por pagar pendiente a Proveedores:</span>
+                        <span class="font-bold text-rose-500" id="resumen-por-pagar">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="modal-registro" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all scale-100">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-10">
+                <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-truck-moving"></i> Registrar Operación en Bitácora</h3>
+                <button onclick="closeModal('modal-registro')" class="text-gray-400 hover:text-white transition text-lg cursor-pointer">&times;</button>
+            </div>
+            <form id="form-bitacora" onsubmit="guardarBitacora(event)" class="p-6 space-y-5 text-sm">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Fecha *</label>
+                        <input type="date" id="bit-fecha" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Tipo Flete *</label>
+                        <select id="bit-tipo" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                            <option value="Sencillo">Sencillo</option>
+                            <option value="Full">Full</option>
+                            <option value="Torton">Torton</option>
+                            <option value="Consolidado">Consolidado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Estado del Flete</label>
+                        <select id="bit-estado" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                            <option value="Programado">Programado</option>
+                            <option value="En Tránsito">En Tránsito</option>
+                            <option value="Entregado">Entregado</option>
+                            <option value="Liquidado">Liquidado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Cliente *</label>
+                        <input type="text" id="bit-cliente" required placeholder="Nombre de la empresa" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Proveedor / Unidad / Chofer</label>
+                        <input type="text" id="bit-unidad" placeholder="Ej. Transportes del Pacífico / Eco 45" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Origen</label>
+                        <input type="text" id="bit-origen" placeholder="Puerto Manzanillo" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Destino</label>
+                        <input type="text" id="bit-destino" placeholder="Planta Guadalajara" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Referencia Interna</label>
+                        <input type="text" id="bit-referencia" placeholder="Pedimento / OC" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1 uppercase">Costo del Flete ($) *</label>
+                        <input type="number" step="0.01" id="bit-costo" required value="0" class="w-full bg-white border border-gray-200 rounded-lg p-2 font-semibold text-rose-600 focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1 uppercase">Monto Cobrado al Cliente ($) *</label>
+                        <input type="number" step="0.01" id="bit-cobrado" required value="0" class="w-full bg-white border border-gray-200 rounded-lg p-2 font-semibold text-emerald-600 focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-3 space-y-3">
+                    <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-box"></i> Contenedor y Patios (Manejo de Vacíos / EIR)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Número Contenedor</label>
+                            <input type="text" id="bit-contenedor" placeholder="TEMU1234567" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Patio de Maniobras</label>
+                            <input type="text" id="bit-patio" placeholder="Ej. Ocupa / CONTECON" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Subir Documento EIR / Ticket</label>
+                            <input type="file" id="bit-file-eir" onchange="subirArchivoAdjunto(this, 'bit-url-eir')" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                            <input type="hidden" id="bit-url-eir">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100/40">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1 uppercase">Costo Maniobra Interna ($)</label>
+                        <input type="number" step="0.01" id="bit-maniobras" value="0" class="w-full bg-white border border-gray-200 rounded-lg p-2 focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1 uppercase">Maniobra Cobrada ($)</label>
+                        <input type="number" step="0.01" id="bit-maniobras-cobrado" value="0" class="w-full bg-white border border-gray-200 rounded-lg p-2 focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1 uppercase">Descripción Maniobra</label>
+                        <input type="text" id="bit-maniobras-desc" placeholder="Ej. Lavado / Almacenaje" class="w-full bg-white border border-gray-200 rounded-lg p-2 focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Notas Adicionales</label>
+                    <textarea id="bit-notas" rows="2" placeholder="Observaciones especiales sobre el viaje o retrasos..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t border-gray-100 pt-4 bg-gray-50 -mx-6 -mb-6 p-4 rounded-b-xl">
+                    <button type="button" onclick="closeModal('modal-registro')" class="bg-white border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg font-medium cursor-pointer transition">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold shadow cursor-pointer transition">Guardar Operación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-cobranza" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-10">
+                <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-file-invoice"></i> Nueva Cuenta por Cobrar (Facturación)</h3>
+                <button onclick="closeModal('modal-cobranza')" class="text-gray-400 hover:text-white transition text-lg cursor-pointer">&times;</button>
+            </div>
+            <form id="form-cobranza" onsubmit="guardarCobranza(event)" class="p-6 space-y-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Folio de Factura *</label>
+                        <input type="text" id="cob-folio" required placeholder="Ej. F-1024" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Cliente *</label>
+                        <input type="text" id="cob-cliente" required placeholder="Nombre comercial" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Monto Total ($) *</label>
+                        <input type="number" step="0.01" id="cob-monto" required value="0" class="w-full bg-white border border-gray-200 rounded-lg p-2 font-bold text-emerald-600 focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Fecha Emisión *</label>
+                        <input type="date" id="cob-emision" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Vencimiento *</label>
+                        <input type="date" id="cob-vencimiento" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Estado Inicial</label>
+                        <select id="cob-estado" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Pagado">Pagado</option>
+                            <option value="Vencido">Vencido</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Referencia Operación</label>
+                        <input type="text" id="cob-referencia" placeholder="Vincular a viaje o contenedor" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">PDF Factura (Enlace)</label>
+                        <input type="file" onchange="subirArchivoAdjunto(this, 'cob-url-factura')" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 cursor-pointer">
+                        <input type="hidden" id="cob-url-factura">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Evidencia / Remisión (Enlace)</label>
+                        <input type="file" onchange="subirArchivoAdjunto(this, 'cob-url-evidencia')" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 cursor-pointer">
+                        <input type="hidden" id="cob-url-evidencia">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Notas / Observaciones de Cobro</label>
+                    <textarea id="cob-notas" rows="2" placeholder="Notas sobre el crédito de 15 o 30 días..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t border-gray-100 pt-4 bg-gray-50 -mx-6 -mb-6 p-4 rounded-b-xl">
+                    <button type="button" onclick="closeModal('modal-cobranza')" class="bg-white border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg font-medium cursor-pointer transition">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold shadow cursor-pointer transition">Guardar Factura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-pago" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-10">
+                <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-handshake-angle"></i> Nueva Cuenta por Pagar (Egreso Proveedor)</h3>
+                <button onclick="closeModal('modal-pago')" class="text-gray-400 hover:text-white transition text-lg cursor-pointer">&times;</button>
+            </div>
+            <form id="form-pago" onsubmit="guardarPago(event)" class="p-6 space-y-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Folio / Referencia Proveedor *</label>
+                        <input type="text" id="pag-folio" required placeholder="Ej. Prov-4592" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Nombre del Proveedor *</label>
+                        <input type="text" id="pag-proveedor" required placeholder="Ej. Transportes Mexicanos S.A." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Monto a Liquidar ($) *</label>
+                        <input type="number" step="0.01" id="pag-monto" required value="0" class="w-full bg-white border border-gray-200 rounded-lg p-2 font-bold text-rose-600 focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Fecha Registro *</label>
+                        <input type="date" id="pag-fecha" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Estado de Pago</label>
+                        <select id="pag-estado" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Pagado">Pagado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Concepto / Descripción del Gasto *</label>
+                    <input type="text" id="pag-concepto" required placeholder="Ej. Pago flete contenedor TCLU77364-1 ruta MZN-GDL" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Notas Adicionales</label>
+                    <textarea id="pag-notas" rows="2" placeholder="Detalles bancarios o condiciones de pago especiales..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 focus:bg-white focus:border-blue-500 focus:outline-hidden"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t border-gray-100 pt-4 bg-gray-50 -mx-6 -mb-6 p-4 rounded-b-xl">
+                    <button type="button" onclick="closeModal('modal-pago')" class="bg-white border border-gray-200 hover:bg-gray-100 px-4 py-2 rounded-lg font-medium cursor-pointer transition">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-semibold shadow cursor-pointer transition">Guardar Cuenta por Pagar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        // 🚨 CONFIGURACIÓN GLOBAL DE LA API DE GOOGLE SHEETS 🚨
+        // Reemplaza estrictamente esta cadena por tu URL final de despliegue generada en Apps Script.
+        const URL_API = 'TU_NUEVA_URL_DE_APPS_SCRIPT_AQUI';
+
+        // Estructuras de Memoria Local (Cache de Datos Sincronizados)
+        let BASE_DATOS = {
+            registros: [],
+            cobranzas: [],
+            pagos: []
+        };
+
+        // Al iniciar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            // Inicializar las fechas por defecto en los formularios
+            const hoy = new Date().toISOString().substring(0, 10);
+            if(document.getElementById('bit-fecha')) document.getElementById('bit-fecha').value = hoy;
+            if(document.getElementById('cob-emision')) document.getElementById('cob-emision').value = hoy;
+            if(document.getElementById('pag-fecha')) document.getElementById('pag-fecha').value = hoy;
+
+            // Cargar la base de datos completa de inmediato
+            cargarDatos();
+        });
+
+        // Alternar visualización entre las diferentes pestañas
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            document.getElementById(`btn-${tabId}`).classList.add('active');
         }
 
-        const resultado = await respuesta.json();
-        console.log("[VAZSE] Respuesta del servidor recibida con éxito:", resultado);
-        return resultado;
+        // Modales de Control Visual
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
 
-    } catch (error) {
-        console.error("[VAZSE] Falló el envío por POST estándar:", error.message);
+        // Formateador Financiero Avanzado
+        function fmtMoney(num) {
+            if (num === null || num === undefined || isNaN(num)) return '$0.00';
+            return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(num);
+        }
+
+        // ── CONTROLADOR API CENTRAL (FETCH SEGURO SIN PREFLIGHT DE CORS) ──
+        async function ejecutarAPI(data) {
+            console.log("[VAZSE] Iniciando petición a la API para acción:", data.action);
+            showLoading(true);
+
+            // Configuramos una estructura de petición POST limpia.
+            // Omitimos intencionalmente 'Content-Type': 'application/json' en headers 
+            // para evitar que el navegador envíe un preflight OPTIONS que Google Apps Script rechazaría.
+            const opcionesFetch = {
+                method: 'POST',
+                mode: 'cors',
+                body: JSON.stringify(data)
+            };
+
+            try {
+                const respuesta = await fetch(URL_API, opcionesFetch);
+                
+                if (!respuesta.ok) {
+                    throw new Error(`Error en servidor Google Sheets (Código: ${respuesta.status})`);
+                }
+
+                const resultado = await respuesta.json();
+                console.log("[VAZSE] Respuesta del servidor procesada exitosamente:", resultado);
+                return resultado;
+
+            } catch (err) {
+                console.error("[VAZSE] Error crítico en la llamada de red:", err.message);
+                alert("Ocurrió un error al sincronizar con el servidor de datos.\nVerifica la consola para más detalles.");
+                throw err;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Control visual del spinner de carga global
+        function showLoading(mostrar, texto = "Procesando cambios en la nube...") {
+            const overlay = document.getElementById('loading-overlay');
+            const txt = document.getElementById('loading-text');
+            if(txt) txt.innerText = texto;
+            if(overlay) {
+                mostrar ? overlay.classList.remove('hidden') : overlay.classList.add('hidden');
+            }
+        }
+
+        // ── CARGA COMPLETA (LECTURA DE TODO EL LIBRO) ───────────────────
+        function cargarDatos() {
+            const syncIcon = document.getElementById('sync-icon');
+            if(syncIcon) syncIcon.classList.add('fa-spin');
+
+            showLoading(true, "Descargando base de datos consolidada...");
+
+            // La lectura se realiza de forma nativa enviando un GET estándar a la macro
+            fetch(URL_API)
+                .then(res => {
+                    if(!res.ok) throw new Error("Error HTTP " + res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    console.log("[VAZSE] Base de datos sincronizada desde la nube:", data);
+                    BASE_DATOS.registros = data.registros || [];
+                    BASE_DATOS.cobranzas = data.cobranzas || [];
+                    BASE_DATOS.pagos = data.pagos || [];
+
+                    // Renderizar y actualizar interfaces
+                    renderBitacora();
+                    renderCobranza();
+                    renderProveedores();
+                    calcularResumenFinanciero();
+                })
+                .catch(err => {
+                    console.error("[VAZSE] Error cargando datos via GET:", err);
+                    alert("No se pudieron leer los datos de Google Sheets. Asegúrate de que el despliegue esté configurado para acceso de 'Cualquiera'.");
+                })
+                .finally(() => {
+                    showLoading(false);
+                    if(syncIcon) syncIcon.classList.remove('fa-spin');
+                });
+        }
+
+        // ── MANEJADOR DE ARCHIVOS ADJUNTOS EN GOOGLE DRIVE ──────────────
+        function subirArchivoAdjunto(inputEl, hiddenInputId) {
+            const file = inputEl.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            showLoading(true, `Subiendo archivo: ${file.name} a Google Drive...`);
+
+            reader.onload = function(e) {
+                const base64Data = e.target.result.split(',')[1];
+                const payload = {
+                    action: 'upload_file',
+                    filename: file.name,
+                    mimeType: file.type,
+                    base64: base64Data
+                };
+
+                // Enviamos el archivo empaquetado en JSON via el controlador central POST
+                ejecutarAPI(payload)
+                    .then(res => {
+                        if (res && res.ok && res.url) {
+                            document.getElementById(hiddenInputId).value = res.url;
+                            alert(`✓ Archivo "${file.name}" subido con éxito y vinculado.`);
+                        } else {
+                            alert("El servidor procesó el archivo pero no devolvió un enlace válido.");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error subiendo archivo:", err);
+                        alert("Falló la carga del documento en Google Drive.");
+                    })
+                    .finally(() => showLoading(false));
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ── PROCESADORES DE RENDERIZADO VISUAL (UI) ──────────────────────
         
-        // Alerta visual directa en la consola para saber si el problema persiste en el despliegue
-        console.warn("[VAZSE] Si ves un error de CORS aquí, verifica que tu Apps Script esté publicado como 'Cualquiera' (Anyone).");
+        function renderBitacora(datosFiltrados = null) {
+            const target = document.getElementById('tbody-bitacora');
+            if(!target) return;
+            target.innerHTML = '';
+
+            const pool = datosFiltrados || BASE_DATOS.registros;
+
+            // Variables de cálculo para KPIs
+            let tViajes = pool.length;
+            let tIngreso = 0;
+            let tCosto = 0;
+            let tUtilidad = 0;
+
+            pool.forEach(r => {
+                const costoNeto = parseFloat(r.costo || 0) + parseFloat(r.maniobras || 0);
+                const cobradoNeto = parseFloat(r.cobrado || 0) + parseFloat(r.maniobrasCobrado || 0);
+                const utilidadNeta = cobradoNeto - costoNeto;
+
+                tIngreso += cobradoNeto;
+                tCosto += costoNeto;
+                tUtilidad += utilidadNeta;
+
+                // Estilo visual del tag de estado del flete
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if(r.estadoFlete === 'En Tránsito') badgeColor = "bg-amber-100 text-amber-800 font-medium";
+                if(r.estadoFlete === 'Entregado') badgeColor = "bg-blue-100 text-blue-800 font-medium";
+                if(r.estadoFlete === 'Liquidado') badgeColor = "bg-emerald-100 text-emerald-800 font-medium";
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3 pl-4 font-semibold text-slate-600">${r.fecha}</td>
+                    <td class="p-3"><span class="bg-slate-200 text-slate-800 px-2 py-0.5 rounded-sm font-medium text-[10px]">${r.tipo}</span></td>
+                    <td class="p-3 font-bold text-slate-900">${r.cliente}</td>
+                    <td class="p-3 text-gray-600">${r.unidad || '<em class="text-gray-300">No asignado</em>'}</td>
+                    <td class="p-3 text-gray-600"><span class="font-medium text-slate-700">${r.origen || '-'}</span> <i class="fa-solid fa-arrow-right text-[10px] mx-1 text-gray-400"></i> <span class="font-medium text-slate-700">${r.destino || '-'}</span></td>
+                    <td class="p-3 text-right font-medium text-rose-600">${fmtMoney(costoNeto)}</td>
+                    <td class="p-3 text-right font-bold text-emerald-600">${fmtMoney(cobradoNeto)}</td>
+                    <td class="p-3 text-right font-black ${utilidadNeta >= 0 ? 'text-indigo-600' : 'text-rose-700'}">${fmtMoney(utilidadNeta)}</td>
+                    <td class="p-3 text-gray-500">
+                        <div class="font-medium text-slate-700">${r.maniobrasDesc || '-'}</div>
+                        <div class="text-[10px] text-gray-400">Cost: ${fmtMoney(r.maniobras)} | Cob: ${fmtMoney(r.maniobrasCobrado)}</div>
+                    </td>
+                    <td class="p-3 text-gray-600">
+                        <div class="font-mono text-slate-800 font-bold">${r.contenedor || '-'}</div>
+                        <div class="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                            <i class="fa-solid fa-warehouse"></i> ${r.patio || '-'}
+                            ${r.urlEir ? `<a href="${r.urlEir}" target="_blank" class="text-blue-500 hover:underline font-bold"><i class="fa-solid fa-file-pdf"></i> EIR</a>` : ''}
+                        </div>
+                    </td>
+                    <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] ${badgeColor}">${r.estadoFlete || 'Programado'}</span></td>
+                    <td class="p-3 text-center pr-4">
+                        <button onclick="eliminarRegistroBitacora('${r.fecha}', '${r.tipo}', ${r.costo})" class="text-gray-300 hover:text-rose-600 p-1 rounded-sm transition cursor-pointer" title="Eliminar de la bitácora">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    </td>
+                `;
+                target.appendChild(tr);
+            });
+
+            // Inyectar contadores globales en la interfaz
+            document.getElementById('kpi-viajes-totales').innerText = tViajes;
+            document.getElementById('kpi-ingreso-bitacora').innerText = fmtMoney(tIngreso);
+            document.getElementById('kpi-costo-bitacora').innerText = fmtMoney(tCosto);
+            document.getElementById('kpi-utilidad-bitacora').innerText = fmtMoney(tUtilidad);
+        }
+
+        function renderCobranza(datosFiltrados = null) {
+            const target = document.getElementById('tbody-cobranza');
+            if(!target) return;
+            target.innerHTML = '';
+
+            const pool = datosFiltrados || BASE_DATOS.cobranzas;
+
+            let cPendiente = 0;
+            let cPagado = 0;
+            let cVencido = 0;
+            let cTotal = 0;
+
+            pool.forEach(c => {
+                const monto = parseFloat(c.monto || 0);
+                cTotal += monto;
+
+                let badgeColor = "bg-amber-100 text-amber-800 font-bold";
+                if(c.estado === 'Pagado') { badgeColor = "bg-emerald-100 text-emerald-800 font-medium"; cPagado += monto; }
+                else if(c.estado === 'Vencido') { badgeColor = "bg-rose-100 text-rose-800 font-black"; cVencido += monto; }
+                else { cPendiente += monto; }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3 pl-4 font-mono font-bold text-slate-700">${c.folio}</td>
+                    <td class="p-3 font-bold text-slate-900">${c.cliente}</td>
+                    <td class="p-3 text-right font-black text-slate-800 text-sm">${fmtMoney(monto)}</td>
+                    <td class="p-3 text-gray-500">${c.fechaEmision}</td>
+                    <td class="p-3 text-gray-600 font-medium">${c.fechaVencimiento}</td>
+                    <td class="p-3">
+                        <select onchange="cambiarEstadoCobranza('${c.folio}', this.value)" class="px-2 py-1 rounded-sm text-[10px] ${badgeColor} border-0 focus:ring-2 focus:ring-blue-500 font-semibold cursor-pointer">
+                            <option value="Pendiente" ${c.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="Pagado" ${c.estado === 'Pagado' ? 'selected' : ''}>Pagado</option>
+                            <option value="Vencido" ${c.estado === 'Vencido' ? 'selected' : ''}>Vencido</option>
+                            <option value="Cancelado" ${c.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+                        </select>
+                    </td>
+                    <td class="p-3 text-gray-500">${c.referencia || '-'}</td>
+                    <td class="p-3 text-xs">
+                        <div class="flex gap-2">
+                            ${c.urlFactura ? `<a href="${c.urlFactura}" target="_blank" class="text-blue-600 hover:underline font-bold"><i class="fa-solid fa-file-invoice"></i> XML/PDF</a>` : '<span class="text-gray-300">Sin Factura</span>'}
+                            ${c.urlEvidencia ? `<a href="${c.urlEvidencia}" target="_blank" class="text-indigo-600 hover:underline font-bold"><i class="fa-solid fa-paperclip"></i> Evid</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="p-3 text-gray-600 max-w-xs truncate" title="${c.notas}">${c.notas || '-'}</td>
+                    <td class="p-3 text-center pr-4">
+                        <button onclick="eliminarCobranza('${c.folio}')" class="text-gray-300 hover:text-rose-600 p-1 transition cursor-pointer">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    </td>
+                `;
+                target.appendChild(tr);
+            });
+
+            document.getElementById('kpi-cobranza-pendiente').innerText = fmtMoney(cPendiente);
+            document.getElementById('kpi-cobranza-pagado').innerText = fmtMoney(cPagado);
+            document.getElementById('kpi-cobranza-vencido').innerText = fmtMoney(cVencido);
+            document.getElementById('kpi-cobranza-total').innerText = fmtMoney(cTotal);
+        }
+
+        function renderProveedores(datosFiltrados = null) {
+            const target = document.getElementById('tbody-proveedores');
+            if(!target) return;
+            target.innerHTML = '';
+
+            const pool = datosFiltrados || BASE_DATOS.pagos;
+
+            let pPendiente = 0;
+            let pPagado = 0;
+            let pTotal = 0;
+
+            pool.forEach(p => {
+                const monto = parseFloat(p.monto || 0);
+                pTotal += monto;
+
+                let badgeColor = "bg-amber-100 text-amber-800 font-bold";
+                if(p.estado === 'Pagado') { badgeColor = "bg-emerald-100 text-emerald-800 font-medium"; pPagado += monto; }
+                else { pPendiente += monto; }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                tr.innerHTML = `
+                    <td class="p-3 pl-4 font-mono text-slate-600 font-semibold">${p.folio}</td>
+                    <td class="p-3 font-bold text-slate-900">${p.proveedor}</td>
+                    <td class="p-3 text-right font-bold text-rose-600">${fmtMoney(monto)}</td>
+                    <td class="p-3 text-gray-500">${p.fecha}</td>
+                    <td class="p-3 text-gray-500">${p.fechaPago || '<em class="text-gray-300">Pendiente de abono</em>'}</td>
+                    <td class="p-3">
+                        <select onchange="cambiarEstadoPago('${p.folio}', this.value)" class="px-2 py-1 rounded-sm text-[10px] ${badgeColor} border-0 focus:ring-2 focus:ring-blue-500 font-semibold cursor-pointer">
+                            <option value="Pendiente" ${p.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="Pagado" ${p.estado === 'Pagado' ? 'selected' : ''}>Pagado</option>
+                        </select>
+                    </td>
+                    <td class="p-3 text-slate-700 font-medium max-w-xs truncate" title="${p.concepto}">${p.concepto}</td>
+                    <td class="p-3 text-gray-500 max-w-xs truncate" title="${p.notas}">${p.notas || '-'}</td>
+                    <td class="p-3 text-center pr-4">
+                        <button onclick="eliminarPago('${p.folio}')" class="text-gray-300 hover:text-rose-600 p-1 transition cursor-pointer">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    </td>
+                `;
+                target.appendChild(tr);
+            });
+
+            document.getElementById('kpi-proveedores-pendiente').innerText = fmtMoney(pPendiente);
+            document.getElementById('kpi-proveedores-pagado').innerText = fmtMoney(pPagado);
+            document.getElementById('kpi-proveedores-total').innerText = fmtMoney(pTotal);
+        }
+
+        function calcularResumenFinanciero() {
+            // Cálculo basado en Flujos de Caja Reales (Facturas Pagadas vs Pagos a Proveedores ya realizados)
+            let ingresosReales = 0;
+            let egresosReales = 0;
+
+            BASE_DATOS.cobranzas.forEach(c => { if(c.estado === 'Pagado') ingresosReales += parseFloat(c.monto || 0); });
+            BASE_DATOS.pagos.forEach(p => { if(p.estado === 'Pagado') egresosReales += parseFloat(p.monto || 0); });
+
+            let flujoNeto = ingresosReales - egresosReales;
+
+            // Totales en cartera de espera
+            let porCobrarPendiente = 0;
+            let porPagarPendiente = 0;
+
+            BASE_DATOS.cobranzas.forEach(c => { if(c.estado !== 'Pagado' && c.estado !== 'Cancelado') porCobrarPendiente += parseFloat(c.monto || 0); });
+            BASE_DATOS.pagos.forEach(p => { if(p.estado !== 'Pagado') porPagarPendiente += parseFloat(p.monto || 0); });
+
+            document.getElementById('resumen-ingresos-reales').innerText = fmtMoney(ingresosReales);
+            document.getElementById('resumen-egresos-reales').innerText = fmtMoney(egresosReales);
+            document.getElementById('resumen-flujo-neto').innerText = fmtMoney(flujoNeto);
+            
+            const cajaNetaEl = document.getElementById('resumen-flujo-neto');
+            if(flujoNeto >= 0) {
+                cajaNetaEl.className = "text-xl font-black text-emerald-600";
+            } else {
+                cajaNetaEl.className = "text-xl font-black text-rose-600";
+            }
+
+            document.getElementById('resumen-por-cobrar').innerText = fmtMoney(porCobrarPendiente);
+            document.getElementById('resumen-por-pagar').innerText = fmtMoney(porPagarPendiente);
+        }
+
+        // ── FILTROS INDIVIDUALES (BUSCADORES FRONTEND EN TIEMPO REAL) ────
+        function filtrarBitacora() {
+            const query = document.getElementById('filter-bitacora').value.toLowerCase();
+            const tipoFiltro = document.getElementById('filter-tipo-flete').value;
+
+            const res = BASE_DATOS.registros.filter(r => {
+                const matchTexto = r.cliente.toLowerCase().includes(query) || 
+                                   (r.contenedor && r.contenedor.toLowerCase().includes(query)) ||
+                                   (r.referencia && r.referencia.toLowerCase().includes(query));
+                const matchTipo = tipoFiltro === "" || r.tipo === tipoFiltro;
+                return matchTexto && matchTipo;
+            });
+            renderBitacora(res);
+        }
+
+        function filtrarCobranza() {
+            const query = document.getElementById('filter-cobranza').value.toLowerCase();
+            const estadoFiltro = document.getElementById('filter-estado-cobranza').value;
+
+            const res = BASE_DATOS.cobranzas.filter(c => {
+                const matchTexto = c.cliente.toLowerCase().includes(query) || c.folio.toLowerCase().includes(query);
+                const matchEstado = estadoFiltro === "" || c.estado === estadoFiltro;
+                return matchTexto && matchEstado;
+            });
+            renderCobranza(res);
+        }
+
+        function filtrarProveedores() {
+            const query = document.getElementById('filter-proveedores').value.toLowerCase();
+            const res = BASE_DATOS.pagos.filter(p => {
+                return p.proveedor.toLowerCase().includes(query) || p.concepto.toLowerCase().includes(query) || p.folio.toLowerCase().includes(query);
+            });
+            renderProveedores(res);
+        }
+
+        // ── CONTROLADORES DE SUBMIT (ESCRITURAS DE NUEVOS DATOS) ─────────
         
-        // Re-lanzamos el error para que la interfaz (los modales de cobranza/bitácora) sepan que no se guardó
-        throw error;
-    }
-}
+        function guardarBitacora(e) {
+            e.preventDefault();
+            const payload = {
+                action: 'append',
+                registro: {
+                    fecha: document.getElementById('bit-fecha').value,
+                    tipo: document.getElementById('bit-tipo').value,
+                    cliente: document.getElementById('bit-cliente').value,
+                    unidad: document.getElementById('bit-unidad').value,
+                    origen: document.getElementById('bit-origen').value,
+                    destino: document.getElementById('bit-destino').value,
+                    costo: parseFloat(document.getElementById('bit-costo').value || 0),
+                    cobrado: parseFloat(document.getElementById('bit-cobrado').value || 0),
+                    contenedor: document.getElementById('bit-contenedor').value.toUpperCase(),
+                    patio: document.getElementById('bit-patio').value,
+                    maniobras: parseFloat(document.getElementById('bit-maniobras').value || 0),
+                    maniobrasCobrado: parseFloat(document.getElementById('bit-maniobras-cobrado').value || 0),
+                    maniobrasDesc: document.getElementById('bit-maniobras-desc').value,
+                    urlEir: document.getElementById('bit-url-eir').value,
+                    estadoFlete: document.getElementById('bit-estado').value,
+                    referencia: document.getElementById('bit-referencia').value,
+                    notas: document.getElementById('bit-notas').value
+                }
+            };
+
+            ejecutarAPI(payload).then(() => {
+                closeModal('modal-registro');
+                document.getElementById('form-bitacora').reset();
+                document.getElementById('bit-url-eir').value = '';
+                cargarDatos(); // Recargar base limpia
+            });
+        }
+
+        function guardarCobranza(e) {
+            e.preventDefault();
+            const payload = {
+                action: 'cobranza_append',
+                cobranza: {
+                    folio: document.getElementById('cob-folio').value,
+                    cliente: document.getElementById('cob-cliente').value,
+                    monto: parseFloat(document.getElementById('cob-monto').value || 0),
+                    fechaEmision: document.getElementById('cob-emision').value,
+                    fechaVencimiento: document.getElementById('cob-vencimiento').value,
+                    estado: document.getElementById('cob-estado').value,
+                    referencia: document.getElementById('cob-referencia').value,
+                    urlFactura: document.getElementById('cob-url-factura').value,
+                    urlEvidencia: document.getElementById('cob-url-evidencia').value,
+                    notas: document.getElementById('cob-notas').value
+                }
+            };
+
+            ejecutarAPI(payload).then(() => {
+                closeModal('modal-cobranza');
+                document.getElementById('form-cobranza').reset();
+                document.getElementById('cob-url-factura').value = '';
+                document.getElementById('cob-url-evidencia').value = '';
+                cargarDatos();
+            });
+        }
+
+        function guardarPago(e) {
+            e.preventDefault();
+            const payload = {
+                action: 'pago_append',
+                pago: {
+                    folio: document.getElementById('pag-folio').value,
+                    proveedor: document.getElementById('pag-proveedor').value,
+                    monto: parseFloat(document.getElementById('pag-monto').value || 0),
+                    fecha: document.getElementById('pag-fecha').value,
+                    estado: document.getElementById('pag-estado').value,
+                    concepto: document.getElementById('pag-concepto').value,
+                    notas: document.getElementById('pag-notas').value
+                }
+            };
+
+            ejecutarAPI(payload).then(() => {
+                closeModal('modal-pago');
+                document.getElementById('form-pago').reset();
+                cargarDatos();
+            });
+        }
+
+        // ── MODIFICADORES DE ESTADO DIRECTOS (EDICIÓN RÁPIDA DE FILA) ───
+        function cambiarEstadoCobranza(folio, nuevoEstado) {
+            ejecutarAPI({
+                action: 'cobranza_update_estado',
+                folio: folio,
+                estado: nuevoEstado
+            }).then(() => cargarDatos());
+        }
+
+        function cambiarEstadoPago(folio, nuevoEstado) {
+            ejecutarAPI({
+                action: 'pago_update_estado',
+                folio: folio,
+                estado: nuevoEstado
+            }).then(() => cargarDatos());
+        }
+
+        // ── DESTRUCTORES (ELIMINACIÓN DE REGISTROS) ─────────────────────
+        function eliminarRegistroBitacora(fecha, tipo, costo) {
+            if(!confirm("¿Estás completamente seguro de que deseas eliminar este viaje de la bitácora?\nEsta acción modificará las celdas del archivo de cálculo.")) return;
+            ejecutarAPI({
+                action: 'delete',
+                fecha: fecha,
+                tipo: tipo,
+                costo: costo
+            }).then(() => cargarDatos());
+        }
+
+        function eliminarCobranza(folio) {
+            if(!confirm(`¿Deseas eliminar la factura con folio ${folio} de la base de datos de cobranza?`)) return;
+            ejecutarAPI({
+                action: 'cobranza_delete',
+                folio: folio
+            }).then(() => cargarDatos());
+        }
+
+        function eliminarPago(folio) {
+            if(!confirm(`¿Deseas eliminar el compromiso de pago con folio ${folio}?`)) return;
+            ejecutarAPI({
+                action: 'pago_delete',
+                folio: folio
+            }).then(() => cargarDatos());
+        }
+    </script>
+</body>
+</html>
