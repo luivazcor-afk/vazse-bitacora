@@ -453,19 +453,12 @@ tbody td{padding:9px 12px;vertical-align:middle}
       <div class="section-label">Nuevo registro</div>
       <div class="form-grid">
         <div class="fg"><label>Fecha</label><input type="date" id="v-fecha"></div>
-        <div class="fg"><label>Tipo</label>
-          <select id="v-tipo" onchange="toggleFleteSection()">
-<option value="carga">Carga</option>
-            <option value="descarga">Descarga</option>
-            <option value="traslado">Traslado</option>
-            <option value="lavado_sencillo">Lavado sencillo</option>
-            <option value="lavado_especial">Lavado especial</option>
-            <option value="maniobras">Maniobras</option>
-            <option value="flete_full">Flete Full</option>
-            <option value="flete_sencillo">Flete Sencillo</option>
-            <option value="seguro">Seguro</option>
-            <option value="otro">Otro</option>
-          </select>
+        <div class="fg autocomplete-wrap"><label>Tipo / Servicio</label>
+          <input type="text" id="v-tipo" placeholder="Buscar servicio..." autocomplete="off"
+            oninput="mostrarAC('v-tipo','servicios');toggleFleteSectionAC()"
+            onblur="cerrarAC('v-tipo')" onkeydown="navAC(event,'v-tipo')"
+            onchange="toggleFleteSectionAC()">
+          <div class="autocomplete-list" id="ac-v-tipo" style="display:none"></div>
         </div>
         <div class="fg autocomplete-wrap"><label>Cliente</label>
       <input type="text" id="v-cliente" placeholder="Buscar o capturar cliente..." autocomplete="off"
@@ -719,7 +712,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
 
     <!-- POR CLIENTE -->
     <div id="rep-clientes" class="report-panel">
-      <div class="chart-card" style="margin-bottom:1rem">
+      <div class="chart-card" style="margin-bottom:1rem;display:none">
         <div class="chart-header"><span class="chart-title">Cobrado vs costo por cliente</span></div>
         <div style="position:relative;width:100%;height:220px"><canvas id="chart-clientes"></canvas></div>
       </div>
@@ -739,7 +732,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
 
     <!-- POR UNIDAD -->
     <div id="rep-unidades" class="report-panel">
-      <div class="chart-card" style="margin-bottom:1rem">
+      <div class="chart-card" style="margin-bottom:1rem;display:none">
         <div class="chart-header"><span class="chart-title">Utilidad por unidad</span></div>
         <div style="position:relative;width:100%;height:220px"><canvas id="chart-unidades"></canvas></div>
       </div>
@@ -759,7 +752,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
 
     <!-- POR TIPO -->
     <div id="rep-tipos" class="report-panel">
-      <div class="chart-card" style="margin-bottom:1rem">
+      <div class="chart-card" style="margin-bottom:1rem;display:none">
         <div class="chart-header"><span class="chart-title">Distribución por tipo de servicio</span></div>
         <div style="position:relative;width:100%;height:220px"><canvas id="chart-tipos"></canvas></div>
       </div>
@@ -1023,6 +1016,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <div class="cat-tabs">
       <button class="cat-tab active" onclick="cambiarCatTab('clientes',this)">👥 Clientes</button>
       <button class="cat-tab" onclick="cambiarCatTab('proveedores-cat',this)">🏢 Proveedores</button>
+      <button class="cat-tab" onclick="cambiarCatTab('servicios',this)">🛠️ Servicios</button>
     </div>
 
     <!-- CLIENTES -->
@@ -1038,6 +1032,8 @@ tbody td{padding:9px 12px;vertical-align:middle}
             <input type="text" id="cat-cli-contacto" placeholder="Nombre del contacto"></div>
           <div class="fg"><label>Teléfono</label>
             <input type="text" id="cat-cli-tel" placeholder="314 000 0000"></div>
+          <div class="fg"><label>Correo</label>
+            <input type="email" id="cat-cli-email" placeholder="correo@empresa.com"></div>
           <div class="fg full"><label>Notas</label>
             <input type="text" id="cat-cli-notas" placeholder="Observaciones, dirección, etc."></div>
         </div>
@@ -1047,7 +1043,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Nombre</th><th>RFC</th><th>Contacto</th><th>Teléfono</th><th>Notas</th>
+              <th>Nombre</th><th>RFC</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Notas</th>
               <th class="no-sort"></th>
             </tr></thead>
             <tbody id="cat-cli-tbody">
@@ -1071,6 +1067,8 @@ tbody td{padding:9px 12px;vertical-align:middle}
             <input type="text" id="cat-prov-contacto" placeholder="Nombre del operador/contacto"></div>
           <div class="fg"><label>Teléfono</label>
             <input type="text" id="cat-prov-tel" placeholder="314 000 0000"></div>
+          <div class="fg"><label>Correo</label>
+            <input type="email" id="cat-prov-email" placeholder="correo@proveedor.com"></div>
           <div class="fg"><label>Tipo</label>
             <select id="cat-prov-tipo">
               <option value="transportista">Transportista</option>
@@ -1088,7 +1086,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Nombre</th><th>RFC</th><th>Tipo</th><th>Contacto</th><th>Teléfono</th><th>Notas</th>
+              <th>Nombre</th><th>RFC</th><th>Tipo</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Notas</th>
               <th class="no-sort"></th>
             </tr></thead>
             <tbody id="cat-prov-tbody">
@@ -1548,7 +1546,7 @@ function cambiarTab(id, btn) {
   if (id === 'contenedores') setTimeout(buscarContenedor, 80);
   if (id === 'historial') setTimeout(renderHistorial, 80);
   if (id === 'proveedores') setTimeout(filtrarPagos, 80);
-  if (id === 'catalogos') { setTimeout(renderCatClientes, 80); setTimeout(renderCatProveedores, 80); }
+  if (id === 'catalogos') { setTimeout(renderCatClientes, 80); setTimeout(renderCatProveedores, 80); setTimeout(renderCatServicios, 80); }
 }
 
 // ── TOAST ─────────────────────────────────────────────
@@ -3552,11 +3550,17 @@ function solicitarFactura(cobId) {
 
   const nl = '%0A';
   const sp = '          ';
+  const d  = calcDesglose(cob.monto || 0);
 
   const cuerpo = 'Buen dia' + nl + nl +
     'De su apoyo con esta' + (esManiobras ? 's maniobras' : ' factura') + nl + nl +
     'RESOLUCION ESTRATEGICA VAZSE' + sp + cliente + nl + nl +
-    concepto + sp + monto + ' + IVA - RET' + nl +
+    concepto + nl +
+    'Subtotal:' + sp + '$' + d.base + nl +
+    'IVA 16%:' + sp + sp + '$' + d.iva + nl +
+    'RET ISR 4%:' + sp + '-$' + d.retIsr + nl +
+    'RET IVA 10.67%:' + sp + '-$' + d.retIva + nl +
+    'TOTAL COBRADO:' + sp + '$' + d.total + nl + nl +
     linea3 + nl + nl +
     'SALUDOS';
 
@@ -3629,13 +3633,14 @@ async function agregarCatalogo(tipo) {
       rfc:      document.getElementById('cat-cli-rfc').value.trim(),
       contacto: document.getElementById('cat-cli-contacto').value.trim(),
       tel:      document.getElementById('cat-cli-tel').value.trim(),
+      email:    document.getElementById('cat-cli-email') ? document.getElementById('cat-cli-email').value.trim() : '',
       notas:    document.getElementById('cat-cli-notas').value.trim()
     };
     catClientes.push(entry);
     saveCatClientes();
     await sendPost({action:'catalogo_append', catalogo:'clientes', entry});
-    ['cat-cli-nombre','cat-cli-rfc','cat-cli-contacto','cat-cli-tel','cat-cli-notas']
-      .forEach(id => document.getElementById(id).value = '');
+    ['cat-cli-nombre','cat-cli-rfc','cat-cli-contacto','cat-cli-tel','cat-cli-email','cat-cli-notas']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
     renderCatClientes();
     toast('Cliente agregado','ok');
   } else {
@@ -3648,13 +3653,14 @@ async function agregarCatalogo(tipo) {
       tipo:     document.getElementById('cat-prov-tipo').value,
       contacto: document.getElementById('cat-prov-contacto').value.trim(),
       tel:      document.getElementById('cat-prov-tel').value.trim(),
+      email:    document.getElementById('cat-prov-email') ? document.getElementById('cat-prov-email').value.trim() : '',
       notas:    document.getElementById('cat-prov-notas').value.trim()
     };
     catProveedores.push(entry);
     saveCatProveedores();
     await sendPost({action:'catalogo_append', catalogo:'proveedores', entry});
-    ['cat-prov-nombre','cat-prov-rfc','cat-prov-contacto','cat-prov-tel','cat-prov-notas']
-      .forEach(id => document.getElementById(id).value = '');
+    ['cat-prov-nombre','cat-prov-rfc','cat-prov-contacto','cat-prov-tel','cat-prov-email','cat-prov-notas']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
     renderCatProveedores();
     toast('Proveedor agregado','ok');
   }
@@ -3689,6 +3695,7 @@ function renderCatClientes() {
     <td style="font-size:12px;color:#888780">${e.rfc||'—'}</td>
     <td style="font-size:12px">${e.contacto||'—'}</td>
     <td style="font-size:12px">${e.tel||'—'}</td>
+    <td style="font-size:12px;color:#185FA5">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
     <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
     <td><button class="btn-sm del" onclick="eliminarCatalogo('cliente',${e.id})">✕</button></td>
   </tr>`).join('');
@@ -3706,6 +3713,7 @@ function renderCatProveedores() {
     <td><span class="badge b-otro" style="font-size:10px">${e.tipo||'otro'}</span></td>
     <td style="font-size:12px">${e.contacto||'—'}</td>
     <td style="font-size:12px">${e.tel||'—'}</td>
+    <td style="font-size:12px;color:#185FA5">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
     <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
     <td><button class="btn-sm del" onclick="eliminarCatalogo('proveedor',${e.id})">✕</button></td>
   </tr>`).join('');
@@ -3719,7 +3727,7 @@ function mostrarAC(inputId, tipo) {
   const list  = document.getElementById('ac-' + inputId);
   if (!input || !list) return;
   const q = input.value.trim().toLowerCase();
-  const items = tipo === 'clientes' ? catClientes : catProveedores;
+  const items = tipo === 'clientes' ? catClientes : tipo === 'proveedores' ? catProveedores : catServicios;
   const matches = q
     ? items.filter(e => e.nombre.toLowerCase().includes(q))
     : items;
@@ -3789,12 +3797,99 @@ function cargarCatalogos(data) {
     catProveedores = data.proveedoresCat.map((r, i) => ({
       id: i + 1, nombre: r.nombre||'', rfc: r.rfc||'',
       tipo: r.tipo||'otro', contacto: r.contacto||'',
-      tel: r.tel||'', notas: r.notas||''
+      tel: r.tel||'', email: r.email||'', notas: r.notas||''
     }));
     saveCatProveedores();
   }
+  if (data.serviciosCat && data.serviciosCat.length) {
+    catServicios = data.serviciosCat.map((r, i) => ({
+      id: i + 1, nombre: r.nombre||'', clave: r.clave||'',
+      unidad: r.unidad||'', desc: r.desc||''
+    }));
+    saveCatServicios();
+  }
   renderCatClientes();
   renderCatProveedores();
+  renderCatServicios();
+}
+
+
+// ── CATÁLOGO SERVICIOS ───────────────────────────────
+let catServicios = JSON.parse(localStorage.getItem('vazse_cat_servicios') || '[]');
+
+function saveCatServicios() { localStorage.setItem('vazse_cat_servicios', JSON.stringify(catServicios)); }
+
+async function agregarServicio() {
+  const nombre = document.getElementById('cat-svc-nombre').value.trim().toUpperCase();
+  if (!nombre) { toast('Ingresa el nombre del servicio','err'); return; }
+  const entry = {
+    id: Date.now(),
+    nombre,
+    clave:  document.getElementById('cat-svc-clave').value.trim(),
+    unidad: document.getElementById('cat-svc-unidad').value.trim(),
+    desc:   document.getElementById('cat-svc-desc').value.trim()
+  };
+  catServicios.push(entry);
+  saveCatServicios();
+  await sendPost({action:'catalogo_append', catalogo:'servicios', entry});
+  ['cat-svc-nombre','cat-svc-clave','cat-svc-unidad','cat-svc-desc']
+    .forEach(id => document.getElementById(id).value = '');
+  renderCatServicios();
+  toast('Servicio agregado','ok');
+}
+
+async function eliminarServicio(id) {
+  if (!confirm('¿Eliminar este servicio?')) return;
+  const entry = catServicios.find(e => e.id === id);
+  catServicios = catServicios.filter(e => e.id !== id);
+  saveCatServicios();
+  if (entry) await sendPost({action:'catalogo_delete', catalogo:'servicios', nombre:entry.nombre});
+  renderCatServicios();
+  toast('Eliminado','ok');
+}
+
+function renderCatServicios() {
+  const tbody = document.getElementById('cat-svc-tbody');
+  if (!tbody) return;
+  if (!catServicios.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>Sin servicios registrados</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = catServicios.map(e => `<tr>
+    <td style="font-weight:500">${e.nombre}</td>
+    <td style="font-size:12px;color:#888780">${e.clave||'—'}</td>
+    <td style="font-size:12px">${e.unidad||'—'}</td>
+    <td class="trunc muted" style="font-size:12px">${e.desc||'—'}</td>
+    <td><button class="btn-sm del" onclick="eliminarServicio(${e.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+// ── TIPO VIAJE con autocomplete de servicios ──────────
+function toggleFleteSectionAC() {
+  const tipo = (document.getElementById('v-tipo').value || '').toLowerCase();
+  const sec  = document.getElementById('flete-section');
+  const FLETES = ['flete full','flete sencillo','traslado','flete_full','flete_sencillo'];
+  if (FLETES.some(f => tipo.includes(f))) sec.classList.add('show');
+  else sec.classList.remove('show');
+}
+
+// ── DESGLOSE IVA para correo de factura ──────────────
+function calcDesglose(montoConIva) {
+  // Monto capturado = base + IVA 16% - RET ISR 4% - RET IVA 10.6667%
+  // monto = base * (1 + 0.16 - 0.04 - 0.106667) = base * 1.013333
+  const factor = 1 + 0.16 - 0.04 - 0.106667;
+  const base   = montoConIva / factor;
+  const iva    = base * 0.16;
+  const retIsr  = base * 0.04;
+  const retIva  = base * 0.106667;
+  const neto   = montoConIva - iva + retIsr + retIva; // what client pays
+  return {
+    base:   base.toFixed(2),
+    iva:    iva.toFixed(2),
+    retIsr: retIsr.toFixed(2),
+    retIva: retIva.toFixed(2),
+    total:  montoConIva.toFixed(2)
+  };
 }
 
 
@@ -3817,6 +3912,7 @@ cargar();
 renderHistorial();
 renderCatClientes();
 renderCatProveedores();
+renderCatServicios();
 actualizarEstadoOffline();
 mostrarEstadoConexion();
 </script>
