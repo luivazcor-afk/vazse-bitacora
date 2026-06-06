@@ -1529,25 +1529,29 @@ document.getElementById('v-fecha').addEventListener('change', function() {
 document.getElementById('v-referencia').value = generarFolioAuto();
 
 // ── TABS ──────────────────────────────────────────────
+const _TODOS_PANELES = ['viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
+
 function cambiarTab(id, btn) {
-  // Hide ALL top-level tab panels
-  document.querySelectorAll('.tab-panel').forEach(p => {
-    p.classList.remove('active');
-    p.style.display = 'none';
+  // Ocultar todos los paneles explícitamente por ID
+  _TODOS_PANELES.forEach(function(pid) {
+    var p = document.getElementById('panel-' + pid);
+    if (p) {
+      p.classList.remove('active');
+      p.setAttribute('style', 'display:none!important');
+    }
   });
-  // Deactivate all main tabs
+  // Desactivar todos los botones
   document.querySelectorAll('.tabs > .tab').forEach(t => t.classList.remove('active'));
-  // Show ONLY target panel
-  const panel = document.getElementById('panel-' + id);
+  // Mostrar solo el panel seleccionado
+  var panel = document.getElementById('panel-' + id);
   if (panel) {
     panel.classList.add('active');
-    panel.style.display = 'block';
+    panel.setAttribute('style', 'display:block!important');
   }
-  // Activate clicked tab
+  // Activar botón
   if (btn) btn.classList.add('active');
-  // Scroll tab into view on mobile
   if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  // Trigger panel-specific renders
+  // Renders específicos
   if (id === 'reportes') setTimeout(renderReporteMensual, 80);
   if (id === 'contenedores') setTimeout(buscarContenedor, 80);
   if (id === 'historial') setTimeout(renderHistorial, 80);
@@ -3914,6 +3918,11 @@ window.addEventListener('offline', () => {
   toast('Sin conexión — modo offline activado', 'inf');
 });
 
+// Asegurar que solo viajes sea visible al inicio
+_TODOS_PANELES.forEach(function(pid) {
+  var p = document.getElementById('panel-' + pid);
+  if (p) p.setAttribute('style', pid === 'viajes' ? 'display:block!important' : 'display:none!important');
+});
 cargar();
 renderHistorial();
 renderCatClientes();
