@@ -240,6 +240,25 @@ tbody td{padding:9px 12px;vertical-align:middle}
   border-radius:20px;background:#FAEEDA;color:#633806;font-weight:500;cursor:pointer}
 .sync-badge:hover{background:#FAC775}
 
+
+/* AUTOCOMPLETE */
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;
+  border:0.5px solid rgba(0,0,0,.18);border-radius:8px;z-index:500;
+  max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.1);margin-top:2px}
+.autocomplete-item{padding:8px 12px;font-size:13px;cursor:pointer;transition:background .1s}
+.autocomplete-item:hover,.autocomplete-item.selected{background:#E6F1FB;color:#0C447C}
+.autocomplete-item span{font-size:11px;color:#888780;display:block}
+.autocomplete-empty{padding:8px 12px;font-size:12px;color:#888780}
+
+/* CATALOG TABLE */
+.cat-tabs{display:flex;gap:4px;margin-bottom:1rem;background:#ebe9e4;
+  border-radius:10px;padding:4px}
+.cat-tab{flex:1;padding:8px 12px;font-size:12px;font-weight:500;border:none;
+  background:transparent;border-radius:7px;cursor:pointer;color:#888780;transition:all .15s}
+.cat-tab.active{background:#fff;color:#1a1a18;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cat-panel{display:none}.cat-panel.active{display:block}
+
 /* ESTADO FLETE */
 .ef-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
 .ef-transito{background:#E6F1FB;color:#0C447C}.ef-transito .badge-dot{background:#185FA5}
@@ -383,6 +402,9 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <button class="tab" onclick="cambiarTab('proveedores',this)">
       <span class="tab-icon">🏢</span> Proveedores
     </button>
+    <button class="tab" onclick="cambiarTab('catalogos',this)">
+      <span class="tab-icon">📑</span> Catálogos
+    </button>
   </div>
 
   <!-- ════════════════════════════════════════════
@@ -445,8 +467,16 @@ tbody td{padding:9px 12px;vertical-align:middle}
             <option value="otro">Otro</option>
           </select>
         </div>
-        <div class="fg"><label>Cliente</label><input type="text" id="v-cliente" placeholder="Nombre del cliente"></div>
-        <div class="fg"><label>Proveedor principal</label><input type="text" id="v-unidad" placeholder="Nombre del proveedor"></div>
+        <div class="fg autocomplete-wrap"><label>Cliente</label>
+      <input type="text" id="v-cliente" placeholder="Buscar o capturar cliente..." autocomplete="off"
+        oninput="mostrarAC('v-cliente','clientes')" onblur="cerrarAC('v-cliente')" onkeydown="navAC(event,'v-cliente')">
+      <div class="autocomplete-list" id="ac-v-cliente" style="display:none"></div>
+    </div>
+        <div class="fg autocomplete-wrap"><label>Proveedor principal</label>
+      <input type="text" id="v-unidad" placeholder="Buscar o capturar proveedor..." autocomplete="off"
+        oninput="mostrarAC('v-unidad','proveedores')" onblur="cerrarAC('v-unidad')" onkeydown="navAC(event,'v-unidad')">
+      <div class="autocomplete-list" id="ac-v-unidad" style="display:none"></div>
+    </div>
         <div class="fg"><label>Origen</label><input type="text" id="v-origen" placeholder="Ciudad / lugar"></div>
         <div class="fg"><label>Destino</label><input type="text" id="v-destino" placeholder="Ciudad / lugar"></div>
         <div class="fg"><label>Costo ($)</label><input type="number" id="v-costo" placeholder="0.00" min="0" step="0.01"></div>
@@ -572,7 +602,11 @@ tbody td{padding:9px 12px;vertical-align:middle}
       <div class="section-label">Nueva factura / cobranza</div>
       <div class="form-grid">
         <div class="fg"><label>Folio / N° factura</label><input type="text" id="c-folio" placeholder="FAC-001"></div>
-        <div class="fg"><label>Cliente</label><input type="text" id="c-cliente" placeholder="Nombre del cliente"></div>
+        <div class="fg autocomplete-wrap"><label>Cliente</label>
+      <input type="text" id="c-cliente" placeholder="Buscar o capturar cliente..." autocomplete="off"
+        oninput="mostrarAC('c-cliente','clientes')" onblur="cerrarAC('c-cliente')" onkeydown="navAC(event,'c-cliente')">
+      <div class="autocomplete-list" id="ac-c-cliente" style="display:none"></div>
+    </div>
         <div class="fg"><label>Monto ($)</label><input type="number" id="c-monto" placeholder="0.00" min="0" step="0.01"></div>
         <div class="fg"><label>Estado</label>
           <select id="c-estado">
@@ -904,7 +938,11 @@ tbody td{padding:9px 12px;vertical-align:middle}
       <div class="section-label">Nuevo pago a proveedor</div>
       <div class="form-grid">
         <div class="fg"><label>Folio</label><input type="text" id="p-folio" placeholder="PAG-001"></div>
-        <div class="fg"><label>Proveedor</label><input type="text" id="p-proveedor" placeholder="Nombre del proveedor"></div>
+        <div class="fg autocomplete-wrap"><label>Proveedor</label>
+      <input type="text" id="p-proveedor" placeholder="Buscar o capturar proveedor..." autocomplete="off"
+        oninput="mostrarAC('p-proveedor','proveedores')" onblur="cerrarAC('p-proveedor')" onkeydown="navAC(event,'p-proveedor')">
+      <div class="autocomplete-list" id="ac-p-proveedor" style="display:none"></div>
+    </div>
         <div class="fg"><label>Monto ($)</label><input type="number" id="p-monto" placeholder="0.00" min="0" step="0.01"></div>
         <div class="fg"><label>Estado</label>
           <select id="p-estado">
@@ -964,6 +1002,105 @@ tbody td{padding:9px 12px;vertical-align:middle}
   </div>
 
 
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA — CATÁLOGOS
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-catalogos" class="tab-panel">
+    <div class="topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="#185FA5" stroke-width="1.4"/><path d="M6 6h8M6 9h8M6 12h5" stroke="#185FA5" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div><div class="brand-title">Catálogos</div></div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
+      </div>
+    </div>
+
+    <!-- SUB TABS -->
+    <div class="cat-tabs">
+      <button class="cat-tab active" onclick="cambiarCatTab('clientes',this)">👥 Clientes</button>
+      <button class="cat-tab" onclick="cambiarCatTab('proveedores-cat',this)">🏢 Proveedores</button>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="cat-clientes" class="cat-panel active">
+      <div class="form-card" style="margin-bottom:1rem">
+        <div class="section-label">Nuevo cliente</div>
+        <div class="form-grid">
+          <div class="fg"><label>Nombre / Razón social</label>
+            <input type="text" id="cat-cli-nombre" placeholder="COMERCIALIZADORA YAALI"></div>
+          <div class="fg"><label>RFC</label>
+            <input type="text" id="cat-cli-rfc" placeholder="CYA123456ABC"></div>
+          <div class="fg"><label>Contacto</label>
+            <input type="text" id="cat-cli-contacto" placeholder="Nombre del contacto"></div>
+          <div class="fg"><label>Teléfono</label>
+            <input type="text" id="cat-cli-tel" placeholder="314 000 0000"></div>
+          <div class="fg full"><label>Notas</label>
+            <input type="text" id="cat-cli-notas" placeholder="Observaciones, dirección, etc."></div>
+        </div>
+        <button class="btn-add" onclick="agregarCatalogo('cliente')">+ Agregar cliente</button>
+      </div>
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nombre</th><th>RFC</th><th>Contacto</th><th>Teléfono</th><th>Notas</th>
+              <th class="no-sort"></th>
+            </tr></thead>
+            <tbody id="cat-cli-tbody">
+              <tr><td colspan="6"><div class="empty-state"><p>Sin clientes registrados</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROVEEDORES CATÁLOGO -->
+    <div id="cat-proveedores-cat" class="cat-panel">
+      <div class="form-card" style="margin-bottom:1rem">
+        <div class="section-label">Nuevo proveedor</div>
+        <div class="form-grid">
+          <div class="fg"><label>Nombre / Razón social</label>
+            <input type="text" id="cat-prov-nombre" placeholder="TRANSPORTES GALLETA"></div>
+          <div class="fg"><label>RFC</label>
+            <input type="text" id="cat-prov-rfc" placeholder="TGA123456ABC"></div>
+          <div class="fg"><label>Contacto</label>
+            <input type="text" id="cat-prov-contacto" placeholder="Nombre del operador/contacto"></div>
+          <div class="fg"><label>Teléfono</label>
+            <input type="text" id="cat-prov-tel" placeholder="314 000 0000"></div>
+          <div class="fg"><label>Tipo</label>
+            <select id="cat-prov-tipo">
+              <option value="transportista">Transportista</option>
+              <option value="maniobras">Maniobras</option>
+              <option value="lavado">Lavado</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="fg"><label>Notas</label>
+            <input type="text" id="cat-prov-notas" placeholder="Placas, banco, cuenta..."></div>
+        </div>
+        <button class="btn-add" onclick="agregarCatalogo('proveedor')">+ Agregar proveedor</button>
+      </div>
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nombre</th><th>RFC</th><th>Tipo</th><th>Contacto</th><th>Teléfono</th><th>Notas</th>
+              <th class="no-sort"></th>
+            </tr></thead>
+            <tbody id="cat-prov-tbody">
+              <tr><td colspan="7"><div class="empty-state"><p>Sin proveedores registrados</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 </div><!-- end .app -->
 
 <!-- EDIT MODAL VIAJES -->
@@ -989,8 +1126,16 @@ tbody td{padding:9px 12px;vertical-align:middle}
           <option value="otro">Otro</option>
         </select>
       </div>
-      <div class="fg"><label>Cliente</label><input type="text" id="ev-cliente"></div>
-      <div class="fg"><label>Proveedor principal</label><input type="text" id="ev-unidad"></div>
+      <div class="fg autocomplete-wrap"><label>Cliente</label>
+      <input type="text" id="ev-cliente" autocomplete="off"
+        oninput="mostrarAC('ev-cliente','clientes')" onblur="cerrarAC('ev-cliente')" onkeydown="navAC(event,'ev-cliente')">
+      <div class="autocomplete-list" id="ac-ev-cliente" style="display:none"></div>
+    </div>
+      <div class="fg autocomplete-wrap"><label>Proveedor principal</label>
+      <input type="text" id="ev-unidad" autocomplete="off"
+        oninput="mostrarAC('ev-unidad','proveedores')" onblur="cerrarAC('ev-unidad')" onkeydown="navAC(event,'ev-unidad')">
+      <div class="autocomplete-list" id="ac-ev-unidad" style="display:none"></div>
+    </div>
       <div class="fg"><label>Origen</label><input type="text" id="ev-origen"></div>
       <div class="fg"><label>Destino</label><input type="text" id="ev-destino"></div>
       <div class="fg"><label>Costo ($)</label><input type="number" id="ev-costo" min="0" step="0.01"></div>
@@ -1050,7 +1195,11 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <input type="hidden" id="ec-id">
     <div class="edit-grid">
       <div class="fg"><label>Folio</label><input type="text" id="ec-folio"></div>
-      <div class="fg"><label>Cliente</label><input type="text" id="ec-cliente"></div>
+      <div class="fg autocomplete-wrap"><label>Cliente</label>
+      <input type="text" id="ec-cliente" autocomplete="off"
+        oninput="mostrarAC('ec-cliente','clientes')" onblur="cerrarAC('ec-cliente')" onkeydown="navAC(event,'ec-cliente')">
+      <div class="autocomplete-list" id="ac-ec-cliente" style="display:none"></div>
+    </div>
       <div class="fg"><label>Monto ($)</label><input type="number" id="ec-monto" min="0" step="0.01"></div>
       <div class="fg"><label>Estado</label>
         <select id="ec-estado">
@@ -1399,6 +1548,7 @@ function cambiarTab(id, btn) {
   if (id === 'contenedores') setTimeout(buscarContenedor, 80);
   if (id === 'historial') setTimeout(renderHistorial, 80);
   if (id === 'proveedores') setTimeout(filtrarPagos, 80);
+  if (id === 'catalogos') { setTimeout(renderCatClientes, 80); setTimeout(renderCatProveedores, 80); }
 }
 
 // ── TOAST ─────────────────────────────────────────────
@@ -1536,6 +1686,7 @@ async function cargar() {
 
     // Save to cache
     guardarCache(data);
+    cargarCatalogos(data);
 
     filtrarViajes(); actualizarGraficaV();
     filtrarCobranza();
@@ -3452,6 +3603,201 @@ function getMailBtnLabel(cobId) {
 
 
 
+// ══════════════════════════════════════════════════════
+//  CATÁLOGOS
+// ══════════════════════════════════════════════════════
+let catClientes    = JSON.parse(localStorage.getItem('vazse_cat_clientes') || '[]');
+let catProveedores = JSON.parse(localStorage.getItem('vazse_cat_proveedores') || '[]');
+
+function saveCatClientes()    { localStorage.setItem('vazse_cat_clientes', JSON.stringify(catClientes)); }
+function saveCatProveedores() { localStorage.setItem('vazse_cat_proveedores', JSON.stringify(catProveedores)); }
+
+function cambiarCatTab(id, btn) {
+  document.querySelectorAll('.cat-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('cat-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+async function agregarCatalogo(tipo) {
+  if (tipo === 'cliente') {
+    const nombre = document.getElementById('cat-cli-nombre').value.trim();
+    if (!nombre) { toast('Ingresa el nombre del cliente','err'); return; }
+    const entry = {
+      id: Date.now(),
+      nombre,
+      rfc:      document.getElementById('cat-cli-rfc').value.trim(),
+      contacto: document.getElementById('cat-cli-contacto').value.trim(),
+      tel:      document.getElementById('cat-cli-tel').value.trim(),
+      notas:    document.getElementById('cat-cli-notas').value.trim()
+    };
+    catClientes.push(entry);
+    saveCatClientes();
+    await sendPost({action:'catalogo_append', catalogo:'clientes', entry});
+    ['cat-cli-nombre','cat-cli-rfc','cat-cli-contacto','cat-cli-tel','cat-cli-notas']
+      .forEach(id => document.getElementById(id).value = '');
+    renderCatClientes();
+    toast('Cliente agregado','ok');
+  } else {
+    const nombre = document.getElementById('cat-prov-nombre').value.trim();
+    if (!nombre) { toast('Ingresa el nombre del proveedor','err'); return; }
+    const entry = {
+      id: Date.now(),
+      nombre,
+      rfc:      document.getElementById('cat-prov-rfc').value.trim(),
+      tipo:     document.getElementById('cat-prov-tipo').value,
+      contacto: document.getElementById('cat-prov-contacto').value.trim(),
+      tel:      document.getElementById('cat-prov-tel').value.trim(),
+      notas:    document.getElementById('cat-prov-notas').value.trim()
+    };
+    catProveedores.push(entry);
+    saveCatProveedores();
+    await sendPost({action:'catalogo_append', catalogo:'proveedores', entry});
+    ['cat-prov-nombre','cat-prov-rfc','cat-prov-contacto','cat-prov-tel','cat-prov-notas']
+      .forEach(id => document.getElementById(id).value = '');
+    renderCatProveedores();
+    toast('Proveedor agregado','ok');
+  }
+}
+
+async function eliminarCatalogo(tipo, id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  if (tipo === 'cliente') {
+    const entry = catClientes.find(e => e.id === id);
+    catClientes = catClientes.filter(e => e.id !== id);
+    saveCatClientes();
+    if (entry) await sendPost({action:'catalogo_delete', catalogo:'clientes', nombre:entry.nombre});
+    renderCatClientes();
+  } else {
+    const entry = catProveedores.find(e => e.id === id);
+    catProveedores = catProveedores.filter(e => e.id !== id);
+    saveCatProveedores();
+    if (entry) await sendPost({action:'catalogo_delete', catalogo:'proveedores', nombre:entry.nombre});
+    renderCatProveedores();
+  }
+  toast('Eliminado','ok');
+}
+
+function renderCatClientes() {
+  const tbody = document.getElementById('cat-cli-tbody');
+  if (!catClientes.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Sin clientes registrados</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = catClientes.map(e => `<tr>
+    <td style="font-weight:500">${e.nombre}</td>
+    <td style="font-size:12px;color:#888780">${e.rfc||'—'}</td>
+    <td style="font-size:12px">${e.contacto||'—'}</td>
+    <td style="font-size:12px">${e.tel||'—'}</td>
+    <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
+    <td><button class="btn-sm del" onclick="eliminarCatalogo('cliente',${e.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+function renderCatProveedores() {
+  const tbody = document.getElementById('cat-prov-tbody');
+  if (!catProveedores.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><p>Sin proveedores registrados</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = catProveedores.map(e => `<tr>
+    <td style="font-weight:500">${e.nombre}</td>
+    <td style="font-size:12px;color:#888780">${e.rfc||'—'}</td>
+    <td><span class="badge b-otro" style="font-size:10px">${e.tipo||'otro'}</span></td>
+    <td style="font-size:12px">${e.contacto||'—'}</td>
+    <td style="font-size:12px">${e.tel||'—'}</td>
+    <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
+    <td><button class="btn-sm del" onclick="eliminarCatalogo('proveedor',${e.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+// ── AUTOCOMPLETE ──────────────────────────────────────
+let _acIdx = -1;
+
+function mostrarAC(inputId, tipo) {
+  const input = document.getElementById(inputId);
+  const list  = document.getElementById('ac-' + inputId);
+  if (!input || !list) return;
+  const q = input.value.trim().toLowerCase();
+  const items = tipo === 'clientes' ? catClientes : catProveedores;
+  const matches = q
+    ? items.filter(e => e.nombre.toLowerCase().includes(q))
+    : items;
+  if (!matches.length) {
+    list.innerHTML = '<div class="autocomplete-empty">Sin resultados — puedes capturar manualmente</div>';
+    list.style.display = 'block'; return;
+  }
+  _acIdx = -1;
+  list.innerHTML = matches.slice(0,10).map((e,i) =>
+    `<div class="autocomplete-item" data-val="${e.nombre}"
+      onmousedown="seleccionarAC('${inputId}','${e.nombre.replace(/'/g,"\'")}')">
+      ${e.nombre}
+      ${e.rfc ? '<span>' + e.rfc + '</span>' : ''}
+    </div>`
+  ).join('');
+  list.style.display = 'block';
+}
+
+function seleccionarAC(inputId, valor) {
+  const input = document.getElementById(inputId);
+  const list  = document.getElementById('ac-' + inputId);
+  if (input) input.value = valor;
+  if (list)  list.style.display = 'none';
+  _acIdx = -1;
+}
+
+function cerrarAC(inputId) {
+  setTimeout(() => {
+    const list = document.getElementById('ac-' + inputId);
+    if (list) list.style.display = 'none';
+    _acIdx = -1;
+  }, 180);
+}
+
+function navAC(e, inputId) {
+  const list = document.getElementById('ac-' + inputId);
+  if (!list || list.style.display === 'none') return;
+  const items = list.querySelectorAll('.autocomplete-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _acIdx = Math.min(_acIdx + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _acIdx = Math.max(_acIdx - 1, 0);
+  } else if (e.key === 'Enter' && _acIdx >= 0) {
+    e.preventDefault();
+    seleccionarAC(inputId, items[_acIdx].dataset.val);
+    return;
+  } else if (e.key === 'Escape') {
+    cerrarAC(inputId); return;
+  }
+  items.forEach((it, i) => it.classList.toggle('selected', i === _acIdx));
+  if (_acIdx >= 0) items[_acIdx].scrollIntoView({block:'nearest'});
+}
+
+// Load catalogs from Sheets on cargar()
+function cargarCatalogos(data) {
+  if (data.clientes && data.clientes.length) {
+    catClientes = data.clientes.map((r, i) => ({
+      id: i + 1, nombre: r.nombre||'', rfc: r.rfc||'',
+      contacto: r.contacto||'', tel: r.tel||'', notas: r.notas||''
+    }));
+    saveCatClientes();
+  }
+  if (data.proveedoresCat && data.proveedoresCat.length) {
+    catProveedores = data.proveedoresCat.map((r, i) => ({
+      id: i + 1, nombre: r.nombre||'', rfc: r.rfc||'',
+      tipo: r.tipo||'otro', contacto: r.contacto||'',
+      tel: r.tel||'', notas: r.notas||''
+    }));
+    saveCatProveedores();
+  }
+  renderCatClientes();
+  renderCatProveedores();
+}
+
+
 // ── ARRANQUE ──────────────────────────────────────────
 // Listen for online/offline events
 window.addEventListener('online', () => {
@@ -3469,6 +3815,8 @@ window.addEventListener('offline', () => {
 
 cargar();
 renderHistorial();
+renderCatClientes();
+renderCatProveedores();
 actualizarEstadoOffline();
 mostrarEstadoConexion();
 </script>
