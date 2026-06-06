@@ -2162,7 +2162,8 @@ function renderCobranza(){
         <td>${eviBtn}</td>
         <td class="trunc muted" style="font-size:12px">${r.notas||'—'}</td>
         <td style="white-space:nowrap;display:flex;gap:4px">
-          <button class="btn-sm view" onclick="solicitarFactura(${r.id})" title="Solicitar factura" style="background:#EAF3DE;color:#27500A;border-color:#C0DD97">📧</button>
+          <button class="btn-sm view" id="mail-btn-${r.id}" onclick="solicitarFactura(${r.id})" title="Solicitar factura"
+            style="${getMailBtnStyle(r.id)}">📧 ${getMailBtnLabel(r.id)}</button>
           <button class="btn-sm view" onclick="abrirEditCobranza(${r.id})" title="Editar">✏️</button>
           <button class="btn-sm del" onclick="eliminarCobranza(${r.id},'${r.folio}')" title="Eliminar">✕</button>
         </td>
@@ -3412,8 +3413,43 @@ function solicitarFactura(cobId) {
   const para     = 'fvalencia@grupovazse.com.mx,facturacion1@grupovazse.com.mx';
   const cc       = encodeURIComponent('cuentadegastos@grupovazse.com.mx,cintya.aguirre@grupovazse.com.mx');
 
+  // Mark as sent in localStorage
+  const sentKey = 'vazse_mail_sent_' + cobId;
+  const sentData = { ts: Date.now(), fecha: new Date().toLocaleDateString('es-MX') };
+  localStorage.setItem(sentKey, JSON.stringify(sentData));
+
+  // Update button immediately
+  const btn = document.getElementById('mail-btn-' + cobId);
+  if (btn) {
+    btn.style.background = '#FAEEDA';
+    btn.style.color = '#633806';
+    btn.style.borderColor = '#FAC775';
+    btn.title = 'Enviado el ' + sentData.fecha;
+    btn.innerHTML = '📧 Enviado';
+  }
+
   window.location.href = 'mailto:' + para + '?cc=' + cc + '&subject=' + asunto + '&body=' + cuerpo;
 }
+
+function getMailBtnStyle(cobId) {
+  try {
+    const raw = localStorage.getItem('vazse_mail_sent_' + cobId);
+    if (raw) return 'background:#FAEEDA;color:#633806;border-color:#FAC775';
+  } catch(e) {}
+  return 'background:#EAF3DE;color:#27500A;border-color:#C0DD97';
+}
+
+function getMailBtnLabel(cobId) {
+  try {
+    const raw = localStorage.getItem('vazse_mail_sent_' + cobId);
+    if (raw) {
+      const d = JSON.parse(raw);
+      return 'Enviado';
+    }
+  } catch(e) {}
+  return '';
+}
+
 
 
 // ── ARRANQUE ──────────────────────────────────────────
