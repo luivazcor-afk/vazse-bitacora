@@ -2161,7 +2161,11 @@ function renderCobranza(){
         <td>${facturaBtn}</td>
         <td>${eviBtn}</td>
         <td class="trunc muted" style="font-size:12px">${r.notas||'—'}</td>
-        <td style="white-space:nowrap;display:flex;gap:4px"><button class="btn-sm view" onclick="abrirEditCobranza(${r.id})" title="Editar">✏️</button><button class="btn-sm del" onclick="eliminarCobranza(${r.id},'${r.folio}')" title="Eliminar">✕</button></td>
+        <td style="white-space:nowrap;display:flex;gap:4px">
+          <button class="btn-sm view" onclick="solicitarFactura(${r.id})" title="Solicitar factura" style="background:#EAF3DE;color:#27500A;border-color:#C0DD97">📧</button>
+          <button class="btn-sm view" onclick="abrirEditCobranza(${r.id})" title="Editar">✏️</button>
+          <button class="btn-sm del" onclick="eliminarCobranza(${r.id},'${r.folio}')" title="Eliminar">✕</button>
+        </td>
       </tr>`;
     }).join('');
   }
@@ -3376,6 +3380,39 @@ function exportarProveedores() {
   ws['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:12},{wch:11},{wch:18},{wch:18},{wch:28}];
   XLSX.utils.book_append_sheet(wb,ws,'Proveedores');
   XLSX.writeFile(wb,`pagos_proveedores_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+
+// ── SOLICITAR FACTURA POR EMAIL ──────────────────────
+function solicitarFactura(cobId) {
+  const cob = cobranzas.find(function(x){ return x.id === cobId; });
+  if (!cob) return;
+
+  const esManiobras = String(cob.folio).startsWith('MAN-');
+  const viaje = viajes.find(function(v){ return v.referencia === cob.referencia; });
+  const contenedor = viaje ? (viaje.contenedor || '') : '';
+  const cliente    = (cob.cliente || '').toUpperCase();
+  const referencia = cob.referencia || '';
+  const monto      = cob.monto ? Number(cob.monto).toFixed(2) : '0.00';
+
+  const linea3 = [contenedor, referencia, cliente].filter(Boolean).join(' / ');
+  const concepto = esManiobras ? 'MANIOBRAS DE CONTENEDOR' : 'FLETE TERRESTRE';
+
+  const nl = '%0A';
+  const sp = '          ';
+
+  const cuerpo = 'Buen dia' + nl + nl +
+    'De su apoyo con esta' + (esManiobras ? 's maniobras' : ' factura') + nl + nl +
+    'RESOLUCION ESTRATEGICA VAZSE' + sp + cliente + nl + nl +
+    concepto + sp + monto + ' + IVA - RET' + nl +
+    linea3 + nl + nl +
+    'SALUDOS';
+
+  const asunto   = encodeURIComponent('SOLICITUD DE FACTURA //' + referencia + '// ' + cliente);
+  const para     = 'fvalencia@grupovazse.com.mx,facturacion1@grupovazse.com.mx';
+  const cc       = encodeURIComponent('cuentadegastos@grupovazse.com.mx,cintya.aguirre@grupovazse.com.mx');
+
+  window.location.href = 'mailto:' + para + '?cc=' + cc + '&subject=' + asunto + '&body=' + cuerpo;
 }
 
 
