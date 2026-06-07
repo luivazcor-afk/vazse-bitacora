@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="https://i.imgur.com/dNpSrLC.png">
 <title>Bitácora VAZSE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -341,6 +342,96 @@ tbody td{padding:9px 12px;vertical-align:middle}
   .membrete img{height:38px}
   .tab{font-size:12px;padding:8px 10px}
 }
+
+/* ── VALIDACIÓN DE CAMPOS ────────────────────────── */
+.fg input.campo-error, .fg select.campo-error, .fg textarea.campo-error {
+  border-color: #D85A30 !important;
+  background: #FFF8F6;
+}
+.fg .error-msg {
+  font-size: 11px;
+  color: #D85A30;
+  margin-top: 2px;
+}
+
+/* ── SEGUIMIENTO BADGE ───────────────────────────── */
+.seg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: #E6F1FB;
+  color: #0C447C;
+  font-weight: 500;
+  cursor: pointer;
+}
+.seg-badge:hover { background: #B5D4F4; }
+
+/* ── VISTA TARJETAS MÓVIL ────────────────────────── */
+.card-list { display: none; }
+
+@media (max-width: 768px) {
+  /* Ocultar tablas en móvil */
+  .table-outer { display: none !important; }
+  .card-list   { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+
+  .viaje-card, .cob-card {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,.1);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .card-cliente {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a18;
+    flex: 1;
+  }
+  .card-monto {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .card-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 12px;
+    color: #888780;
+  }
+  .card-util-pos { color: #0F6E56; font-weight: 500; }
+  .card-util-neg { color: #993C1D; font-weight: 500; }
+  .card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 0.5px solid rgba(0,0,0,.06);
+  }
+  .card-actions button { flex: 1; }
+
+  /* Ajustes de formulario en móvil */
+  .form-grid { grid-template-columns: 1fr !important; }
+  .fg.half   { grid-column: span 1 !important; }
+  .flete-grid { grid-template-columns: 1fr !important; }
+
+  /* Tabs scroll en móvil */
+  .tabs { gap: 2px; }
+  .tab  { padding: 8px 10px; font-size: 11px; }
+}
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 </head>
@@ -566,6 +657,8 @@ tbody td{padding:9px 12px;vertical-align:middle}
       </div>
     </div>
     <div class="pagination" id="v-pag"></div>
+    <div class="card-list" id="v-card-list"></div>
+    <div class="pagination" id="v-pag-mobile" style="display:none"></div>
   </div>
 
   <!-- ════════════════════════════════════════════
@@ -685,6 +778,8 @@ tbody td{padding:9px 12px;vertical-align:middle}
       </div>
     </div>
     <div class="pagination" id="c-pag"></div>
+    <div class="card-list" id="c-card-list"></div>
+    <div class="pagination" id="c-pag-mobile" style="display:none"></div>
   </div>
 
   <!-- ════════════════════════════════════════════
@@ -1906,6 +2001,7 @@ function renderViajes() {
     }).join('');
   }
   renderPag('v-pag', totalPag, vPag, n => { vPag = n; renderViajes(); });
+  renderViajesCards(pagina);
 }
 
 function actualizarGraficaV() {
@@ -1944,8 +2040,10 @@ function toggleFleteSection() {
 }
 
 async function agregarViaje() {
+  if (!validarCampos(['v-fecha','v-tipo','v-cliente'])) {
+    toast('Completa los campos requeridos','err'); return;
+  }
   const fecha = document.getElementById('v-fecha').value;
-  if (!fecha) { toast('Ingresa la fecha','err'); return; }
   const tipo = document.getElementById('v-tipo').value;
   const esFlete = TIPOS_FLETE.includes(tipo);
   const registro = {
@@ -2055,6 +2153,7 @@ async function agregarViaje() {
     document.getElementById('eir-attached').style.display = 'none';
     document.getElementById('v-referencia').value = generarFolioAuto();
 
+    limpiarErrores(['v-fecha','v-tipo','v-cliente']);
     filtrarViajes(); actualizarGraficaV(); filtrarCobranza(); filtrarPagos();
     registrarHistorial('agregar','Viaje',registro.cliente+' · '+registro.tipo+' · '+fmtFecha(fecha));
     setStatus('v','ok','Guardado');
@@ -2242,11 +2341,12 @@ async function subirArchivoConToken(file, progressId, token) {
 }
 
 async function agregarCobranza() {
+  if (!validarCampos(['c-folio','c-cliente','c-monto'])) {
+    toast('Completa los campos requeridos','err'); return;
+  }
   const folio = document.getElementById('c-folio').value.trim();
   const cliente = document.getElementById('c-cliente').value.trim();
   const monto = parseFloat(document.getElementById('c-monto').value) || 0;
-  if (!folio) { toast('Ingresa el folio de factura','err'); return; }
-  if (!cliente) { toast('Ingresa el nombre del cliente','err'); return; }
 
   const btn = document.getElementById('c-btn-add');
   btn.disabled = true; btn.textContent = 'Guardando...';
@@ -2287,6 +2387,7 @@ async function agregarCobranza() {
     quitarArchivo('pdf'); quitarArchivo('evidencia');
     urlPdfSubido=''; urlEviSubido='';
 
+    limpiarErrores(['c-folio','c-cliente','c-monto']);
     filtrarCobranza();
     setStatus('c','ok','Guardado'); toast('Factura registrada','ok');
   } catch(e) {
@@ -2377,7 +2478,11 @@ function renderCobranza(){
       const facturaBtn=r.urlFactura?`<button class="btn-sm view" onclick="verDoc('${r.urlFactura}','Factura ${r.folio}')">📄 Ver</button>`:'<span class="muted" style="font-size:11px">—</span>';
       const eviBtn=r.urlEvidencia?`<button class="btn-sm view" onclick="verDoc('${r.urlEvidencia}','Evidencia ${r.folio}')">🧾 Ver</button>`:'<span class="muted" style="font-size:11px">—</span>';
       return`<tr>
-        <td style="font-size:12px;white-space:nowrap;font-weight:500">${r.folio||'—'}${r.fechaCobro?'<br><span class="cobro-real-badge">💰 '+fmtFecha(r.fechaCobro)+'</span>':''}</td>
+        <td style="font-size:12px;white-space:nowrap;font-weight:500">
+          ${r.folio||'—'}
+          ${r.seguimiento && r.seguimiento.length > 0 ? '<span class="seg-badge" onclick="abrirEditCobranza('+r.id+')" title="Ver notas de seguimiento">💬 '+r.seguimiento.length+'</span>' : ''}
+          ${r.fechaCobro?'<br><span class="cobro-real-badge">💰 '+fmtFecha(r.fechaCobro)+'</span>':''}
+        </td>
         <td class="trunc">${r.cliente||'—'}</td>
         <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
         <td style="font-size:12px;white-space:nowrap;color:#888780">${fmtFecha(r.fechaEmision)||'—'}</td>
@@ -2405,6 +2510,7 @@ function renderCobranza(){
     }).join('');
   }
   renderPag('c-pag',totalPag,cPag,n=>{cPag=n;renderCobranza();});
+  renderCobranzaCards(pagina);
 }
 
 function exportarCobranza(){
@@ -4013,6 +4119,128 @@ function cargarTodo() {
   mesCargado = null;
   cargar();
 }
+
+// ── VALIDACIÓN DE CAMPOS ────────────────────────────
+function validarCampos(campos) {
+  let ok = true;
+  campos.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Remove previous error
+    el.classList.remove('campo-error');
+    const errEl = el.parentNode.querySelector('.error-msg');
+    if (errEl) errEl.remove();
+    // Check empty
+    const val = el.value ? el.value.trim() : '';
+    if (!val) {
+      el.classList.add('campo-error');
+      const msg = document.createElement('div');
+      msg.className = 'error-msg';
+      msg.textContent = 'Campo requerido';
+      el.parentNode.appendChild(msg);
+      ok = false;
+    } else {
+      el.classList.remove('campo-error');
+    }
+  });
+  return ok;
+}
+
+function limpiarErrores(campos) {
+  campos.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('campo-error');
+    const errEl = el.parentNode.querySelector('.error-msg');
+    if (errEl) errEl.remove();
+  });
+}
+
+// ── TARJETAS MÓVIL ───────────────────────────────────
+function esMobil() {
+  return window.innerWidth <= 768;
+}
+
+function renderViajesCards(pagina) {
+  const el = document.getElementById('v-card-list');
+  if (!el) return;
+  if (!esMobil()) { el.innerHTML = ''; return; }
+  if (!pagina.length) {
+    el.innerHTML = '<div class="empty-state"><p>No hay registros que coincidan.</p></div>';
+    return;
+  }
+  el.innerHTML = pagina.map(r => {
+    const totalCob = (r.cobrado||0) + (r.maniobrasCobrado||0);
+    const totalCost = (r.costo||0) + (r.maniobras||0);
+    const util = totalCob - totalCost;
+    const ruta = [r.origen, r.destino].filter(Boolean).join(' → ') || '—';
+    return `<div class="viaje-card">
+      <div class="card-top">
+        <div>
+          <div class="card-cliente">${r.cliente||'Sin cliente'}</div>
+          <div class="card-meta">
+            <span>${fmtFecha(r.fecha)}</span>
+            <span>·</span>
+            ${badgeViaje(r.tipo)}
+            ${r.referencia ? '<span style="color:#185FA5;font-weight:500">'+r.referencia+'</span>' : ''}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="card-monto">${fmt(totalCob)}</div>
+          <div class="card-${util>=0?'util-pos':'util-neg'}" style="font-size:12px">${util>=0?'+':''}${fmt(util)}</div>
+        </div>
+      </div>
+      ${ruta !== '—' ? '<div class="card-meta">📍 '+ruta+'</div>' : ''}
+      ${r.contenedor ? '<div class="card-meta">📦 '+r.contenedor+(r.patio?' · '+r.patio:'')+'</div>' : ''}
+      <div class="card-actions">
+        <button class="btn-sm dup" onclick="duplicarViaje(${r.id})">⧉ Dup</button>
+        <button class="btn-sm view" onclick="abrirEditViaje(${r.id})">✏️ Editar</button>
+        <button class="btn-sm del" onclick="eliminarViaje(${r.id},'${fmtFecha(r.fecha)}','${r.tipo}',${r.costo})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCobranzaCards(pagina) {
+  const el = document.getElementById('c-card-list');
+  if (!el) return;
+  if (!esMobil()) { el.innerHTML = ''; return; }
+  if (!pagina.length) {
+    el.innerHTML = '<div class="empty-state"><p>No hay facturas que coincidan.</p></div>';
+    return;
+  }
+  el.innerHTML = pagina.map(r => {
+    const hoy = new Date().toISOString().split('T')[0];
+    const venc = fmtFecha(r.fechaVencimiento);
+    const isVencido = venc && venc < hoy && r.estado !== 'pagado';
+    const estadoReal = isVencido && r.estado === 'pendiente' ? 'vencido' : r.estado;
+    const segs = r.seguimiento ? r.seguimiento.length : 0;
+    return `<div class="cob-card">
+      <div class="card-top">
+        <div>
+          <div class="card-cliente">${r.cliente||'Sin cliente'}</div>
+          <div class="card-meta">
+            <span style="color:#185FA5;font-weight:500">${r.folio||'—'}</span>
+            <span>·</span>
+            <span>${fmtFecha(r.fechaEmision)}</span>
+            ${segs > 0 ? '<span class="seg-badge">💬 '+segs+'</span>' : ''}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="card-monto">${fmt(r.monto)}</div>
+          ${badgeEstado(estadoReal)}
+        </div>
+      </div>
+      ${r.referencia ? '<div class="card-meta">Ref: '+r.referencia+'</div>' : ''}
+      <div class="card-actions">
+        <button class="btn-sm view" style="background:#EAF3DE;color:#27500A;border-color:#C0DD97" onclick="solicitarFactura(${r.id})">📧</button>
+        <button class="btn-sm view" onclick="abrirEditCobranza(${r.id})">✏️ Editar</button>
+        <button class="btn-sm del" onclick="eliminarCobranza(${r.id},'${r.folio}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 
 // ── ARRANQUE ──────────────────────────────────────────
 // Listen for online/offline events
