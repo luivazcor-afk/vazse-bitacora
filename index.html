@@ -769,6 +769,67 @@ tbody td{padding:9px 12px;vertical-align:middle}
       </div>
     </div>
 
+
+
+<!-- REPORTE MENSUAL -->
+    <div id="rep-mensual" class="report-panel active">
+      <div class="rep-mes-header">
+        <div class="mes-nav">
+          <button onclick="cambiarMes(-1)">‹</button>
+          <span id="mes-actual-label">Cargando...</span>
+          <button onclick="cambiarMes(1)">›</button>
+        </div>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
+      </div>
+      <div class="metrics" id="rep-mes-metrics" style="margin-bottom:1rem"></div>
+      <div class="section-label" style="margin-bottom:8px">Viajes del mes</div>
+      <div class="table-outer" style="margin-bottom:1rem"><div class="table-wrap">
+        <table class="sum-table"><thead><tr>
+          <th>Fecha</th><th>Ref.</th><th>Tipo</th><th>Cliente</th>
+          <th class="num">Costo</th><th class="num">Cobrado</th><th class="num">Utilidad</th>
+        </tr></thead>
+        <tbody id="rep-mes-viajes"><tr><td colspan="7"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
+        </table></div></div>
+      <div class="section-label" style="margin-bottom:8px">Cobranza del mes</div>
+      <div class="table-outer"><div class="table-wrap">
+        <table class="sum-table"><thead><tr>
+          <th>Folio</th><th>Cliente</th><th class="num">Monto</th><th>Estado</th><th>Vencimiento</th>
+        </tr></thead>
+        <tbody id="rep-mes-cobranza"><tr><td colspan="5"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
+        </table></div></div>
+    </div>
+
+    <!-- COMPARATIVO MENSUAL -->
+    <div id="rep-comparativo" class="report-panel">
+      <div class="comp-card">
+        <div style="font-size:13px;font-weight:500;margin-bottom:4px">Mes actual vs mes anterior</div>
+        <div style="font-size:11px;color:#888780" id="comp-periodo-label"></div>
+        <div class="comp-grid" id="comp-grid"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><span class="chart-title">Tendencia últimos 6 meses</span></div>
+        <div style="position:relative;width:100%;height:220px"><canvas id="chart-comparativo"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TOP 5 -->
+    <div id="rep-top5" class="report-panel">
+      <div class="chart-card" style="margin-bottom:1rem">
+        <div class="chart-header"><span class="chart-title">Top 5 clientes por cobrado</span></div>
+        <div style="position:relative;width:100%;height:200px"><canvas id="chart-top5"></canvas></div>
+      </div>
+      <div class="table-outer" style="margin-bottom:1rem"><div style="padding:.75rem 1.25rem" id="top5-list"></div></div>
+      <div class="section-label" style="margin-bottom:8px">Cobranza por cliente</div>
+      <div class="table-outer"><div class="table-wrap">
+        <table class="sum-table"><thead><tr>
+          <th>Cliente</th><th class="num">Facturas</th>
+          <th class="num">Total</th><th class="num">Cobrado</th>
+          <th class="num">Pendiente</th><th class="num">Vencido</th>
+        </tr></thead>
+        <tbody id="rep-cob-resumen-tbody"></tbody>
+        </table></div></div>
+    </div>
+
   </div>
 
 
@@ -837,69 +898,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </div>
   </div>
 
-
-    <!-- REPORTE MENSUAL -->
-    <div id="rep-mensual" class="report-panel active">
-      <div class="rep-mes-header">
-        <div class="mes-nav">
-          <button onclick="cambiarMes(-1)">‹</button>
-          <span id="mes-actual-label">Cargando...</span>
-          <button onclick="cambiarMes(1)">›</button>
-        </div>
-        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
-      </div>
-      <div class="metrics" id="rep-mes-metrics" style="margin-bottom:1rem"></div>
-      <div class="section-label" style="margin-bottom:8px">Viajes del mes</div>
-      <div class="table-outer" style="margin-bottom:1rem"><div class="table-wrap">
-        <table class="sum-table"><thead><tr>
-          <th>Fecha</th><th>Ref.</th><th>Tipo</th><th>Cliente</th>
-          <th class="num">Costo</th><th class="num">Cobrado</th><th class="num">Utilidad</th>
-        </tr></thead>
-        <tbody id="rep-mes-viajes"><tr><td colspan="7"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
-        </table></div></div>
-      <div class="section-label" style="margin-bottom:8px">Cobranza del mes</div>
-      <div class="table-outer"><div class="table-wrap">
-        <table class="sum-table"><thead><tr>
-          <th>Folio</th><th>Cliente</th><th class="num">Monto</th><th>Estado</th><th>Vencimiento</th>
-        </tr></thead>
-        <tbody id="rep-mes-cobranza"><tr><td colspan="5"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
-        </table></div></div>
-    </div>
-
-    <!-- COMPARATIVO MENSUAL -->
-    <div id="rep-comparativo" class="report-panel">
-      <div class="comp-card">
-        <div style="font-size:13px;font-weight:500;margin-bottom:4px">Mes actual vs mes anterior</div>
-        <div style="font-size:11px;color:#888780" id="comp-periodo-label"></div>
-        <div class="comp-grid" id="comp-grid"></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-header"><span class="chart-title">Tendencia últimos 6 meses</span></div>
-        <div style="position:relative;width:100%;height:220px"><canvas id="chart-comparativo"></canvas></div>
-      </div>
-    </div>
-
-    <!-- TOP 5 -->
-    <div id="rep-top5" class="report-panel">
-      <div class="chart-card" style="margin-bottom:1rem">
-        <div class="chart-header"><span class="chart-title">Top 5 clientes por cobrado</span></div>
-        <div style="position:relative;width:100%;height:200px"><canvas id="chart-top5"></canvas></div>
-      </div>
-      <div class="table-outer" style="margin-bottom:1rem"><div style="padding:.75rem 1.25rem" id="top5-list"></div></div>
-      <div class="section-label" style="margin-bottom:8px">Cobranza por cliente</div>
-      <div class="table-outer"><div class="table-wrap">
-        <table class="sum-table"><thead><tr>
-          <th>Cliente</th><th class="num">Facturas</th>
-          <th class="num">Total</th><th class="num">Cobrado</th>
-          <th class="num">Pendiente</th><th class="num">Vencido</th>
-        </tr></thead>
-        <tbody id="rep-cob-resumen-tbody"></tbody>
-        </table></div></div>
-    </div>
-
-
-
-  <!-- ════════════════════════════════════════════
+<!-- ════════════════════════════════════════════
        PESTAÑA — PROVEEDORES
   ═══════════════════════════════════════════════ -->
   <div id="panel-proveedores" class="tab-panel">
@@ -993,9 +992,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
     <div class="pagination" id="p-pag"></div>
   </div>
 
-
-
-  <!-- ════════════════════════════════════════════
+    <!-- ════════════════════════════════════════════
        PESTAÑA — CATÁLOGOS
   ═══════════════════════════════════════════════ -->
   <div id="panel-catalogos" class="tab-panel">
