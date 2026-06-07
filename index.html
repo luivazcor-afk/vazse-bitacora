@@ -4071,9 +4071,8 @@ async function agregarCatalogo(tipo) {
     saveCatClientes();
     await sendPost({action:'catalogo_append', catalogo:'clientes', entry});
     limpiarFormCliente();
-    renderCatClientes();
-    toast('Cliente agregado','ok');
-    setTimeout(cargar, 1500);
+    toast('Guardando...','inf');
+    setTimeout(function() { cargar().then(function() { toast('Cliente agregado ✓','ok'); }); }, 800);
   } else {
     const nombre = document.getElementById('cat-prov-nombre').value.trim();
     if (!nombre) { toast('Ingresa el nombre del proveedor','err'); return; }
@@ -4094,9 +4093,8 @@ async function agregarCatalogo(tipo) {
     saveCatProveedores();
     await sendPost({action:'catalogo_append', catalogo:'proveedores', entry});
     limpiarFormProveedor();
-    renderCatProveedores();
-    toast('Proveedor agregado','ok');
-    setTimeout(cargar, 1500);
+    toast('Guardando...','inf');
+    setTimeout(function() { cargar().then(function() { toast('Proveedor agregado ✓','ok'); }); }, 800);
   }
 }
 
@@ -4237,22 +4235,36 @@ function navAC(e, inputId) {
 
 // Load catalogs from Sheets on cargar()
 function cargarCatalogos(data) {
-  if (data.clientes && data.clientes.length) {
+  if (data.clientes) {
     catClientes = data.clientes.map((r, i) => ({
-      id: i + 1, nombre: r.nombre||'', rfc: r.rfc||'',
-      contacto: r.contacto||'', tel: r.tel||'', notas: r.notas||''
+      id: i + 1,
+      nombre:     r.nombre||'',
+      rfc:        r.rfc||'',
+      contacto:   r.contacto||'',
+      tel:        r.tel||'',
+      email:      r.email||'',
+      notas:      r.notas||'',
+      domicilios: r.domicilios||[]
     }));
     saveCatClientes();
   }
-  if (data.proveedoresCat && data.proveedoresCat.length) {
+  if (data.proveedoresCat) {
     catProveedores = data.proveedoresCat.map((r, i) => ({
-      id: i + 1, nombre: r.nombre||'', rfc: r.rfc||'',
-      tipo: r.tipo||'otro', contacto: r.contacto||'',
-      tel: r.tel||'', email: r.email||'', notas: r.notas||''
+      id:       i + 1,
+      nombre:   r.nombre||'',
+      rfc:      r.rfc||'',
+      tipo:     r.tipo||'otro',
+      contacto: r.contacto||'',
+      tel1:     r.tel1||r.tel||'',
+      tel2:     r.tel2||'',
+      email1:   r.email1||r.email||'',
+      email2:   r.email2||'',
+      cuentas:  r.cuentas||[],
+      notas:    r.notas||''
     }));
     saveCatProveedores();
   }
-  if (data.serviciosCat && data.serviciosCat.length) {
+  if (data.serviciosCat) {
     catServicios = data.serviciosCat.map((r, i) => ({
       id: i + 1, nombre: r.nombre||'', clave: r.clave||'',
       unidad: r.unidad||'', desc: r.desc||'', retencion: (r.retencion === 'si' ? 'si' : 'no')
@@ -4262,6 +4274,9 @@ function cargarCatalogos(data) {
   renderCatClientes();
   renderCatProveedores();
   renderCatServicios();
+  // Re-activate visible cat panel
+  const activeCatPanel = document.querySelector('.cat-panel.active');
+  if (activeCatPanel) activeCatPanel.style.display = 'block';
 }
 
 
@@ -4287,9 +4302,8 @@ async function agregarServicio() {
   ['cat-svc-nombre','cat-svc-clave','cat-svc-unidad','cat-svc-desc']
     .forEach(id => document.getElementById(id).value = '');
   const retEl = document.getElementById('cat-svc-retencion'); if(retEl) retEl.value='si';
-  renderCatServicios();
-  toast('Servicio agregado','ok');
-  setTimeout(cargar, 1500);
+  toast('Guardando...','inf');
+  setTimeout(function() { cargar().then(function() { toast('Servicio agregado ✓','ok'); }); }, 800);
 }
 
 async function eliminarServicio(id) {
@@ -4934,10 +4948,13 @@ async function guardarEditCli() {
   // Delete old + append new in Sheets
   await sendPost({action:'catalogo_delete', catalogo:'clientes', nombre:nombreViejo});
   await sendPost({action:'catalogo_append', catalogo:'clientes', entry:updated});
-  renderCatClientes();
   cerrarEditCli();
-  toast('Cliente actualizado','ok');
-  setTimeout(cargar, 1500); // Reload from Sheets
+  toast('Guardando...','inf');
+  setTimeout(function() {
+    cargar().then(function() {
+      toast('Cliente actualizado ✓','ok');
+    });
+  }, 800);
 }
 
 // ── EDITAR PROVEEDOR ──────────────────────────────────
@@ -5028,10 +5045,13 @@ async function guardarEditProv() {
   saveCatProveedores();
   await sendPost({action:'catalogo_delete', catalogo:'proveedores', nombre:nombreViejo});
   await sendPost({action:'catalogo_append', catalogo:'proveedores', entry:updated});
-  renderCatProveedores();
   cerrarEditProv();
-  toast('Proveedor actualizado','ok');
-  setTimeout(cargar, 1500);
+  toast('Guardando...','inf');
+  setTimeout(function() {
+    cargar().then(function() {
+      toast('Proveedor actualizado ✓','ok');
+    });
+  }, 800);
 }
 
 // ── EDITAR SERVICIO ───────────────────────────────────
@@ -5068,10 +5088,13 @@ async function guardarEditSvc() {
   saveCatServicios();
   await sendPost({action:'catalogo_delete', catalogo:'servicios', nombre:nombreViejo});
   await sendPost({action:'catalogo_append', catalogo:'servicios', entry:updated});
-  renderCatServicios();
   cerrarEditSvc();
-  toast('Servicio actualizado','ok');
-  setTimeout(cargar, 1500);
+  toast('Guardando...','inf');
+  setTimeout(function() {
+    cargar().then(function() {
+      toast('Servicio actualizado ✓','ok');
+    });
+  }, 800);
 }
 
 
