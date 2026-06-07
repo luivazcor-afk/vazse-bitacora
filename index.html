@@ -25,8 +25,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;color:#1a
 .tab:hover{color:#1a1a18;background:rgba(255,255,255,.5)}
 .tab.active{background:#fff;color:#1a1a18;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .tab-icon{font-size:13px}
-.tab-panel{display:none!important}
-.tab-panel.active{display:block!important}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
 
 /* CARDS & LAYOUT */
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap}
@@ -218,7 +218,6 @@ tbody td{padding:9px 12px;vertical-align:middle}
 @media print{
   .tabs,.topbar,.form-card,.toolbar,.pagination,.btns,.btn-sm,
   .edit-overlay,.modal-overlay,.toast-wrap,.alert-banner,
-  .tab-panel:not(.active){display:none!important}
   body{background:#fff}
   .app{max-width:100%;padding:0}
   .membrete{border:none;padding:.5rem 0}
@@ -1537,7 +1536,7 @@ function cambiarTab(id, btn) {
     var p = document.getElementById('panel-' + pid);
     if (p) {
       p.classList.remove('active');
-      p.setAttribute('style', 'display:none!important');
+      p.style.cssText = 'display:none';
     }
   });
   // Desactivar todos los botones
@@ -1546,7 +1545,7 @@ function cambiarTab(id, btn) {
   var panel = document.getElementById('panel-' + id);
   if (panel) {
     panel.classList.add('active');
-    panel.setAttribute('style', 'display:block!important');
+    panel.style.cssText = 'display:block';
   }
   // Activar botón
   if (btn) btn.classList.add('active');
@@ -3921,7 +3920,7 @@ window.addEventListener('offline', () => {
 // Asegurar que solo viajes sea visible al inicio
 _TODOS_PANELES.forEach(function(pid) {
   var p = document.getElementById('panel-' + pid);
-  if (p) p.setAttribute('style', pid === 'viajes' ? 'display:block!important' : 'display:none!important');
+  if (p) p.style.cssText = (pid === 'viajes') ? 'display:block' : 'display:none';
 });
 cargar();
 renderHistorial();
