@@ -421,7 +421,13 @@ tbody td{padding:9px 12px;vertical-align:middle}
           <div class="brand-sub"><span class="dot dot-loading" id="v-dot"></span><span id="v-status">Conectando...</span></div>
         </div>
       </div>
-      <div class="btns">
+      <div class="btns" style="align-items:center">
+        <div style="display:flex;align-items:center;gap:2px;background:#f1efeb;border-radius:8px;padding:3px 6px">
+          <button onclick="navMes(-1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">‹</button>
+          <span id="mes-cargado-label" style="font-size:12px;font-weight:500;min-width:84px;text-align:center">Este mes</span>
+          <button onclick="navMes(1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">›</button>
+        </div>
+        <button class="btn" onclick="cargarTodo()" style="font-size:11px" title="Ver todos los registros">📂 Todo</button>
         <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
         <button class="btn" id="btn-export-v" onclick="exportarViajes()" disabled>↓ Excel</button>
         <button class="btn" id="btn-pdf-v" onclick="exportarPDFViajes()" disabled>🖨️ PDF</button>
@@ -1311,6 +1317,24 @@ tbody td{padding:9px 12px;vertical-align:middle}
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <script>
+/**
+ * SISTEMA BITÁCORA VAZSE — v3.0
+ * ══════════════════════════════════════════════════════
+ * 01. CONFIG & HELPERS      — formato, badges, paginación
+ * 02. OFFLINE & SYNC        — cola, caché, JSONP
+ * 03. GOOGLE DRIVE / OAUTH  — subida de archivos
+ * 04. DATOS & CARGA         — cargar(), filtrar, mes
+ * 05. VIAJES                — CRUD + auto-cobranza/pagos
+ * 06. COBRANZA              — CRUD + email factura
+ * 07. PROVEEDORES           — CRUD pagos a proveedores
+ * 08. CATÁLOGOS             — clientes, proveedores, svc
+ * 09. REPORTES              — mensual, comparativo, top5
+ * 10. CONTENEDORES          — búsqueda + timeline
+ * 11. HISTORIAL             — log de cambios
+ * 12. UI                    — tabs, autocomplete, alerts
+ * 13. ARRANQUE              — init
+ * ══════════════════════════════════════════════════════
+ */
 const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwMOjlD7L9dFQ2XZX-9Kc1tf8_kd9FD_SoKy_RCGrahXd9-A9s9nmR7Qse7MED1xs_m/exec';
 
 // ── POST helper — usa form oculto para evitar CORS/redirect issues ─
@@ -1538,6 +1562,8 @@ const POR_PAGINA = 15;
 // ── STATE ─────────────────────────────────────────────
 let viajes = [], vFiltrados = [], vPag = 1, vSortCol = 'fecha', vSortDir = -1;
 let cobranzas = [], cFiltrados = [], cPag = 1, cSortCol = 'fechaEmision', cSortDir = -1;
+let mesCargado = new Date().toISOString().substring(0,7); // YYYY-MM
+let cargandoTodo = false;
 let graficaV = null;
 let archivoPdf = null, archivoEvi = null, archivoEir = null;
 let urlPdfSubido = '', urlEviSubido = '', urlEirSubido = '';
@@ -1721,7 +1747,8 @@ async function cargar() {
   }
 
   try {
-    const res = await fetch(SCRIPT_URL);
+    const mesParam = (cargandoTodo || !mesCargado) ? '' : ('&mes=' + mesCargado);
+    const res = await fetch(SCRIPT_URL + '?v=1' + mesParam);
     const data = await res.json();
 
     viajes = (data.registros || []).map((r, i) => ({
@@ -2537,8 +2564,7 @@ async function guardarEditViaje() {
       estadoFlete: esFlete ? document.getElementById('ev-estado-flete').value : '',
       urlEir:     evEirUrlNuevo || evEirActual
     };
-    await sendPost({action:'delete', fecha:fmtFecha(r.fecha), tipo:r.tipo, costo:r.costo});
-    await sendPost({action:'append', registro:updated});
+    await sendPost({action:'update_viaje', referencia:r.referencia, registro:updated});
     const idx = viajes.findIndex(v => v.id === id);
     if (idx !== -1) viajes[idx] = updated;
     filtrarViajes(); actualizarGraficaV(); filtrarPagos();
@@ -2662,8 +2688,7 @@ async function guardarEditCobranza() {
       urlEvidencia: ecUrlEviNuevo || ecUrlEviActual,
       notas: document.getElementById('ec-notas').value.trim()
     };
-    await sendPost({action:'cobranza_delete', folio:r.folio});
-    await sendPost({action:'cobranza_append', cobranza:updated});
+    await sendPost({action:'cobranza_update', folio:r.folio, cobranza:updated});
     const idx = cobranzas.findIndex(c => c.id === id);
     if (idx !== -1) cobranzas[idx] = updated;
     filtrarCobranza();
@@ -3964,6 +3989,30 @@ function calcDesglose(montoConIva) {
   };
 }
 
+
+// ── NAVEGACIÓN DE MES ────────────────────────────────
+function actualizarLabelMes() {
+  const el = document.getElementById('mes-cargado-label');
+  if (!el) return;
+  if (cargandoTodo || !mesCargado) { el.textContent = 'Todos'; return; }
+  const [y, m] = mesCargado.split('-');
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  el.textContent = meses[parseInt(m)-1] + ' ' + y;
+}
+
+function navMes(delta) {
+  const d = new Date(mesCargado + '-01');
+  d.setMonth(d.getMonth() + delta);
+  mesCargado = d.toISOString().substring(0,7);
+  cargandoTodo = false;
+  cargar();
+}
+
+function cargarTodo() {
+  cargandoTodo = true;
+  mesCargado = null;
+  cargar();
+}
 
 // ── ARRANQUE ──────────────────────────────────────────
 // Listen for online/offline events
