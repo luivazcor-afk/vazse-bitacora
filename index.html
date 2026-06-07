@@ -454,6 +454,15 @@ tbody td{padding:9px 12px;vertical-align:middle}
 .mail-btn-enviado  {background:#FAEEDA!important;color:#633806!important;border-color:#FAC775!important}
 .mail-btn-recibido {background:#E6F1FB!important;color:#0C447C!important;border-color:#B5D4F4!important}
 
+
+/* ── CAMPOS DINÁMICOS PROVEEDOR ─────────────────── */
+.dynamic-group { background:#f7f6f3; border:0.5px solid rgba(0,0,0,.1); border-radius:10px; padding:10px 12px; margin-bottom:8px; position:relative; }
+.dynamic-group-title { font-size:10px; font-weight:500; color:#888780; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+.dynamic-group .btn-remove-dynamic { position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; color:#888780; font-size:14px; padding:0 4px; border-radius:4px; }
+.dynamic-group .btn-remove-dynamic:hover { color:#993C1D; background:#FAECE7; }
+.btn-add-dynamic { font-size:12px; color:#185FA5; background:#E6F1FB; border:0.5px solid #B5D4F4; border-radius:8px; padding:5px 12px; cursor:pointer; margin-top:4px; }
+.btn-add-dynamic:hover { background:#B5D4F4; }
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 </head>
@@ -1194,22 +1203,44 @@ tbody td{padding:9px 12px;vertical-align:middle}
             <input type="text" id="cat-cli-nombre" placeholder="COMERCIALIZADORA YAALI"></div>
           <div class="fg"><label>RFC</label>
             <input type="text" id="cat-cli-rfc" placeholder="CYA123456ABC"></div>
-          <div class="fg"><label>Contacto</label>
+          <div class="fg"><label>Contacto principal</label>
             <input type="text" id="cat-cli-contacto" placeholder="Nombre del contacto"></div>
           <div class="fg"><label>Teléfono</label>
             <input type="text" id="cat-cli-tel" placeholder="314 000 0000"></div>
           <div class="fg"><label>Correo</label>
             <input type="email" id="cat-cli-email" placeholder="correo@empresa.com"></div>
           <div class="fg full"><label>Notas</label>
-            <input type="text" id="cat-cli-notas" placeholder="Observaciones, dirección, etc."></div>
+            <input type="text" id="cat-cli-notas" placeholder="Observaciones generales..."></div>
         </div>
-        <button class="btn-add" onclick="agregarCatalogo('cliente')">+ Agregar cliente</button>
+
+        <!-- DOMICILIOS DE ENTREGA -->
+        <div style="margin-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="section-label" style="margin-bottom:0">Domicilios de entrega</div>
+            <button class="btn-add-dynamic" onclick="agregarDomicilio()">+ Agregar domicilio</button>
+          </div>
+          <div id="cat-cli-domicilios-wrap">
+            <div class="dynamic-group" id="domicilio-0">
+              <div class="dynamic-group-title">Domicilio 1</div>
+              <div class="form-grid">
+                <div class="fg"><label>Nombre / Alias</label><input type="text" class="cli-dom-nombre" placeholder="Almacén Central, Planta Norte..."></div>
+                <div class="fg"><label>Contacto en almacén</label><input type="text" class="cli-dom-contacto" placeholder="Nombre del responsable"></div>
+                <div class="fg"><label>Teléfono almacén</label><input type="text" class="cli-dom-tel" placeholder="314 000 0000"></div>
+                <div class="fg full"><label>Dirección</label><input type="text" class="cli-dom-dir" placeholder="Calle, colonia, ciudad, CP"></div>
+                <div class="fg"><label>Horario de recepción</label><input type="text" class="cli-dom-horario" placeholder="Lun-Vie 8:00-17:00"></div>
+                <div class="fg"><label>Notas</label><input type="text" class="cli-dom-notas" placeholder="Instrucciones especiales..."></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-add" onclick="agregarCatalogo('cliente')" style="margin-top:14px">+ Agregar cliente</button>
       </div>
       <div class="table-outer">
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Nombre</th><th>RFC</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Notas</th>
+              <th>Nombre / RFC</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Domicilios</th><th>Notas</th>
               <th class="no-sort"></th>
             </tr></thead>
             <tbody id="cat-cli-tbody">
@@ -1229,12 +1260,6 @@ tbody td{padding:9px 12px;vertical-align:middle}
             <input type="text" id="cat-prov-nombre" placeholder="TRANSPORTES GALLETA"></div>
           <div class="fg"><label>RFC</label>
             <input type="text" id="cat-prov-rfc" placeholder="TGA123456ABC"></div>
-          <div class="fg"><label>Contacto</label>
-            <input type="text" id="cat-prov-contacto" placeholder="Nombre del operador/contacto"></div>
-          <div class="fg"><label>Teléfono</label>
-            <input type="text" id="cat-prov-tel" placeholder="314 000 0000"></div>
-          <div class="fg"><label>Correo</label>
-            <input type="email" id="cat-prov-email" placeholder="correo@proveedor.com"></div>
           <div class="fg"><label>Tipo</label>
             <select id="cat-prov-tipo">
               <option value="transportista">Transportista</option>
@@ -1243,16 +1268,56 @@ tbody td{padding:9px 12px;vertical-align:middle}
               <option value="otro">Otro</option>
             </select>
           </div>
-          <div class="fg"><label>Notas</label>
-            <input type="text" id="cat-prov-notas" placeholder="Placas, banco, cuenta..."></div>
+          <div class="fg"><label>Contacto</label>
+            <input type="text" id="cat-prov-contacto" placeholder="Nombre del operador/contacto"></div>
+          <div class="fg full"><label>Notas</label>
+            <input type="text" id="cat-prov-notas" placeholder="Placas, observaciones..."></div>
         </div>
-        <button class="btn-add" onclick="agregarCatalogo('proveedor')">+ Agregar proveedor</button>
+
+        <!-- TELÉFONOS -->
+        <div style="margin-top:12px">
+          <div class="section-label" style="margin-bottom:6px">Teléfonos <span style="font-size:10px;color:#888780">(máx. 2)</span></div>
+          <div class="form-grid" style="margin-bottom:6px">
+            <div class="fg"><input type="text" id="cat-prov-tel1" placeholder="314 000 0000"></div>
+            <div class="fg"><input type="text" id="cat-prov-tel2" placeholder="314 000 0001 (opcional)"></div>
+          </div>
+        </div>
+
+        <!-- CORREOS -->
+        <div style="margin-top:10px">
+          <div class="section-label" style="margin-bottom:6px">Correos <span style="font-size:10px;color:#888780">(máx. 2)</span></div>
+          <div class="form-grid" style="margin-bottom:6px">
+            <div class="fg"><input type="email" id="cat-prov-email1" placeholder="correo1@proveedor.com"></div>
+            <div class="fg"><input type="email" id="cat-prov-email2" placeholder="correo2@proveedor.com (opcional)"></div>
+          </div>
+        </div>
+
+        <!-- CUENTAS BANCARIAS -->
+        <div style="margin-top:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="section-label" style="margin-bottom:0">Cuentas bancarias</div>
+            <button class="btn-add-dynamic" onclick="agregarCuentaBancaria()">+ Agregar banco</button>
+          </div>
+          <div id="cat-prov-cuentas-wrap">
+            <div class="dynamic-group" id="cuenta-banco-0">
+              <div class="dynamic-group-title">Cuenta 1</div>
+              <div class="form-grid">
+                <div class="fg"><label>Banco</label><input type="text" class="prov-banco" placeholder="BBVA, Santander..."></div>
+                <div class="fg"><label>N° Cuenta</label><input type="text" class="prov-cuenta" placeholder="1234567890"></div>
+                <div class="fg"><label>CLABE</label><input type="text" class="prov-clabe" placeholder="18 dígitos" maxlength="18"></div>
+                <div class="fg"><label>Titular</label><input type="text" class="prov-titular" placeholder="Nombre del titular"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-add" onclick="agregarCatalogo('proveedor')" style="margin-top:14px">+ Agregar proveedor</button>
       </div>
       <div class="table-outer">
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Nombre</th><th>RFC</th><th>Tipo</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Notas</th>
+              <th>Nombre / RFC</th><th>Tipo</th><th>Contacto</th><th>Teléfonos</th><th>Correos</th><th>Cuentas bancarias</th><th>Notas</th>
               <th class="no-sort"></th>
             </tr></thead>
             <tbody id="cat-prov-tbody">
@@ -3893,17 +3958,17 @@ async function agregarCatalogo(tipo) {
     const entry = {
       id: Date.now(),
       nombre,
-      rfc:      document.getElementById('cat-cli-rfc').value.trim(),
-      contacto: document.getElementById('cat-cli-contacto').value.trim(),
-      tel:      document.getElementById('cat-cli-tel').value.trim(),
-      email:    document.getElementById('cat-cli-email') ? document.getElementById('cat-cli-email').value.trim() : '',
-      notas:    document.getElementById('cat-cli-notas').value.trim()
+      rfc:       document.getElementById('cat-cli-rfc').value.trim(),
+      contacto:  document.getElementById('cat-cli-contacto').value.trim(),
+      tel:       document.getElementById('cat-cli-tel').value.trim(),
+      email:     document.getElementById('cat-cli-email') ? document.getElementById('cat-cli-email').value.trim() : '',
+      notas:     document.getElementById('cat-cli-notas').value.trim(),
+      domicilios: leerDomicilios()
     };
     catClientes.push(entry);
     saveCatClientes();
     await sendPost({action:'catalogo_append', catalogo:'clientes', entry});
-    ['cat-cli-nombre','cat-cli-rfc','cat-cli-contacto','cat-cli-tel','cat-cli-email','cat-cli-notas']
-      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    limpiarFormCliente();
     renderCatClientes();
     toast('Cliente agregado','ok');
   } else {
@@ -3915,15 +3980,17 @@ async function agregarCatalogo(tipo) {
       rfc:      document.getElementById('cat-prov-rfc').value.trim(),
       tipo:     document.getElementById('cat-prov-tipo').value,
       contacto: document.getElementById('cat-prov-contacto').value.trim(),
-      tel:      document.getElementById('cat-prov-tel').value.trim(),
-      email:    document.getElementById('cat-prov-email') ? document.getElementById('cat-prov-email').value.trim() : '',
+      tel1:     document.getElementById('cat-prov-tel1') ? document.getElementById('cat-prov-tel1').value.trim() : '',
+      tel2:     document.getElementById('cat-prov-tel2') ? document.getElementById('cat-prov-tel2').value.trim() : '',
+      email1:   document.getElementById('cat-prov-email1') ? document.getElementById('cat-prov-email1').value.trim() : '',
+      email2:   document.getElementById('cat-prov-email2') ? document.getElementById('cat-prov-email2').value.trim() : '',
+      cuentas:  leerCuentasBancarias(),
       notas:    document.getElementById('cat-prov-notas').value.trim()
     };
     catProveedores.push(entry);
     saveCatProveedores();
     await sendPost({action:'catalogo_append', catalogo:'proveedores', entry});
-    ['cat-prov-nombre','cat-prov-rfc','cat-prov-contacto','cat-prov-tel','cat-prov-email','cat-prov-notas']
-      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    limpiarFormProveedor();
     renderCatProveedores();
     toast('Proveedor agregado','ok');
   }
@@ -3953,15 +4020,21 @@ function renderCatClientes() {
     tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Sin clientes registrados</p></div></td></tr>';
     return;
   }
-  tbody.innerHTML = catClientes.map(e => `<tr>
-    <td style="font-weight:500">${e.nombre}</td>
-    <td style="font-size:12px;color:#888780">${e.rfc||'—'}</td>
-    <td style="font-size:12px">${e.contacto||'—'}</td>
-    <td style="font-size:12px">${e.tel||'—'}</td>
-    <td style="font-size:12px;color:#185FA5">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
-    <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
-    <td><button class="btn-sm del" onclick="eliminarCatalogo('cliente',${e.id})">✕</button></td>
-  </tr>`).join('');
+  tbody.innerHTML = catClientes.map(e => {
+    const doms = (e.domicilios||[]);
+    const domsBadge = doms.length > 0
+      ? '<span class="seg-badge" title="'+doms.map(d=>d.nombre||d.dir).join(', ')+'">📍 '+doms.length+'</span>'
+      : '—';
+    return `<tr>
+      <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:#888780">${e.rfc||''}</span></td>
+      <td style="font-size:12px">${e.contacto||'—'}</td>
+      <td style="font-size:12px">${e.tel||'—'}</td>
+      <td style="font-size:12px;color:#185FA5">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
+      <td>${domsBadge}</td>
+      <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
+      <td><button class="btn-sm del" onclick="eliminarCatalogo('cliente',${e.id})">✕</button></td>
+    </tr>`;
+  }).join('');
 }
 
 function renderCatProveedores() {
@@ -3970,16 +4043,21 @@ function renderCatProveedores() {
     tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><p>Sin proveedores registrados</p></div></td></tr>';
     return;
   }
-  tbody.innerHTML = catProveedores.map(e => `<tr>
-    <td style="font-weight:500">${e.nombre}</td>
-    <td style="font-size:12px;color:#888780">${e.rfc||'—'}</td>
-    <td><span class="badge b-otro" style="font-size:10px">${e.tipo||'otro'}</span></td>
-    <td style="font-size:12px">${e.contacto||'—'}</td>
-    <td style="font-size:12px">${e.tel||'—'}</td>
-    <td style="font-size:12px;color:#185FA5">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
-    <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
-    <td><button class="btn-sm del" onclick="eliminarCatalogo('proveedor',${e.id})">✕</button></td>
-  </tr>`).join('');
+  tbody.innerHTML = catProveedores.map(e => {
+    const tels = [e.tel1,e.tel2].filter(Boolean).join(', ') || e.tel || '—';
+    const emails = [e.email1,e.email2].filter(Boolean).map(em=>'<a href="mailto:'+em+'">'+em+'</a>').join('<br>') || (e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—');
+    const cuentas = (e.cuentas||[]).map(cu=>'<div style="font-size:11px"><strong>'+cu.banco+'</strong> '+cu.cuenta+(cu.clabe?' · CLABE: '+cu.clabe:'')+'</div>').join('') || '—';
+    return `<tr>
+      <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:#888780">${e.rfc||''}</span></td>
+      <td><span class="badge b-otro" style="font-size:10px">${e.tipo||'otro'}</span></td>
+      <td style="font-size:12px">${e.contacto||'—'}</td>
+      <td style="font-size:12px">${tels}</td>
+      <td style="font-size:12px">${emails}</td>
+      <td style="font-size:12px">${cuentas}</td>
+      <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
+      <td><button class="btn-sm del" onclick="eliminarCatalogo('proveedor',${e.id})">✕</button></td>
+    </tr>`;
+  }).join('');
 }
 
 // ── AUTOCOMPLETE ──────────────────────────────────────
@@ -4526,6 +4604,132 @@ function actualizarBtnMail(cobId) {
   btn.setAttribute('style', getMailBtnStyle(cobId));
   btn.title = getMailBtnTitle(cobId);
   btn.innerHTML = '📧' + getMailBtnLabel(cobId);
+}
+
+
+// ── CUENTAS BANCARIAS DINÁMICAS ──────────────────────
+let _numCuentas = 1;
+
+function agregarCuentaBancaria() {
+  const wrap = document.getElementById('cat-prov-cuentas-wrap');
+  if (!wrap) return;
+  const num = ++_numCuentas;
+  const div = document.createElement('div');
+  div.className = 'dynamic-group';
+  div.id = 'cuenta-banco-' + num;
+  div.innerHTML = `
+    <div class="dynamic-group-title">Cuenta ${num}</div>
+    <button class="btn-remove-dynamic" onclick="eliminarCuentaBancaria('cuenta-banco-${num}')" title="Eliminar">✕</button>
+    <div class="form-grid">
+      <div class="fg"><label>Banco</label><input type="text" class="prov-banco" placeholder="BBVA, Santander..."></div>
+      <div class="fg"><label>N° Cuenta</label><input type="text" class="prov-cuenta" placeholder="1234567890"></div>
+      <div class="fg"><label>CLABE</label><input type="text" class="prov-clabe" placeholder="18 dígitos" maxlength="18"></div>
+      <div class="fg"><label>Titular</label><input type="text" class="prov-titular" placeholder="Nombre del titular"></div>
+    </div>`;
+  wrap.appendChild(div);
+}
+
+function eliminarCuentaBancaria(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function leerCuentasBancarias() {
+  const grupos = document.querySelectorAll('#cat-prov-cuentas-wrap .dynamic-group');
+  const cuentas = [];
+  grupos.forEach(g => {
+    const banco   = (g.querySelector('.prov-banco')?.value || '').trim();
+    const cuenta  = (g.querySelector('.prov-cuenta')?.value || '').trim();
+    const clabe   = (g.querySelector('.prov-clabe')?.value || '').trim();
+    const titular = (g.querySelector('.prov-titular')?.value || '').trim();
+    if (banco || cuenta || clabe) cuentas.push({banco, cuenta, clabe, titular});
+  });
+  return cuentas;
+}
+
+function limpiarFormProveedor() {
+  ['cat-prov-nombre','cat-prov-rfc','cat-prov-contacto',
+   'cat-prov-tel1','cat-prov-tel2','cat-prov-email1','cat-prov-email2','cat-prov-notas']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const el = document.getElementById('cat-prov-tipo');
+  if (el) el.value = 'transportista';
+  // Reset cuentas
+  const wrap = document.getElementById('cat-prov-cuentas-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<div class="dynamic-group" id="cuenta-banco-0">
+      <div class="dynamic-group-title">Cuenta 1</div>
+      <div class="form-grid">
+        <div class="fg"><label>Banco</label><input type="text" class="prov-banco" placeholder="BBVA, Santander..."></div>
+        <div class="fg"><label>N° Cuenta</label><input type="text" class="prov-cuenta" placeholder="1234567890"></div>
+        <div class="fg"><label>CLABE</label><input type="text" class="prov-clabe" placeholder="18 dígitos" maxlength="18"></div>
+        <div class="fg"><label>Titular</label><input type="text" class="prov-titular" placeholder="Nombre del titular"></div>
+      </div></div>`;
+  }
+  _numCuentas = 1;
+}
+
+
+// ── DOMICILIOS DE ENTREGA (clientes) ─────────────────
+let _numDomicilios = 1;
+
+function agregarDomicilio() {
+  const wrap = document.getElementById('cat-cli-domicilios-wrap');
+  if (!wrap) return;
+  const num = ++_numDomicilios;
+  const div = document.createElement('div');
+  div.className = 'dynamic-group';
+  div.id = 'domicilio-' + num;
+  div.innerHTML = `
+    <div class="dynamic-group-title">Domicilio ${num}</div>
+    <button class="btn-remove-dynamic" onclick="eliminarDomicilio('domicilio-${num}')" title="Eliminar">✕</button>
+    <div class="form-grid">
+      <div class="fg"><label>Nombre / Alias</label><input type="text" class="cli-dom-nombre" placeholder="Almacén Central, Planta Norte..."></div>
+      <div class="fg"><label>Contacto en almacén</label><input type="text" class="cli-dom-contacto" placeholder="Nombre del responsable"></div>
+      <div class="fg"><label>Teléfono almacén</label><input type="text" class="cli-dom-tel" placeholder="314 000 0000"></div>
+      <div class="fg full"><label>Dirección</label><input type="text" class="cli-dom-dir" placeholder="Calle, colonia, ciudad, CP"></div>
+      <div class="fg"><label>Horario de recepción</label><input type="text" class="cli-dom-horario" placeholder="Lun-Vie 8:00-17:00"></div>
+      <div class="fg"><label>Notas</label><input type="text" class="cli-dom-notas" placeholder="Instrucciones especiales..."></div>
+    </div>`;
+  wrap.appendChild(div);
+}
+
+function eliminarDomicilio(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function leerDomicilios() {
+  const grupos = document.querySelectorAll('#cat-cli-domicilios-wrap .dynamic-group');
+  const doms = [];
+  grupos.forEach(g => {
+    const nombre   = (g.querySelector('.cli-dom-nombre')?.value || '').trim();
+    const contacto = (g.querySelector('.cli-dom-contacto')?.value || '').trim();
+    const tel      = (g.querySelector('.cli-dom-tel')?.value || '').trim();
+    const dir      = (g.querySelector('.cli-dom-dir')?.value || '').trim();
+    const horario  = (g.querySelector('.cli-dom-horario')?.value || '').trim();
+    const notas    = (g.querySelector('.cli-dom-notas')?.value || '').trim();
+    if (nombre || dir || contacto) doms.push({nombre, contacto, tel, dir, horario, notas});
+  });
+  return doms;
+}
+
+function limpiarFormCliente() {
+  ['cat-cli-nombre','cat-cli-rfc','cat-cli-contacto','cat-cli-tel','cat-cli-email','cat-cli-notas']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const wrap = document.getElementById('cat-cli-domicilios-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<div class="dynamic-group" id="domicilio-0">
+      <div class="dynamic-group-title">Domicilio 1</div>
+      <div class="form-grid">
+        <div class="fg"><label>Nombre / Alias</label><input type="text" class="cli-dom-nombre" placeholder="Almacén Central, Planta Norte..."></div>
+        <div class="fg"><label>Contacto en almacén</label><input type="text" class="cli-dom-contacto" placeholder="Nombre del responsable"></div>
+        <div class="fg"><label>Teléfono almacén</label><input type="text" class="cli-dom-tel" placeholder="314 000 0000"></div>
+        <div class="fg full"><label>Dirección</label><input type="text" class="cli-dom-dir" placeholder="Calle, colonia, ciudad, CP"></div>
+        <div class="fg"><label>Horario de recepción</label><input type="text" class="cli-dom-horario" placeholder="Lun-Vie 8:00-17:00"></div>
+        <div class="fg"><label>Notas</label><input type="text" class="cli-dom-notas" placeholder="Instrucciones especiales..."></div>
+      </div></div>`;
+  }
+  _numDomicilios = 1;
 }
 
 
