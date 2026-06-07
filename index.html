@@ -4945,9 +4945,7 @@ async function guardarEditCli() {
   };
   catClientes[idx] = updated;
   saveCatClientes();
-  // Delete old + append new in Sheets
-  await sendPost({action:'catalogo_delete', catalogo:'clientes', nombre:nombreViejo});
-  await sendPost({action:'catalogo_append', catalogo:'clientes', entry:updated});
+  await sendPost({action:'catalogo_update', catalogo:'clientes', nombreViejo:nombreViejo, entry:updated});
   cerrarEditCli();
   toast('Guardando...','inf');
   setTimeout(function() {
@@ -5043,8 +5041,7 @@ async function guardarEditProv() {
   };
   catProveedores[idx] = updated;
   saveCatProveedores();
-  await sendPost({action:'catalogo_delete', catalogo:'proveedores', nombre:nombreViejo});
-  await sendPost({action:'catalogo_append', catalogo:'proveedores', entry:updated});
+  await sendPost({action:'catalogo_update', catalogo:'proveedores', nombreViejo:nombreViejo, entry:updated});
   cerrarEditProv();
   toast('Guardando...','inf');
   setTimeout(function() {
@@ -5086,8 +5083,7 @@ async function guardarEditSvc() {
   };
   catServicios[idx] = updated;
   saveCatServicios();
-  await sendPost({action:'catalogo_delete', catalogo:'servicios', nombre:nombreViejo});
-  await sendPost({action:'catalogo_append', catalogo:'servicios', entry:updated});
+  await sendPost({action:'catalogo_update', catalogo:'servicios', nombreViejo:nombreViejo, entry:updated});
   cerrarEditSvc();
   toast('Guardando...','inf');
   setTimeout(function() {
