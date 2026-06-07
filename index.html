@@ -1106,6 +1106,12 @@ tbody td{padding:9px 12px;vertical-align:middle}
             <input type="text" id="cat-svc-unidad" placeholder="E48 - Servicio"></div>
           <div class="fg full"><label>Descripción larga (para factura)</label>
             <input type="text" id="cat-svc-desc" placeholder="SERVICIO DE FLETE TERRESTRE DE CONTENEDOR"></div>
+          <div class="fg"><label>¿Aplica retención?</label>
+            <select id="cat-svc-retencion">
+              <option value="si">Sí — IVA + RET ISR + RET IVA</option>
+              <option value="no">No — Solo IVA 16%</option>
+            </select>
+          </div>
         </div>
         <button class="btn-add" onclick="agregarServicio()">+ Agregar servicio</button>
       </div>
@@ -1113,7 +1119,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>Nombre</th><th>Clave SAT</th><th>Unidad SAT</th><th>Descripción</th>
+              <th>Nombre</th><th>Clave SAT</th><th>Unidad SAT</th><th>Descripción</th><th>Retención</th>
               <th class="no-sort"></th>
             </tr></thead>
             <tbody id="cat-svc-tbody">
@@ -3601,18 +3607,23 @@ function solicitarFactura(cobId) {
   const concepto = esManiobras ? 'MANIOBRAS DE CONTENEDOR' : 'FLETE TERRESTRE';
 
   const nl = '%0A';
-  const sp = '          ';
-  const d  = calcDesglose(cob.monto || 0);
+  const sp = '     ';
+
+  // Find service in catalog to check if retencion applies
+  const svcNombre = concepto;
+  const svcEntry = catServicios.find(function(s) {
+    return s.nombre === svcNombre || concepto.includes(s.nombre);
+  });
+  const tieneRet = !svcEntry || svcEntry.retencion !== 'no';
+
+  const impuestos = tieneRet ? ' + IVA - RET' : ' + IVA';
+
+  const montoStr = cob.monto ? Number(cob.monto).toFixed(2) : '0.00';
 
   const cuerpo = 'Buen dia' + nl + nl +
     'De su apoyo con esta' + (esManiobras ? 's maniobras' : ' factura') + nl + nl +
     'RESOLUCION ESTRATEGICA VAZSE' + sp + cliente + nl + nl +
-    concepto + nl +
-    'Subtotal:' + sp + '$' + d.base + nl +
-    'IVA 16%:' + sp + sp + '$' + d.iva + nl +
-    'RET ISR 4%:' + sp + '-$' + d.retIsr + nl +
-    'RET IVA 10.67%:' + sp + '-$' + d.retIva + nl +
-    'TOTAL COBRADO:' + sp + '$' + d.total + nl + nl +
+    concepto + sp + '$' + montoStr + impuestos + nl +
     linea3 + nl + nl +
     'SALUDOS';
 
@@ -3860,7 +3871,7 @@ function cargarCatalogos(data) {
   if (data.serviciosCat && data.serviciosCat.length) {
     catServicios = data.serviciosCat.map((r, i) => ({
       id: i + 1, nombre: r.nombre||'', clave: r.clave||'',
-      unidad: r.unidad||'', desc: r.desc||''
+      unidad: r.unidad||'', desc: r.desc||'', retencion: r.retencion||'si'
     }));
     saveCatServicios();
   }
@@ -3881,15 +3892,17 @@ async function agregarServicio() {
   const entry = {
     id: Date.now(),
     nombre,
-    clave:  document.getElementById('cat-svc-clave').value.trim(),
-    unidad: document.getElementById('cat-svc-unidad').value.trim(),
-    desc:   document.getElementById('cat-svc-desc').value.trim()
+    clave:     document.getElementById('cat-svc-clave').value.trim(),
+    unidad:    document.getElementById('cat-svc-unidad').value.trim(),
+    desc:      document.getElementById('cat-svc-desc').value.trim(),
+    retencion: document.getElementById('cat-svc-retencion').value
   };
   catServicios.push(entry);
   saveCatServicios();
   await sendPost({action:'catalogo_append', catalogo:'servicios', entry});
   ['cat-svc-nombre','cat-svc-clave','cat-svc-unidad','cat-svc-desc']
     .forEach(id => document.getElementById(id).value = '');
+  const retEl = document.getElementById('cat-svc-retencion'); if(retEl) retEl.value='si';
   renderCatServicios();
   toast('Servicio agregado','ok');
 }
@@ -3916,6 +3929,9 @@ function renderCatServicios() {
     <td style="font-size:12px;color:#888780">${e.clave||'—'}</td>
     <td style="font-size:12px">${e.unidad||'—'}</td>
     <td class="trunc muted" style="font-size:12px">${e.desc||'—'}</td>
+    <td>${e.retencion==='no'
+      ? '<span class="badge b-otro" style="font-size:10px">Solo IVA</span>'
+      : '<span class="badge b-pagado" style="font-size:10px">IVA + RET</span>'}</td>
     <td><button class="btn-sm del" onclick="eliminarServicio(${e.id})">✕</button></td>
   </tr>`).join('');
 }
