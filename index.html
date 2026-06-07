@@ -1128,6 +1128,27 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </div>
 
     <!-- FORMULARIO -->
+    <!-- BALANCE POR PROVEEDOR -->
+    <div class="balance-wrap" id="prov-balance-wrap" style="margin-bottom:1.25rem">
+      <div class="balance-title">Balance por proveedor</div>
+      <div class="table-outer" style="margin-bottom:0">
+        <div class="table-wrap">
+          <table class="balance-table">
+            <thead><tr>
+              <th>Proveedor</th>
+              <th style="text-align:right">Total comprometido</th>
+              <th style="text-align:right">Pagado</th>
+              <th style="text-align:right">Pendiente</th>
+            </tr></thead>
+            <tbody id="prov-balance-tbody">
+              <tr><td colspan="4"><div class="empty-state"><p>Sin registros</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
     <div class="form-card">
       <div class="section-label">Nuevo pago a proveedor</div>
       <div class="form-grid">
