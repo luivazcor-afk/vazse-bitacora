@@ -463,6 +463,15 @@ tbody td{padding:9px 12px;vertical-align:middle}
 .btn-add-dynamic { font-size:12px; color:#185FA5; background:#E6F1FB; border:0.5px solid #B5D4F4; border-radius:8px; padding:5px 12px; cursor:pointer; margin-top:4px; }
 .btn-add-dynamic:hover { background:#B5D4F4; }
 
+
+/* ── MODALES DE EDICIÓN CATÁLOGOS ───────────────── */
+.cat-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:none;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.cat-overlay.show{display:flex}
+.cat-modal{background:#fff;border-radius:16px;padding:1.5rem;width:100%;max-width:720px;box-shadow:0 8px 32px rgba(0,0,0,.18);position:relative}
+.cat-modal-title{font-size:15px;font-weight:500;margin-bottom:1rem;color:#1a1a18}
+.cat-modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:18px;cursor:pointer;color:#888780;padding:2px 6px;border-radius:6px}
+.cat-modal-close:hover{background:#f1efeb;color:#1a1a18}
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 </head>
@@ -1366,6 +1375,99 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </div>
   </div>
 
+
+  <!-- MODAL EDITAR CLIENTE -->
+  <div id="edit-cli-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarEditCli()">
+    <div class="cat-modal">
+      <button class="cat-modal-close" onclick="cerrarEditCli()">✕</button>
+      <div class="cat-modal-title">✏️ Editar cliente</div>
+      <input type="hidden" id="edit-cli-id">
+      <div class="form-grid">
+        <div class="fg"><label>Nombre / Razón social</label><input type="text" id="edit-cli-nombre"></div>
+        <div class="fg"><label>RFC</label><input type="text" id="edit-cli-rfc"></div>
+        <div class="fg"><label>Contacto principal</label><input type="text" id="edit-cli-contacto"></div>
+        <div class="fg"><label>Teléfono</label><input type="text" id="edit-cli-tel"></div>
+        <div class="fg"><label>Correo</label><input type="email" id="edit-cli-email"></div>
+        <div class="fg full"><label>Notas</label><input type="text" id="edit-cli-notas"></div>
+      </div>
+      <!-- Domicilios -->
+      <div style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="section-label" style="margin-bottom:0">Domicilios de entrega</div>
+          <button class="btn-add-dynamic" onclick="agregarDomicilioEdit()">+ Agregar domicilio</button>
+        </div>
+        <div id="edit-cli-domicilios-wrap"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end">
+        <button class="btn" onclick="cerrarEditCli()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarEditCli()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR PROVEEDOR -->
+  <div id="edit-prov-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarEditProv()">
+    <div class="cat-modal">
+      <button class="cat-modal-close" onclick="cerrarEditProv()">✕</button>
+      <div class="cat-modal-title">✏️ Editar proveedor</div>
+      <input type="hidden" id="edit-prov-id">
+      <div class="form-grid">
+        <div class="fg"><label>Nombre / Razón social</label><input type="text" id="edit-prov-nombre"></div>
+        <div class="fg"><label>RFC</label><input type="text" id="edit-prov-rfc"></div>
+        <div class="fg"><label>Tipo</label>
+          <select id="edit-prov-tipo">
+            <option value="transportista">Transportista</option>
+            <option value="maniobras">Maniobras</option>
+            <option value="lavado">Lavado</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="fg"><label>Contacto</label><input type="text" id="edit-prov-contacto"></div>
+        <div class="fg"><label>Teléfono 1</label><input type="text" id="edit-prov-tel1"></div>
+        <div class="fg"><label>Teléfono 2</label><input type="text" id="edit-prov-tel2"></div>
+        <div class="fg"><label>Correo 1</label><input type="email" id="edit-prov-email1"></div>
+        <div class="fg"><label>Correo 2</label><input type="email" id="edit-prov-email2"></div>
+        <div class="fg full"><label>Notas</label><input type="text" id="edit-prov-notas"></div>
+      </div>
+      <!-- Cuentas bancarias -->
+      <div style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="section-label" style="margin-bottom:0">Cuentas bancarias</div>
+          <button class="btn-add-dynamic" onclick="agregarCuentaEdit()">+ Agregar banco</button>
+        </div>
+        <div id="edit-prov-cuentas-wrap"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end">
+        <button class="btn" onclick="cerrarEditProv()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarEditProv()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR SERVICIO -->
+  <div id="edit-svc-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarEditSvc()">
+    <div class="cat-modal" style="max-width:560px">
+      <button class="cat-modal-close" onclick="cerrarEditSvc()">✕</button>
+      <div class="cat-modal-title">✏️ Editar servicio</div>
+      <input type="hidden" id="edit-svc-id">
+      <div class="form-grid">
+        <div class="fg"><label>Nombre del servicio</label><input type="text" id="edit-svc-nombre"></div>
+        <div class="fg"><label>Clave SAT</label><input type="text" id="edit-svc-clave"></div>
+        <div class="fg"><label>Unidad SAT</label><input type="text" id="edit-svc-unidad"></div>
+        <div class="fg full"><label>Descripción larga</label><input type="text" id="edit-svc-desc"></div>
+        <div class="fg"><label>¿Aplica retención?</label>
+          <select id="edit-svc-retencion">
+            <option value="si">Sí — IVA + RET ISR + RET IVA</option>
+            <option value="no">No — Solo IVA 16%</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end">
+        <button class="btn" onclick="cerrarEditSvc()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarEditSvc()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
 
 </div><!-- end .app -->
 
@@ -4032,7 +4134,10 @@ function renderCatClientes() {
       <td style="font-size:12px;color:#185FA5">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
       <td>${domsBadge}</td>
       <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
-      <td><button class="btn-sm del" onclick="eliminarCatalogo('cliente',${e.id})">✕</button></td>
+      <td style="white-space:nowrap;display:flex;gap:4px">
+        <button class="btn-sm view" onclick="abrirEditCli(${e.id})" title="Editar">✏️</button>
+        <button class="btn-sm del" onclick="eliminarCatalogo('cliente',${e.id})" title="Eliminar">✕</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -4055,7 +4160,10 @@ function renderCatProveedores() {
       <td style="font-size:12px">${emails}</td>
       <td style="font-size:12px">${cuentas}</td>
       <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
-      <td><button class="btn-sm del" onclick="eliminarCatalogo('proveedor',${e.id})">✕</button></td>
+      <td style="white-space:nowrap;display:flex;gap:4px">
+        <button class="btn-sm view" onclick="abrirEditProv(${e.id})" title="Editar">✏️</button>
+        <button class="btn-sm del" onclick="eliminarCatalogo('proveedor',${e.id})" title="Eliminar">✕</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -4206,7 +4314,10 @@ function renderCatServicios() {
     <td>${(e.retencion && e.retencion==='si')
       ? '<span class="badge b-pagado" style="font-size:10px">IVA + RET</span>'
       : '<span class="badge b-otro" style="font-size:10px">Solo IVA</span>'}</td>
-    <td><button class="btn-sm del" onclick="eliminarServicio(${e.id})">✕</button></td>
+    <td style="white-space:nowrap;display:flex;gap:4px">
+      <button class="btn-sm view" onclick="abrirEditSvc(${e.id})" title="Editar">✏️</button>
+      <button class="btn-sm del" onclick="eliminarServicio(${e.id})" title="Eliminar">✕</button>
+    </td>
   </tr>`).join('');
 }
 
@@ -4730,6 +4841,231 @@ function limpiarFormCliente() {
       </div></div>`;
   }
   _numDomicilios = 1;
+}
+
+
+// ── EDITAR CLIENTE ───────────────────────────────────
+let _editDomNum = 0;
+
+function abrirEditCli(id) {
+  const e = catClientes.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('edit-cli-id').value = id;
+  document.getElementById('edit-cli-nombre').value   = e.nombre||'';
+  document.getElementById('edit-cli-rfc').value      = e.rfc||'';
+  document.getElementById('edit-cli-contacto').value = e.contacto||'';
+  document.getElementById('edit-cli-tel').value      = e.tel||'';
+  document.getElementById('edit-cli-email').value    = e.email||'';
+  document.getElementById('edit-cli-notas').value    = e.notas||'';
+  // Load domicilios
+  const wrap = document.getElementById('edit-cli-domicilios-wrap');
+  _editDomNum = 0;
+  wrap.innerHTML = '';
+  const doms = e.domicilios && e.domicilios.length ? e.domicilios : [{}];
+  doms.forEach(function(d, i) {
+    _editDomNum = i;
+    wrap.appendChild(crearDomicilioDiv('edit-dom-' + i, i+1, d));
+  });
+  document.getElementById('edit-cli-overlay').classList.add('show');
+}
+
+function crearDomicilioDiv(divId, num, d) {
+  const div = document.createElement('div');
+  div.className = 'dynamic-group'; div.id = divId;
+  div.innerHTML = `
+    <div class="dynamic-group-title">Domicilio ${num}</div>
+    ${num > 1 ? `<button class="btn-remove-dynamic" onclick="this.closest('.dynamic-group').remove()" title="Eliminar">✕</button>` : ''}
+    <div class="form-grid">
+      <div class="fg"><label>Nombre / Alias</label><input type="text" class="cli-dom-nombre" value="${d.nombre||''}"></div>
+      <div class="fg"><label>Contacto almacén</label><input type="text" class="cli-dom-contacto" value="${d.contacto||''}"></div>
+      <div class="fg"><label>Teléfono</label><input type="text" class="cli-dom-tel" value="${d.tel||''}"></div>
+      <div class="fg full"><label>Dirección</label><input type="text" class="cli-dom-dir" value="${d.dir||''}"></div>
+      <div class="fg"><label>Horario</label><input type="text" class="cli-dom-horario" value="${d.horario||''}"></div>
+      <div class="fg"><label>Notas</label><input type="text" class="cli-dom-notas" value="${d.notas||''}"></div>
+    </div>`;
+  return div;
+}
+
+function agregarDomicilioEdit() {
+  const wrap = document.getElementById('edit-cli-domicilios-wrap');
+  _editDomNum++;
+  wrap.appendChild(crearDomicilioDiv('edit-dom-' + _editDomNum, _editDomNum+1, {}));
+}
+
+function leerDomiciliosEdit() {
+  const grupos = document.querySelectorAll('#edit-cli-domicilios-wrap .dynamic-group');
+  const doms = [];
+  grupos.forEach(function(g) {
+    const nombre   = (g.querySelector('.cli-dom-nombre')?.value||'').trim();
+    const contacto = (g.querySelector('.cli-dom-contacto')?.value||'').trim();
+    const tel      = (g.querySelector('.cli-dom-tel')?.value||'').trim();
+    const dir      = (g.querySelector('.cli-dom-dir')?.value||'').trim();
+    const horario  = (g.querySelector('.cli-dom-horario')?.value||'').trim();
+    const notas    = (g.querySelector('.cli-dom-notas')?.value||'').trim();
+    if (nombre||dir||contacto) doms.push({nombre,contacto,tel,dir,horario,notas});
+  });
+  return doms;
+}
+
+function cerrarEditCli() {
+  document.getElementById('edit-cli-overlay').classList.remove('show');
+}
+
+async function guardarEditCli() {
+  const id = parseInt(document.getElementById('edit-cli-id').value);
+  const idx = catClientes.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const nombreViejo = catClientes[idx].nombre;
+  const updated = {
+    id,
+    nombre:    document.getElementById('edit-cli-nombre').value.trim(),
+    rfc:       document.getElementById('edit-cli-rfc').value.trim(),
+    contacto:  document.getElementById('edit-cli-contacto').value.trim(),
+    tel:       document.getElementById('edit-cli-tel').value.trim(),
+    email:     document.getElementById('edit-cli-email').value.trim(),
+    notas:     document.getElementById('edit-cli-notas').value.trim(),
+    domicilios: leerDomiciliosEdit()
+  };
+  catClientes[idx] = updated;
+  saveCatClientes();
+  // Delete old + append new in Sheets
+  await sendPost({action:'catalogo_delete', catalogo:'clientes', nombre:nombreViejo});
+  await sendPost({action:'catalogo_append', catalogo:'clientes', entry:updated});
+  renderCatClientes();
+  cerrarEditCli();
+  toast('Cliente actualizado','ok');
+}
+
+// ── EDITAR PROVEEDOR ──────────────────────────────────
+let _editCuentaNum = 0;
+
+function abrirEditProv(id) {
+  const e = catProveedores.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('edit-prov-id').value       = id;
+  document.getElementById('edit-prov-nombre').value   = e.nombre||'';
+  document.getElementById('edit-prov-rfc').value      = e.rfc||'';
+  document.getElementById('edit-prov-tipo').value     = e.tipo||'transportista';
+  document.getElementById('edit-prov-contacto').value = e.contacto||'';
+  document.getElementById('edit-prov-tel1').value     = e.tel1||e.tel||'';
+  document.getElementById('edit-prov-tel2').value     = e.tel2||'';
+  document.getElementById('edit-prov-email1').value   = e.email1||e.email||'';
+  document.getElementById('edit-prov-email2').value   = e.email2||'';
+  document.getElementById('edit-prov-notas').value    = e.notas||'';
+  // Load cuentas
+  const wrap = document.getElementById('edit-prov-cuentas-wrap');
+  _editCuentaNum = 0;
+  wrap.innerHTML = '';
+  const cuentas = e.cuentas && e.cuentas.length ? e.cuentas : [{}];
+  cuentas.forEach(function(cu, i) {
+    _editCuentaNum = i;
+    wrap.appendChild(crearCuentaDiv('edit-cuenta-' + i, i+1, cu));
+  });
+  document.getElementById('edit-prov-overlay').classList.add('show');
+}
+
+function crearCuentaDiv(divId, num, cu) {
+  const div = document.createElement('div');
+  div.className = 'dynamic-group'; div.id = divId;
+  div.innerHTML = `
+    <div class="dynamic-group-title">Cuenta ${num}</div>
+    ${num > 1 ? `<button class="btn-remove-dynamic" onclick="this.closest('.dynamic-group').remove()" title="Eliminar">✕</button>` : ''}
+    <div class="form-grid">
+      <div class="fg"><label>Banco</label><input type="text" class="prov-banco" value="${cu.banco||''}"></div>
+      <div class="fg"><label>N° Cuenta</label><input type="text" class="prov-cuenta" value="${cu.cuenta||''}"></div>
+      <div class="fg"><label>CLABE</label><input type="text" class="prov-clabe" value="${cu.clabe||''}" maxlength="18"></div>
+      <div class="fg"><label>Titular</label><input type="text" class="prov-titular" value="${cu.titular||''}"></div>
+    </div>`;
+  return div;
+}
+
+function agregarCuentaEdit() {
+  const wrap = document.getElementById('edit-prov-cuentas-wrap');
+  _editCuentaNum++;
+  wrap.appendChild(crearCuentaDiv('edit-cuenta-' + _editCuentaNum, _editCuentaNum+1, {}));
+}
+
+function leerCuentasEdit() {
+  const grupos = document.querySelectorAll('#edit-prov-cuentas-wrap .dynamic-group');
+  const cuentas = [];
+  grupos.forEach(function(g) {
+    const banco   = (g.querySelector('.prov-banco')?.value||'').trim();
+    const cuenta  = (g.querySelector('.prov-cuenta')?.value||'').trim();
+    const clabe   = (g.querySelector('.prov-clabe')?.value||'').trim();
+    const titular = (g.querySelector('.prov-titular')?.value||'').trim();
+    if (banco||cuenta||clabe) cuentas.push({banco,cuenta,clabe,titular});
+  });
+  return cuentas;
+}
+
+function cerrarEditProv() {
+  document.getElementById('edit-prov-overlay').classList.remove('show');
+}
+
+async function guardarEditProv() {
+  const id = parseInt(document.getElementById('edit-prov-id').value);
+  const idx = catProveedores.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const nombreViejo = catProveedores[idx].nombre;
+  const updated = {
+    id,
+    nombre:   document.getElementById('edit-prov-nombre').value.trim(),
+    rfc:      document.getElementById('edit-prov-rfc').value.trim(),
+    tipo:     document.getElementById('edit-prov-tipo').value,
+    contacto: document.getElementById('edit-prov-contacto').value.trim(),
+    tel1:     document.getElementById('edit-prov-tel1').value.trim(),
+    tel2:     document.getElementById('edit-prov-tel2').value.trim(),
+    email1:   document.getElementById('edit-prov-email1').value.trim(),
+    email2:   document.getElementById('edit-prov-email2').value.trim(),
+    notas:    document.getElementById('edit-prov-notas').value.trim(),
+    cuentas:  leerCuentasEdit()
+  };
+  catProveedores[idx] = updated;
+  saveCatProveedores();
+  await sendPost({action:'catalogo_delete', catalogo:'proveedores', nombre:nombreViejo});
+  await sendPost({action:'catalogo_append', catalogo:'proveedores', entry:updated});
+  renderCatProveedores();
+  cerrarEditProv();
+  toast('Proveedor actualizado','ok');
+}
+
+// ── EDITAR SERVICIO ───────────────────────────────────
+function abrirEditSvc(id) {
+  const e = catServicios.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('edit-svc-id').value        = id;
+  document.getElementById('edit-svc-nombre').value    = e.nombre||'';
+  document.getElementById('edit-svc-clave').value     = e.clave||'';
+  document.getElementById('edit-svc-unidad').value    = e.unidad||'';
+  document.getElementById('edit-svc-desc').value      = e.desc||'';
+  document.getElementById('edit-svc-retencion').value = e.retencion||'no';
+  document.getElementById('edit-svc-overlay').classList.add('show');
+}
+
+function cerrarEditSvc() {
+  document.getElementById('edit-svc-overlay').classList.remove('show');
+}
+
+async function guardarEditSvc() {
+  const id = parseInt(document.getElementById('edit-svc-id').value);
+  const idx = catServicios.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const nombreViejo = catServicios[idx].nombre;
+  const updated = {
+    id,
+    nombre:    document.getElementById('edit-svc-nombre').value.trim().toUpperCase(),
+    clave:     document.getElementById('edit-svc-clave').value.trim(),
+    unidad:    document.getElementById('edit-svc-unidad').value.trim(),
+    desc:      document.getElementById('edit-svc-desc').value.trim(),
+    retencion: document.getElementById('edit-svc-retencion').value
+  };
+  catServicios[idx] = updated;
+  saveCatServicios();
+  await sendPost({action:'catalogo_delete', catalogo:'servicios', nombre:nombreViejo});
+  await sendPost({action:'catalogo_append', catalogo:'servicios', entry:updated});
+  renderCatServicios();
+  cerrarEditSvc();
+  toast('Servicio actualizado','ok');
 }
 
 
