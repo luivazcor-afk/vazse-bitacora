@@ -4073,6 +4073,7 @@ async function agregarCatalogo(tipo) {
     limpiarFormCliente();
     renderCatClientes();
     toast('Cliente agregado','ok');
+    setTimeout(cargar, 1500);
   } else {
     const nombre = document.getElementById('cat-prov-nombre').value.trim();
     if (!nombre) { toast('Ingresa el nombre del proveedor','err'); return; }
@@ -4095,6 +4096,7 @@ async function agregarCatalogo(tipo) {
     limpiarFormProveedor();
     renderCatProveedores();
     toast('Proveedor agregado','ok');
+    setTimeout(cargar, 1500);
   }
 }
 
@@ -4287,6 +4289,7 @@ async function agregarServicio() {
   const retEl = document.getElementById('cat-svc-retencion'); if(retEl) retEl.value='si';
   renderCatServicios();
   toast('Servicio agregado','ok');
+  setTimeout(cargar, 1500);
 }
 
 async function eliminarServicio(id) {
@@ -4934,6 +4937,7 @@ async function guardarEditCli() {
   renderCatClientes();
   cerrarEditCli();
   toast('Cliente actualizado','ok');
+  setTimeout(cargar, 1500); // Reload from Sheets
 }
 
 // ── EDITAR PROVEEDOR ──────────────────────────────────
@@ -5027,6 +5031,7 @@ async function guardarEditProv() {
   renderCatProveedores();
   cerrarEditProv();
   toast('Proveedor actualizado','ok');
+  setTimeout(cargar, 1500);
 }
 
 // ── EDITAR SERVICIO ───────────────────────────────────
@@ -5066,6 +5071,7 @@ async function guardarEditSvc() {
   renderCatServicios();
   cerrarEditSvc();
   toast('Servicio actualizado','ok');
+  setTimeout(cargar, 1500);
 }
 
 
