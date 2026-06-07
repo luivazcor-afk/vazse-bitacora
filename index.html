@@ -1092,6 +1092,37 @@ tbody td{padding:9px 12px;vertical-align:middle}
         </div>
       </div>
     </div>
+
+    <!-- SERVICIOS -->
+    <div id="cat-servicios" class="cat-panel">
+      <div class="form-card" style="margin-bottom:1rem">
+        <div class="section-label">Nuevo servicio</div>
+        <div class="form-grid">
+          <div class="fg"><label>Nombre del servicio</label>
+            <input type="text" id="cat-svc-nombre" placeholder="FLETE TERRESTRE"></div>
+          <div class="fg"><label>Clave SAT</label>
+            <input type="text" id="cat-svc-clave" placeholder="78101800"></div>
+          <div class="fg"><label>Unidad SAT</label>
+            <input type="text" id="cat-svc-unidad" placeholder="E48 - Servicio"></div>
+          <div class="fg full"><label>Descripción larga (para factura)</label>
+            <input type="text" id="cat-svc-desc" placeholder="SERVICIO DE FLETE TERRESTRE DE CONTENEDOR"></div>
+        </div>
+        <button class="btn-add" onclick="agregarServicio()">+ Agregar servicio</button>
+      </div>
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nombre</th><th>Clave SAT</th><th>Unidad SAT</th><th>Descripción</th>
+              <th class="no-sort"></th>
+            </tr></thead>
+            <tbody id="cat-svc-tbody">
+              <tr><td colspan="5"><div class="empty-state"><p>Sin servicios registrados</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
 
@@ -1552,7 +1583,22 @@ function cambiarTab(id, btn) {
   if (id === 'contenedores') setTimeout(buscarContenedor, 80);
   if (id === 'historial') setTimeout(renderHistorial, 80);
   if (id === 'proveedores') setTimeout(filtrarPagos, 80);
-  if (id === 'catalogos') { setTimeout(renderCatClientes, 80); setTimeout(renderCatProveedores, 80); setTimeout(renderCatServicios, 80); }
+  if (id === 'catalogos') {
+    setTimeout(function() {
+      renderCatClientes(); renderCatProveedores(); renderCatServicios();
+      // Show the active cat-panel
+      var activeCat = document.querySelector('.cat-panel.active');
+      if (!activeCat) {
+        // Default to first panel
+        var first = document.getElementById('cat-clientes');
+        if (first) { first.classList.add('active'); first.style.display = 'block'; }
+        var firstBtn = document.querySelector('.cat-tab');
+        if (firstBtn) firstBtn.classList.add('active');
+      } else {
+        activeCat.style.display = 'block';
+      }
+    }, 80);
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────
@@ -3623,9 +3669,13 @@ function saveCatClientes()    { localStorage.setItem('vazse_cat_clientes', JSON.
 function saveCatProveedores() { localStorage.setItem('vazse_cat_proveedores', JSON.stringify(catProveedores)); }
 
 function cambiarCatTab(id, btn) {
-  document.querySelectorAll('.cat-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.cat-panel').forEach(function(p) {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
   document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('cat-' + id).classList.add('active');
+  var panel = document.getElementById('cat-' + id);
+  if (panel) { panel.classList.add('active'); panel.style.display = 'block'; }
   btn.classList.add('active');
 }
 
