@@ -3882,7 +3882,7 @@ function solicitarFactura(cobId) {
   const svcEntry = catServicios.find(function(s) {
     return s.nombre === svcNombre || concepto.includes(s.nombre);
   });
-  const tieneRet = !svcEntry || svcEntry.retencion !== 'no';
+  const tieneRet = svcEntry && svcEntry.retencion === 'si';
 
   const impuestos = tieneRet ? ' + IVA - RET' : ' + IVA';
 
@@ -4145,7 +4145,7 @@ function cargarCatalogos(data) {
   if (data.serviciosCat && data.serviciosCat.length) {
     catServicios = data.serviciosCat.map((r, i) => ({
       id: i + 1, nombre: r.nombre||'', clave: r.clave||'',
-      unidad: r.unidad||'', desc: r.desc||'', retencion: r.retencion||'si'
+      unidad: r.unidad||'', desc: r.desc||'', retencion: (r.retencion === 'si' ? 'si' : 'no')
     }));
     saveCatServicios();
   }
@@ -4203,9 +4203,9 @@ function renderCatServicios() {
     <td style="font-size:12px;color:#888780">${e.clave||'—'}</td>
     <td style="font-size:12px">${e.unidad||'—'}</td>
     <td class="trunc muted" style="font-size:12px">${e.desc||'—'}</td>
-    <td>${e.retencion==='no'
-      ? '<span class="badge b-otro" style="font-size:10px">Solo IVA</span>'
-      : '<span class="badge b-pagado" style="font-size:10px">IVA + RET</span>'}</td>
+    <td>${(e.retencion && e.retencion==='si')
+      ? '<span class="badge b-pagado" style="font-size:10px">IVA + RET</span>'
+      : '<span class="badge b-otro" style="font-size:10px">Solo IVA</span>'}</td>
     <td><button class="btn-sm del" onclick="eliminarServicio(${e.id})">✕</button></td>
   </tr>`).join('');
 }
