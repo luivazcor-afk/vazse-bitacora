@@ -487,10 +487,55 @@ tbody td{padding:9px 12px;vertical-align:middle}
 .bal-total{color:#1a1a18;font-weight:500;text-align:right}
 .bal-zero{color:#888780;text-align:right}
 
+
+/* ── PANTALLA CONFIGURACIÓN ─────────────────────── */
+#config-screen{position:fixed;inset:0;background:#f7f6f3;z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
+.config-box{background:#fff;border-radius:16px;padding:2rem;width:100%;max-width:520px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.config-logo{text-align:center;margin-bottom:1.5rem}
+.config-logo img{height:60px}
+.config-title{font-size:18px;font-weight:500;color:#1a1a18;margin-bottom:4px;text-align:center}
+.config-sub{font-size:13px;color:#888780;text-align:center;margin-bottom:1.5rem}
+.config-field{margin-bottom:1rem}
+.config-field label{display:block;font-size:12px;font-weight:500;color:#444340;margin-bottom:4px}
+.config-field input{width:100%;padding:10px 12px;border:0.5px solid rgba(0,0,0,.2);border-radius:10px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.config-field input:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.config-help{font-size:11px;color:#888780;margin-top:4px}
+.config-help a{color:#185FA5}
+.config-btn{width:100%;padding:12px;background:#185FA5;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;margin-top:8px}
+.config-btn:hover{background:#0C447C}
+.config-edit-btn{font-size:11px;color:#888780;background:none;border:none;cursor:pointer;text-decoration:underline;margin-left:8px}
+.config-edit-btn:hover{color:#185FA5}
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 </head>
 <body>
+<!-- PANTALLA DE CONFIGURACIÓN -->
+<div id="config-screen" style="display:none">
+  <div class="config-box">
+    <div class="config-logo">
+      <img src="https://luivazcor-afk.github.io/vazse-bitacora/logo_R_resolucion.png" onerror="this.style.display='none'">
+    </div>
+    <div class="config-title">Bitácora de Viajes</div>
+    <div class="config-sub">Configura tu empresa para comenzar</div>
+
+    <div class="config-field">
+      <label>Nombre de la empresa</label>
+      <input type="text" id="cfg-empresa" placeholder="RESOLUCIÓN ESTRATÉGICA VAZSE">
+    </div>
+    <div class="config-field">
+      <label>ID de Google Sheet</label>
+      <input type="text" id="cfg-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+      <div class="config-help">
+        Abre tu Google Sheet → copia el ID de la URL:<br>
+        docs.google.com/spreadsheets/d/<strong>[ESTE ES EL ID]</strong>/edit
+      </div>
+    </div>
+
+    <button class="config-btn" onclick="guardarConfig()">Comenzar →</button>
+  </div>
+</div>
+
 <div class="app">
 
   <!-- MEMBRETE -->
@@ -1702,7 +1747,33 @@ tbody td{padding:9px 12px;vertical-align:middle}
  * 13. ARRANQUE              — init
  * ══════════════════════════════════════════════════════
  */
-const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwMOjlD7L9dFQ2XZX-9Kc1tf8_kd9FD_SoKy_RCGrahXd9-A9s9nmR7Qse7MED1xs_m/exec';
+const SCRIPT_URL_BASE = 'https://script.google.com/macros/s/AKfycbwMOjlD7L9dFQ2XZX-9Kc1tf8_kd9FD_SoKy_RCGrahXd9-A9s9nmR7Qse7MED1xs_m/exec';
+
+// ── CONFIGURACIÓN MULTI-EMPRESA ───────────────────────
+// Cada empresa tiene su propio SHEET_ID en localStorage
+// El SCRIPT_URL incluye el sheetId como parámetro
+function getConfig() {
+  try {
+    return JSON.parse(localStorage.getItem('vazse_config') || 'null');
+  } catch(e) { return null; }
+}
+function saveConfig(cfg) {
+  localStorage.setItem('vazse_config', JSON.stringify(cfg));
+}
+function getSheetId() {
+  const cfg = getConfig();
+  return cfg ? cfg.sheetId : '';
+}
+function getEmpresaNombre() {
+  const cfg = getConfig();
+  return cfg ? (cfg.empresa || 'RESOLUCIÓN ESTRATÉGICA VAZSE') : 'RESOLUCIÓN ESTRATÉGICA VAZSE';
+}
+function getScriptUrl() {
+  const sid = getSheetId();
+  return sid ? SCRIPT_URL_BASE + '?sheetId=' + sid : SCRIPT_URL_BASE;
+}
+// Legacy compatibility
+const SCRIPT_URL = SCRIPT_URL_BASE;
 
 // ── POST helper — usa form oculto para evitar CORS/redirect issues ─
 function postToScript(payload) {
@@ -1785,7 +1856,7 @@ async function sincronizarCola() {
   for (const item of cola) {
     try {
       const encoded = encodeURIComponent(JSON.stringify(item));
-      const url = SCRIPT_URL + '?action=write&data=' + encoded;
+      const url = SCRIPT_URL_BASE + '?action=write&data=' + encoded + (getSheetId() ? '&sheetId='+getSheetId() : '');
       await fetch(url, { method: 'GET', mode: 'no-cors' });
       await new Promise(r => setTimeout(r, 400));
       exito++;
@@ -2115,7 +2186,8 @@ async function cargar() {
 
   try {
     const mesParam = (cargandoTodo || !mesCargado) ? '' : ('&mes=' + mesCargado);
-    const res = await fetch(SCRIPT_URL + '?v=1' + mesParam);
+    const sid = getSheetId(); const sidParam = sid ? '&sheetId='+sid : '';
+    const res = await fetch(SCRIPT_URL_BASE + '?v=1' + mesParam + sidParam);
     const data = await res.json();
 
     viajes = (data.registros || []).map((r, i) => ({
@@ -5167,6 +5239,46 @@ function renderBalanceProveedores() {
 }
 
 
+// ── CONFIGURACIÓN MULTI-EMPRESA ──────────────────────
+function mostrarConfigScreen() {
+  const cfg = getConfig();
+  if (cfg && cfg.sheetId) {
+    document.getElementById('config-screen').style.display = 'none';
+    aplicarConfig(cfg);
+  } else {
+    document.getElementById('config-screen').style.display = 'flex';
+    document.querySelectorAll('.app')[0].style.display = 'none';
+  }
+}
+
+function guardarConfig() {
+  const empresa  = document.getElementById('cfg-empresa').value.trim() || 'Mi Empresa';
+  const sheetId  = document.getElementById('cfg-sheet-id').value.trim();
+  if (!sheetId) {
+    document.getElementById('cfg-sheet-id').style.borderColor = '#D85A30';
+    return;
+  }
+  const cfg = {empresa, sheetId};
+  saveConfig(cfg);
+  document.getElementById('config-screen').style.display = 'none';
+  document.querySelectorAll('.app')[0].style.display = '';
+  aplicarConfig(cfg);
+  cargar();
+}
+
+function aplicarConfig(cfg) {
+  const el = document.getElementById('brand-empresa');
+  if (el) el.textContent = cfg.empresa || 'Mi Empresa';
+}
+
+function abrirConfig() {
+  const cfg = getConfig() || {};
+  document.getElementById('cfg-empresa').value  = cfg.empresa || '';
+  document.getElementById('cfg-sheet-id').value = cfg.sheetId || '';
+  document.getElementById('config-screen').style.display = 'flex';
+}
+
+
 // ── ARRANQUE ──────────────────────────────────────────
 // Listen for online/offline events
 window.addEventListener('online', () => {
@@ -5181,6 +5293,9 @@ window.addEventListener('offline', () => {
   mostrarEstadoConexion();
   toast('Sin conexión — modo offline activado', 'inf');
 });
+
+// Mostrar config si no hay sheetId configurado
+mostrarConfigScreen();
 
 // Asegurar que solo viajes sea visible al inicio
 _TODOS_PANELES.forEach(function(pid) {
