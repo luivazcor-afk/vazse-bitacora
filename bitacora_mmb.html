@@ -1806,6 +1806,7 @@ function getScriptUrl() {
   const sid = getSheetId();
   return sid ? SCRIPT_URL_BASE + '?sheetId=' + sid : SCRIPT_URL_BASE;
 }
+// MMB override applied after DOM ready - see bottom of script
 // Legacy compatibility
 const SCRIPT_URL = SCRIPT_URL_BASE;
 
@@ -5329,13 +5330,18 @@ window.addEventListener('offline', () => {
   toast('Sin conexión — modo offline activado', 'inf');
 });
 
-// MMB Logistics — configuración preestablecida
+// MMB Logistics — configuración FORZADA (no usar localStorage de VAZSE)
 (function() {
-  var cfg = {
+  var MMB_CFG = {
     empresa: 'MMB LOGISTICS',
     sheetId: '1pzNFkbAFDQ0MifP8uYGfif8eDNkBYT0ZxGJMQZXrWtQ'
   };
-  localStorage.setItem('vazse_config', JSON.stringify(cfg));
+  // Override config functions for MMB
+  window._MMB_CONFIG = MMB_CFG;
+  window.getConfig    = function() { return MMB_CFG; };
+  window.saveConfig   = function(cfg) { window._MMB_CONFIG = cfg; };
+  window.getSheetId   = function() { return MMB_CFG.sheetId; };
+  window.getEmpresaNombre = function() { return MMB_CFG.empresa; };
   var el = document.getElementById('config-screen');
   if (el) el.style.display = 'none';
   var brandEl = document.getElementById('brand-empresa');
