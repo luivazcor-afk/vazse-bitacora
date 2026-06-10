@@ -5336,6 +5336,10 @@ window.addEventListener('offline', () => {
     empresa: 'MMB LOGISTICS',
     sheetId: '1pzNFkbAFDQ0MifP8uYGfif8eDNkBYT0ZxGJMQZXrWtQ'
   };
+  // Clear VAZSE cache to prevent data bleed
+  localStorage.removeItem('vazse_cache_datos');
+  // Force config to MMB always
+  localStorage.setItem('vazse_config', JSON.stringify(MMB_CFG));
   // Override config functions for MMB
   window._MMB_CONFIG = MMB_CFG;
   window.getConfig    = function() { return MMB_CFG; };
@@ -5346,6 +5350,28 @@ window.addEventListener('offline', () => {
   if (el) el.style.display = 'none';
   var brandEl = document.getElementById('brand-empresa');
   if (brandEl) brandEl.textContent = 'MMB LOGISTICS';
+
+  // Override sendPostJsonp to always inject MMB sheetId
+  document.addEventListener('DOMContentLoaded', function() {
+    var _origJsonp = window.sendPostJsonp;
+    window.sendPostJsonp = function(payload) {
+      payload.sheetId = MMB_CFG.sheetId;
+      var cbName = '_vazse_cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+      var encoded = encodeURIComponent(JSON.stringify(payload));
+      var url = window.SCRIPT_URL_BASE + '?action=write&data=' + encoded + '&sheetId=' + MMB_CFG.sheetId + '&cb=' + cbName;
+      return new Promise(function(resolve) {
+        var script = document.createElement('script');
+        window[cbName] = function(resp) {
+          delete window[cbName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          resolve(resp);
+        };
+        script.src = url;
+        document.head.appendChild(script);
+        setTimeout(function() { resolve({ok:false,timeout:true}); }, 12000);
+      });
+    };
+  });
 })();
 
 // Asegurar que solo viajes sea visible al inicio
