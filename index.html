@@ -14,7 +14,7 @@
 /* ══ BASE ════════════════════════════════════════════ */
 body{
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-  background:#F0EDE8;color:#1C1C1A;min-height:100vh;
+  background:#F2F5F9;color:#1C1C1A;min-height:100vh;
   -webkit-font-smoothing:antialiased
 }
 .app{max-width:1160px;margin:0 auto;padding:1.25rem 1rem}
@@ -23,13 +23,14 @@ body{
 .membrete{
   display:flex;align-items:center;justify-content:space-between;
   padding:.875rem 1.25rem;background:#fff;
-  border:0.5px solid rgba(0,0,0,.09);border-radius:14px;
+  border:0.5px solid rgba(0,0,0,.08);border-radius:14px;
+  border-left:4px solid #185FA5;
   margin-bottom:1rem;flex-wrap:wrap;gap:10px;
-  box-shadow:0 1px 3px rgba(0,0,0,.04)
+  box-shadow:0 2px 8px rgba(0,0,0,.06)
 }
 .membrete img{height:48px;width:auto;object-fit:contain}
 .membrete-right{text-align:right}
-.membrete-title{font-size:13px;font-weight:600;color:#185FA5;letter-spacing:.01em}
+.membrete-title{font-size:16px;font-weight:700;color:#185FA5;letter-spacing:-.01em}
 .membrete-sub{font-size:11px;color:#999895;margin-top:2px}
 
 /* ══ TABS ════════════════════════════════════════════ */
@@ -47,8 +48,8 @@ body{
   -webkit-tap-highlight-color:transparent
 }
 .tab:hover{color:#1C1C1A;background:rgba(255,255,255,.5)}
-.tab.active{background:#fff;color:#1C1C1A;
-  box-shadow:0 1px 4px rgba(0,0,0,.1),0 0 0 0.5px rgba(0,0,0,.06)}
+.tab.active{background:#fff;color:#185FA5;font-weight:600;
+  box-shadow:0 2px 8px rgba(24,95,165,.15),0 0 0 0.5px rgba(24,95,165,.18)}
 .tab-icon{font-size:14px}
 
 /* ══ TOPBAR ══════════════════════════════════════════ */
@@ -74,17 +75,17 @@ body{
 }
 .btn:hover{background:#F5F3EF;border-color:rgba(0,0,0,.25)}
 .btn:active{transform:scale(.98)}
-.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
-.btn-primary:hover{background:#0F4A87;border-color:#0F4A87}
+.btn-primary{background:linear-gradient(135deg,#1E72C2,#185FA5);color:#fff;border-color:#185FA5;box-shadow:0 4px 12px rgba(24,95,165,.28)}
+.btn-primary:hover{background:linear-gradient(135deg,#1668AF,#0F4A87);border-color:#0F4A87;box-shadow:0 6px 16px rgba(24,95,165,.36)}
 .btn-danger{background:#fff;color:#C0392B;border-color:rgba(192,57,43,.3)}
 .btn-danger:hover{background:#FDF1F0;border-color:#C0392B}
 .btn-add{
-  background:#185FA5;color:#fff;border:none;border-radius:9px;
+  background:linear-gradient(135deg,#1E72C2,#185FA5);color:#fff;border:none;border-radius:9px;box-shadow:0 4px 12px rgba(24,95,165,.25);
   padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;
   width:100%;display:flex;align-items:center;justify-content:center;
   gap:6px;transition:all .13s;margin-top:4px
 }
-.btn-add:hover{background:#0F4A87}
+.btn-add:hover{background:linear-gradient(135deg,#1668AF,#0F4A87);box-shadow:0 6px 16px rgba(24,95,165,.35)}
 .btn-add:active{transform:scale(.99)}
 
 /* ══ METRICS ══════════════════════════════════════════ */
@@ -92,23 +93,23 @@ body{
   display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
   gap:8px;margin-bottom:1.25rem
 }
-.metric{
+  .metric_PLACEHOLDER{
   background:#fff;border-radius:12px;padding:.9rem 1rem;
   border:0.5px solid rgba(0,0,0,.08);
   box-shadow:0 1px 3px rgba(0,0,0,.04)
 }
-.metric-label{font-size:10px;font-weight:500;color:#999895;
-  text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.metric-val{font-size:20px;font-weight:600;color:#1C1C1A;letter-spacing:-.02em}
-.metric-val.pos{color:#0F6E56}
-.metric-val.neg{color:#C0392B}
-.metric-val.info{color:#185FA5}
+.metric-label{font-size:10.5px;font-weight:600;color:#7A7875;
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.metric-val{font-size:28px;font-weight:700;color:#1C1C1A;letter-spacing:-.03em}
+.metric-val.pos{color:#0A8A68}
+.metric-val.neg{color:#D93025}
+.metric-val.info{color:#1565C0}
 
 /* ══ FORM CARD ════════════════════════════════════════ */
 .form-card{
-  background:#fff;border:0.5px solid rgba(0,0,0,.08);
-  border-radius:13px;padding:1.25rem;margin-bottom:1.25rem;
-  box-shadow:0 1px 3px rgba(0,0,0,.04)
+  background:#fff;border:0.5px solid rgba(0,0,0,.07);
+  border-radius:14px;padding:1.35rem;margin-bottom:1.25rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.06)
 }
 .section-label{
   font-size:10px;font-weight:600;color:#999895;
@@ -152,9 +153,9 @@ body{
 
 /* ══ TABLE ════════════════════════════════════════════ */
 .table-outer{
-  border:0.5px solid rgba(0,0,0,.09);border-radius:13px;
+  border:0.5px solid rgba(0,0,0,.08);border-radius:14px;
   overflow:hidden;margin-bottom:10px;
-  box-shadow:0 1px 3px rgba(0,0,0,.04)
+  box-shadow:0 2px 8px rgba(0,0,0,.06)
 }
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:800px;background:#fff}
@@ -170,7 +171,7 @@ thead th button{
 }
 tbody tr{border-bottom:0.5px solid rgba(0,0,0,.055);transition:background .1s}
 tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#FAFAF8}
+tbody tr:hover{background:#EEF4FF}
 tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .td-ref a{
   color:#185FA5;font-weight:500;font-size:12px;text-decoration:none;
@@ -323,9 +324,9 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 
 /* ══ CHART ════════════════════════════════════════════ */
 .chart-wrap{
-  background:#fff;border:0.5px solid rgba(0,0,0,.08);
-  border-radius:13px;padding:1.25rem;margin-bottom:1.25rem;
-  box-shadow:0 1px 3px rgba(0,0,0,.04)
+  background:#fff;border:0.5px solid rgba(0,0,0,.07);
+  border-radius:14px;padding:1.25rem;margin-bottom:1.25rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.06)
 }
 .chart-title{
   font-size:11px;font-weight:600;color:#8A8880;
@@ -416,14 +417,14 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 
 /* ══ LOGIN ════════════════════════════════════════════ */
 #login-screen{
-  position:fixed;inset:0;background:#F0EDE8;
+  position:fixed;inset:0;background:#F2F5F9;
   z-index:9999;display:flex;align-items:center;
   justify-content:center;padding:1rem
 }
 .login-box{
   background:#fff;border-radius:18px;padding:2rem 2rem 1.75rem;
   width:100%;max-width:380px;
-  box-shadow:0 8px 40px rgba(0,0,0,.12),0 0 0 0.5px rgba(0,0,0,.06)
+  box-shadow:0 16px 48px rgba(0,0,0,.14),0 0 0 0.5px rgba(0,0,0,.06)
 }
 .login-logo{text-align:center;margin-bottom:1.25rem}
 .login-logo img{height:64px;object-fit:contain}
