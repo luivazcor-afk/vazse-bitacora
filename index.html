@@ -506,6 +506,30 @@ tbody td{padding:9px 12px;vertical-align:middle}
 .config-edit-btn{font-size:11px;color:#888780;background:none;border:none;cursor:pointer;text-decoration:underline;margin-left:8px}
 .config-edit-btn:hover{color:#185FA5}
 
+
+/* ── PANTALLA LOGIN ──────────────────────────────── */
+#login-screen{position:fixed;inset:0;background:#f7f6f3;z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-box{background:#fff;border-radius:16px;padding:2rem;width:100%;
+  max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.login-logo{text-align:center;margin-bottom:1.25rem}
+.login-logo img{height:64px;object-fit:contain}
+.login-title{font-size:17px;font-weight:500;color:#1a1a18;text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:#888780;text-align:center;margin-bottom:1.5rem}
+.login-field{margin-bottom:1rem}
+.login-field label{display:block;font-size:12px;font-weight:500;color:#444340;margin-bottom:4px}
+.login-field input{width:100%;padding:10px 12px;border:0.5px solid rgba(0,0,0,.2);
+  border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box}
+.login-field input:focus{outline:none;border-color:var(--login-color,#185FA5);
+  box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.login-btn{width:100%;padding:12px;background:var(--login-color,#185FA5);
+  color:#fff;border:none;border-radius:10px;font-size:14px;
+  font-weight:500;cursor:pointer;margin-top:4px}
+.login-btn:hover{opacity:.9}
+.login-error{font-size:12px;color:#CC0000;text-align:center;
+  margin-top:8px;display:none}
+.login-error.show{display:block}
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 </head>
@@ -533,6 +557,31 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </div>
 
     <button class="config-btn" onclick="guardarConfig()">Comenzar →</button>
+  </div>
+</div>
+
+
+<!-- PANTALLA LOGIN VAZSE -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="https://luivazcor-afk.github.io/vazse-bitacora/logo_R_resolucion.png"
+           onerror="this.style.display='none'">
+    </div>
+    <div class="login-title">Resolución Estratégica VAZSE</div>
+    <div class="login-sub">Sistema de control de viajes y cobranza</div>
+    <div class="login-field">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="usuario" autocomplete="username"
+             onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')hacerLogin()">
+    </div>
+    <button class="login-btn" onclick="hacerLogin()">Ingresar →</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
   </div>
 </div>
 
@@ -613,6 +662,7 @@ tbody td{padding:9px 12px;vertical-align:middle}
         </div>
       </div>
       <div class="btns" style="align-items:center">
+        <button class="btn" onclick="cerrarSesion()" title="Cerrar sesión" style="font-size:11px;padding:5px 10px">🔒 Salir</button>
         <div style="display:flex;align-items:center;gap:2px;background:#f1efeb;border-radius:8px;padding:3px 6px">
           <button onclick="navMes(-1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">‹</button>
           <span id="mes-cargado-label" style="font-size:12px;font-weight:500;min-width:84px;text-align:center">Este mes</span>
@@ -4450,7 +4500,8 @@ function renderCatServicios() {
 function toggleFleteSectionAC() {
   const tipo = (document.getElementById('v-tipo').value || '').toLowerCase();
   const sec  = document.getElementById('flete-section');
-  const FLETES = ['flete full','flete sencillo','traslado','flete_full','flete_sencillo'];
+  const FLETES = ['flete full','flete sencillo','flete terrestre','traslado',
+    'flete_full','flete_sencillo','flete_terrestre','flete full','full'];
   if (FLETES.some(f => tipo.includes(f))) sec.classList.add('show');
   else sec.classList.remove('show');
 }
@@ -5279,6 +5330,41 @@ function abrirConfig() {
 }
 
 
+
+// ── LOGIN VAZSE ───────────────────────────────────────
+const _CREDS = {user: 'vazse', pass: 'vazse2024'};
+
+function hacerLogin() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
+  if (user === _CREDS.user && pass === _CREDS.pass) {
+    localStorage.setItem('vazse_auth', btoa(user + ':' + Date.now()));
+    document.getElementById('login-screen').style.display = 'none';
+    err.classList.remove('show');
+    cargar();
+  } else {
+    err.classList.add('show');
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+  }
+}
+
+function cerrarSesion() {
+  localStorage.removeItem('vazse_auth');
+  location.reload();
+}
+
+function verificarAuth() {
+  const auth = localStorage.getItem('vazse_auth');
+  if (!auth) {
+    document.getElementById('login-screen').style.display = 'flex';
+    return false;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  return true;
+}
+
 // ── ARRANQUE ──────────────────────────────────────────
 // Listen for online/offline events
 window.addEventListener('online', () => {
@@ -5297,12 +5383,15 @@ window.addEventListener('offline', () => {
 // Mostrar config si no hay sheetId configurado
 mostrarConfigScreen();
 
-// Asegurar que solo viajes sea visible al inicio
-_TODOS_PANELES.forEach(function(pid) {
-  var p = document.getElementById('panel-' + pid);
-  if (p) p.style.cssText = (pid === 'viajes') ? 'display:block' : 'display:none';
-});
-cargar();
+// Verificar autenticación antes de mostrar app
+if (verificarAuth()) {
+  // Asegurar que solo viajes sea visible al inicio
+  _TODOS_PANELES.forEach(function(pid) {
+    var p = document.getElementById('panel-' + pid);
+    if (p) p.style.cssText = (pid === 'viajes') ? 'display:block' : 'display:none';
+  });
+  cargar();
+}
 renderHistorial();
 renderCatClientes();
 renderCatProveedores();
