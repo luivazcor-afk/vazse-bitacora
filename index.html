@@ -593,6 +593,30 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 <!-- OAuth2 implicit flow — no external library needed -->
 </head>
 <body>
+<!-- PANTALLA LOGIN VAZSE -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="https://luivazcor-afk.github.io/vazse-bitacora/logo_R_resolucion.png"
+           onerror="this.style.display='none'">
+    </div>
+    <div class="login-title">Resolución Estratégica VAZSE</div>
+    <div class="login-sub">Sistema de control de viajes y cobranza</div>
+    <div class="login-field">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="usuario" autocomplete="username"
+             onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')hacerLogin()">
+    </div>
+    <button class="login-btn" onclick="hacerLogin()">Ingresar →</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+  </div>
+</div>
+
 <div class="app">
 
   <!-- MEMBRETE -->
@@ -5448,11 +5472,12 @@ function cerrarSesion() {
 
 function verificarAuth() {
   const auth = localStorage.getItem('vazse_auth');
+  const el = document.getElementById('login-screen');
   if (!auth) {
-    document.getElementById('login-screen').style.display = 'flex';
+    if (el) el.style.display = 'flex';
     return false;
   }
-  document.getElementById('login-screen').style.display = 'none';
+  if (el) el.style.display = 'none';
   return true;
 }
 
