@@ -511,6 +511,10 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
   background:#F7F5F1;border-radius:0 0 16px 16px
 }
 
+/* ══ TAB PANELS ══════════════════════════════════════ */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
 /* ══ RESPONSIVE ═══════════════════════════════════════ */
 @media(max-width:600px){
   .app{padding:.875rem .75rem}
@@ -2149,10 +2153,7 @@ function cambiarTab(id, btn) {
   // Ocultar todos los paneles explícitamente por ID
   _TODOS_PANELES.forEach(function(pid) {
     var p = document.getElementById('panel-' + pid);
-    if (p) {
-      p.classList.remove('active');
-      p.style.cssText = 'display:none';
-    }
+    if (p) { p.classList.remove('active'); p.style.display = ''; }
   });
   // Desactivar todos los botones
   document.querySelectorAll('.tabs > .tab').forEach(t => t.classList.remove('active'));
@@ -5667,7 +5668,11 @@ window.addEventListener('offline', () => {
 if (verificarAuth()) {
   _TODOS_PANELES.forEach(function(pid) {
     var p = document.getElementById('panel-' + pid);
-    if (p) p.style.cssText = (pid === 'viajes') ? 'display:block' : 'display:none';
+    if (p) {
+      p.classList.remove('active');
+      p.style.display = '';
+      if (pid === 'viajes') p.classList.add('active');
+    }
   });
   cargar();
 }
