@@ -530,6 +530,36 @@ tbody td{padding:9px 12px;vertical-align:middle}
   margin-top:8px;display:none}
 .login-error.show{display:block}
 
+
+/* ── CARTA INSTRUCCIONES ─────────────────────────── */
+#carta-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;
+  display:none;align-items:flex-start;justify-content:center;
+  padding:1rem;overflow-y:auto}
+#carta-overlay.show{display:flex}
+.carta-modal{background:#fff;border-radius:14px;width:100%;max-width:780px;
+  box-shadow:0 8px 40px rgba(0,0,0,.2);margin:auto}
+.carta-header{background:#185FA5;color:#fff;padding:1rem 1.25rem;
+  border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center}
+.carta-header h2{font-size:14px;font-weight:500;margin:0}
+.carta-close{background:none;border:none;color:#fff;font-size:18px;
+  cursor:pointer;padding:2px 8px;border-radius:4px}
+.carta-close:hover{background:rgba(255,255,255,.2)}
+.carta-body{padding:1.25rem;max-height:80vh;overflow-y:auto}
+.carta-section{margin-bottom:1.25rem}
+.carta-section-title{font-size:11px;font-weight:600;color:#185FA5;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;
+  padding-bottom:4px;border-bottom:1px solid #E6F1FB}
+.carta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.carta-grid.full{grid-template-columns:1fr}
+.carta-field label{display:block;font-size:11px;color:#888780;margin-bottom:2px}
+.carta-field input,.carta-field select,.carta-field textarea{
+  width:100%;padding:6px 10px;border:0.5px solid rgba(0,0,0,.2);
+  border-radius:8px;font-size:12px;font-family:inherit;box-sizing:border-box}
+.carta-field textarea{resize:vertical;min-height:60px}
+.carta-footer{padding:1rem 1.25rem;border-top:0.5px solid rgba(0,0,0,.08);
+  display:flex;gap:8px;justify-content:flex-end;background:#f7f6f3;
+  border-radius:0 0 14px 14px}
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 </head>
@@ -1600,6 +1630,146 @@ tbody td{padding:9px 12px;vertical-align:middle}
     </div>
   </div>
 
+<!-- MODAL CARTA INSTRUCCIONES -->
+<div id="carta-overlay" onclick="if(event.target===this)cerrarCarta()">
+  <div class="carta-modal">
+    <div class="carta-header">
+      <h2>📄 Carta de Instrucciones — Entrega de Mercancía</h2>
+      <button class="carta-close" onclick="cerrarCarta()">✕</button>
+    </div>
+    <div class="carta-body">
+
+      <!-- 1. PEDIMENTO -->
+      <div class="carta-section">
+        <div class="carta-section-title">1. Pedimento</div>
+        <div class="carta-grid">
+          <div class="carta-field"><label>No. Pedimento</label>
+            <input type="text" id="ci-pedimento" placeholder="26 16 1734 6000748"></div>
+          <div class="carta-field"><label>Referencia VAZSE</label>
+            <input type="text" id="ci-ref" readonly style="background:#f7f6f3"></div>
+          <div class="carta-field"><label>Patente</label>
+            <input type="text" id="ci-patente" placeholder="1734"></div>
+          <div class="carta-field"><label>Aduana</label>
+            <input type="text" id="ci-aduana" placeholder="160 – Manzanillo"></div>
+          <div class="carta-field"><label>Régimen</label>
+            <input type="text" id="ci-regimen" placeholder="IMD – Importación Definitiva"></div>
+          <div class="carta-field"><label>Fecha de pago</label>
+            <input type="date" id="ci-fecha-pago"></div>
+        </div>
+      </div>
+
+      <!-- 2. CONTENEDOR -->
+      <div class="carta-section">
+        <div class="carta-section-title">2. Contenedor / Embarque</div>
+        <div class="carta-grid">
+          <div class="carta-field"><label>Contenedor</label>
+            <input type="text" id="ci-contenedor"></div>
+          <div class="carta-field"><label>BL / Conocimiento</label>
+            <input type="text" id="ci-bl" placeholder="ZIMUNGB20815577"></div>
+          <div class="carta-field"><label>Línea naviera</label>
+            <input type="text" id="ci-naviera" placeholder="ZIM Integrated Shipping"></div>
+          <div class="carta-field"><label>Tipo de contenedor</label>
+            <input type="text" id="ci-tipo-cont" placeholder="CR – 39' High Cube"></div>
+        </div>
+      </div>
+
+      <!-- 3. PESO Y BULTOS -->
+      <div class="carta-section">
+        <div class="carta-section-title">3. Peso y Bultos</div>
+        <div class="carta-grid">
+          <div class="carta-field"><label>Total de bultos</label>
+            <input type="text" id="ci-bultos" placeholder="465"></div>
+          <div class="carta-field"><label>Peso bruto (kg)</label>
+            <input type="text" id="ci-peso" placeholder="7,518.000"></div>
+          <div class="carta-field"><label>Volumen (m³)</label>
+            <input type="text" id="ci-volumen"></div>
+          <div class="carta-field"><label>Sello / Candado</label>
+            <input type="text" id="ci-sello"></div>
+        </div>
+      </div>
+
+      <!-- 4. DESCRIPCIÓN -->
+      <div class="carta-section">
+        <div class="carta-section-title">4. Descripción de Mercancía</div>
+        <div class="carta-grid">
+          <div class="carta-field carta-grid full"><label>Descripción</label>
+            <input type="text" id="ci-desc" placeholder="TAPONES DE CAUCHO"></div>
+          <div class="carta-field"><label>Fracción arancelaria</label>
+            <input type="text" id="ci-fraccion" placeholder="4016.99.99"></div>
+          <div class="carta-field"><label>País de origen</label>
+            <input type="text" id="ci-origen-mercia" placeholder="China"></div>
+          <div class="carta-field"><label>Factura / Invoice</label>
+            <input type="text" id="ci-factura" placeholder="AE260507-SEA"></div>
+          <div class="carta-field"><label>Proveedor</label>
+            <input type="text" id="ci-proveedor-mercia" placeholder="AE PRODUCTS TRADING LIMITED"></div>
+        </div>
+      </div>
+
+      <!-- 5. INSTRUCCIONES ENTREGA -->
+      <div class="carta-section">
+        <div class="carta-section-title">5. Instrucciones de Entrega</div>
+        <div class="carta-grid">
+          <div class="carta-field full carta-grid"><label>Destinatario / Razón social</label>
+            <input type="text" id="ci-destinatario"></div>
+          <div class="carta-field full carta-grid"><label>Dirección</label>
+            <input type="text" id="ci-direccion"></div>
+          <div class="carta-field"><label>Contacto / Persona que recibe</label>
+            <input type="text" id="ci-contacto-entrega"></div>
+          <div class="carta-field"><label>Teléfono</label>
+            <input type="text" id="ci-tel-entrega"></div>
+          <div class="carta-field"><label>Fecha de entrega solicitada</label>
+            <input type="date" id="ci-fecha-entrega"></div>
+          <div class="carta-field"><label>Horario de recepción</label>
+            <input type="text" id="ci-horario" placeholder="Lun-Vie 8:00-17:00"></div>
+          <div class="carta-field"><label>¿Requiere cita?</label>
+            <select id="ci-cita"><option value="No">No</option><option value="Sí">Sí</option></select></div>
+          <div class="carta-field"><label>No. de cita</label>
+            <input type="text" id="ci-num-cita"></div>
+          <div class="carta-field full carta-grid"><label>Observaciones de entrega</label>
+            <textarea id="ci-obs-entrega"></textarea></div>
+        </div>
+      </div>
+
+      <!-- 6. FACTURACIÓN -->
+      <div class="carta-section">
+        <div class="carta-section-title">6. Instrucciones de Facturación</div>
+        <div class="carta-grid">
+          <div class="carta-field full carta-grid"><label>Facturar a (razón social)</label>
+            <input type="text" id="ci-fact-razon"></div>
+          <div class="carta-field"><label>RFC</label>
+            <input type="text" id="ci-rfc"></div>
+          <div class="carta-field"><label>Régimen fiscal</label>
+            <input type="text" id="ci-regimen-fiscal" placeholder="601 – General de Ley"></div>
+          <div class="carta-field"><label>Uso del CFDI</label>
+            <input type="text" id="ci-cfdi" placeholder="G03 – Gastos en general"></div>
+          <div class="carta-field"><label>Método de pago</label>
+            <input type="text" id="ci-metodo-pago" placeholder="PPD – Pago en parcialidades"></div>
+          <div class="carta-field"><label>Forma de pago</label>
+            <input type="text" id="ci-forma-pago" placeholder="99 – Por definir"></div>
+          <div class="carta-field"><label>Quien paga el flete</label>
+            <select id="ci-paga-flete"><option value="Origen">Origen</option>
+              <option value="Destino">Destino</option></select></div>
+          <div class="carta-field"><label>Correo para factura</label>
+            <input type="email" id="ci-email-fact"></div>
+        </div>
+      </div>
+
+      <!-- 7. OBSERVACIONES -->
+      <div class="carta-section">
+        <div class="carta-section-title">7. Observaciones Generales</div>
+        <div class="carta-field">
+          <textarea id="ci-obs-generales" placeholder="Indicaciones especiales..." style="min-height:80px"></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="carta-footer">
+      <button class="btn" onclick="cerrarCarta()">Cancelar</button>
+      <button class="btn btn-primary" onclick="descargarCarta()">⬇ Descargar DOCX</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- end .app -->
 
 <!-- EDIT MODAL VIAJES -->
@@ -2387,6 +2557,7 @@ function renderViajes() {
         </td>
         <td class="trunc muted" style="font-size:12px">${r.contenedor?'<span style="color:#185FA5;font-weight:500">'+r.contenedor+'</span> ':''}${r.patio?'📍'+r.patio+' ':''}${r.notas||''}</td>
         <td style="white-space:nowrap;display:flex;gap:4px">
+          <button class="btn-sm" onclick="abrirCarta(${r.id})" title="Carta de instrucciones" style="background:#E6F1FB;color:#0C447C;border-color:#B5D4F4">📄</button>
           <button class="btn-sm dup" onclick="duplicarViaje(${r.id})" title="Duplicar">⧉</button>
           <button class="btn-sm view" onclick="abrirEditViaje(${r.id})" title="Editar">✏️</button>
           <button class="btn-sm del" onclick="eliminarViaje(${r.id},'${fmtFecha(r.fecha)}','${r.tipo}',${r.costo})" title="Eliminar">✕</button>
@@ -5364,6 +5535,256 @@ function verificarAuth() {
   document.getElementById('login-screen').style.display = 'none';
   return true;
 }
+
+// ── CARTA DE INSTRUCCIONES ───────────────────────────
+function abrirCarta(viajeId) {
+  const v = viajes.find(x => x.id === viajeId);
+  if (!v) return;
+
+  // Pre-fill from viaje
+  document.getElementById('ci-ref').value        = v.referencia || '';
+  document.getElementById('ci-contenedor').value = v.contenedor || '';
+  document.getElementById('ci-fecha-entrega').value = fmtFecha(v.fecha) || '';
+
+  // Pre-fill from catClientes
+  const cli = catClientes.find(x => x.nombre.toUpperCase() === (v.cliente||'').toUpperCase());
+  if (cli) {
+    document.getElementById('ci-destinatario').value  = cli.nombre || '';
+    document.getElementById('ci-rfc').value           = cli.rfc || '';
+    document.getElementById('ci-fact-razon').value    = cli.nombre || '';
+    document.getElementById('ci-email-fact').value    = cli.email || '';
+    // First domicilio if available
+    if (cli.domicilios && cli.domicilios.length > 0) {
+      const dom = cli.domicilios[0];
+      document.getElementById('ci-direccion').value      = dom.dir || '';
+      document.getElementById('ci-contacto-entrega').value = dom.contacto || '';
+      document.getElementById('ci-tel-entrega').value    = dom.tel || '';
+      document.getElementById('ci-horario').value        = dom.horario || '';
+    } else {
+      document.getElementById('ci-contacto-entrega').value = cli.contacto || '';
+      document.getElementById('ci-tel-entrega').value      = cli.tel || '';
+    }
+  }
+
+  // Show modal
+  document.getElementById('carta-overlay').classList.add('show');
+}
+
+function cerrarCarta() {
+  document.getElementById('carta-overlay').classList.remove('show');
+}
+
+function g(id) { return document.getElementById(id)?.value || ''; }
+
+async function descargarCarta() {
+  const ref = g('ci-ref') || 'SIN-REF';
+
+  // Load docx from CDN
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js';
+  document.head.appendChild(script);
+
+  await new Promise((res, rej) => { script.onload = res; script.onerror = rej; });
+
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+          AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign,
+          HeadingLevel } = docx;
+
+  const W = 9360; // content width DXA (US Letter 1" margins)
+  const COL2 = [W/2, W/2];
+  const COL3 = [W/3, W/3, W/3];
+  const borderNone = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const borderThin = { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' };
+  const bNone = { top:borderNone, bottom:borderNone, left:borderNone, right:borderNone };
+  const bThin = { top:borderThin, bottom:borderThin, left:borderThin, right:borderThin };
+
+  const azul = '185FA5';
+  const gris = 'F2F7FC';
+
+  function bold(text, size=20) {
+    return new TextRun({ text, bold:true, size, font:'Arial' });
+  }
+  function normal(text, size=20) {
+    return new TextRun({ text, size, font:'Arial' });
+  }
+  function label(text) {
+    return new TextRun({ text, bold:true, size:16, font:'Arial', color:'444444' });
+  }
+  function value(text) {
+    return new TextRun({ text: text||'__________________________________________', size:18, font:'Arial' });
+  }
+
+  function headerRow(text) {
+    return new TableRow({ children: [
+      new TableCell({
+        columnSpan: 2,
+        borders: bNone,
+        shading: { fill: azul, type: ShadingType.CLEAR },
+        margins: { top:80, bottom:80, left:180, right:180 },
+        width: { size: W, type: WidthType.DXA },
+        children: [new Paragraph({ children: [
+          new TextRun({ text, bold:true, size:20, font:'Arial', color:'FFFFFF' })
+        ]})]
+      })
+    ]});
+  }
+
+  function dataRow(col1Label, col1Val, col2Label, col2Val) {
+    const makeCell = (lbl, val) => new TableCell({
+      borders: bThin,
+      shading: { fill: gris, type: ShadingType.CLEAR },
+      margins: { top:80, bottom:80, left:160, right:160 },
+      width: { size: W/2, type: WidthType.DXA },
+      children: [new Paragraph({ children: [label(lbl + '  '), value(val)] })]
+    });
+    const cols = col2Label
+      ? [makeCell(col1Label, col1Val), makeCell(col2Label, col2Val)]
+      : [new TableCell({
+          columnSpan: 2,
+          borders: bThin,
+          shading: { fill: gris, type: ShadingType.CLEAR },
+          margins: { top:80, bottom:80, left:160, right:160 },
+          width: { size: W, type: WidthType.DXA },
+          children: [new Paragraph({ children: [label(col1Label + '  '), value(col1Val)] })]
+        })];
+    return new TableRow({ children: cols });
+  }
+
+  function makeTable(rows) {
+    return new Table({ width:{size:W,type:WidthType.DXA}, columnWidths:COL2, rows });
+  }
+
+  function sectionTitle(num, text) {
+    return new Paragraph({
+      spacing:{ before:240, after:80 },
+      children: [new TextRun({ text: `  ${num}.  ${text}`, bold:true, size:22,
+        font:'Arial', color:azul })]
+    });
+  }
+
+  const children = [
+    // Header
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing:{ after:60 },
+      children:[bold('Resolución Estratégica VAZSE, S.A. de C.V.',26)] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing:{ after:20 },
+      children:[normal('Agente Aduanal  ·  Freight Forwarding  ·  Comercio Exterior',18)] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing:{ after:240 },
+      children:[normal('Manzanillo  ·  Lázaro Cárdenas  ·  Altamira  ·  Progreso',18)] }),
+
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing:{ after:60 },
+      children:[bold('CARTA DE INSTRUCCIONES',28)] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing:{ after:300 },
+      border:{ bottom:{style:BorderStyle.SINGLE,size:6,color:azul,space:1} },
+      children:[normal('ENTREGA DE MERCANCÍA  —  FLETE TERRESTRE',22)] }),
+
+    // 1. PEDIMENTO
+    sectionTitle('1','PEDIMENTO'),
+    makeTable([
+      dataRow('No. Pedimento:', g('ci-pedimento'), 'Referencia VAZSE:', g('ci-ref')),
+      dataRow('Patente:', g('ci-patente'), 'Aduana:', g('ci-aduana')),
+      dataRow('Régimen:', g('ci-regimen'), 'Fecha de pago:', g('ci-fecha-pago')),
+    ]),
+
+    // 2. CONTENEDOR
+    sectionTitle('2','CONTENEDOR / EMBARQUE'),
+    makeTable([
+      dataRow('Contenedor:', g('ci-contenedor'), 'BL / Conocimiento:', g('ci-bl')),
+      dataRow('Línea naviera:', g('ci-naviera'), 'Tipo:', g('ci-tipo-cont')),
+    ]),
+
+    // 3. PESO
+    sectionTitle('3','PESO Y BULTOS'),
+    makeTable([
+      dataRow('Total de bultos:', g('ci-bultos'), 'Peso bruto (kg):', g('ci-peso')),
+      dataRow('Volumen (m³):', g('ci-volumen'), 'Sello / Candado:', g('ci-sello')),
+    ]),
+
+    // 4. DESCRIPCIÓN
+    sectionTitle('4','DESCRIPCIÓN DE MERCANCÍA'),
+    makeTable([
+      dataRow('Descripción:', g('ci-desc'), null, null),
+      dataRow('Fracción arancelaria:', g('ci-fraccion'), 'País de origen:', g('ci-origen-mercia')),
+      dataRow('Factura / Invoice:', g('ci-factura'), 'Proveedor:', g('ci-proveedor-mercia')),
+    ]),
+
+    // 5. ENTREGA
+    sectionTitle('5','INSTRUCCIONES DE ENTREGA'),
+    makeTable([
+      dataRow('Destinatario / Razón social:', g('ci-destinatario'), null, null),
+      dataRow('Dirección:', g('ci-direccion'), null, null),
+      dataRow('Contacto / Persona que recibe:', g('ci-contacto-entrega'), 'Teléfono:', g('ci-tel-entrega')),
+      dataRow('Fecha de entrega solicitada:', g('ci-fecha-entrega'), 'Horario de recepción:', g('ci-horario')),
+      dataRow('¿Requiere cita?:', g('ci-cita'), 'No. de cita:', g('ci-num-cita')),
+      dataRow('Observaciones de entrega:', g('ci-obs-entrega'), null, null),
+    ]),
+
+    // 6. FACTURACIÓN
+    sectionTitle('6','INSTRUCCIONES DE FACTURACIÓN'),
+    makeTable([
+      dataRow('Facturar a (razón social):', g('ci-fact-razon'), null, null),
+      dataRow('RFC:', g('ci-rfc'), 'Régimen fiscal:', g('ci-regimen-fiscal')),
+      dataRow('Uso del CFDI:', g('ci-cfdi'), 'Método de pago:', g('ci-metodo-pago')),
+      dataRow('Forma de pago:', g('ci-forma-pago'), 'Quien paga el flete:', g('ci-paga-flete')),
+      dataRow('Correo para envío de factura:', g('ci-email-fact'), null, null),
+    ]),
+
+    // 7. OBSERVACIONES
+    sectionTitle('7','OBSERVACIONES GENERALES'),
+    new Paragraph({ spacing:{after:80},
+      children:[normal(g('ci-obs-generales') || '                                                                              ', 18)] }),
+
+    // FIRMAS
+    new Paragraph({ spacing:{before:300,after:80},
+      border:{top:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC',space:1}},
+      children:[normal('')] }),
+
+    makeTable([
+      new TableRow({ children:[
+        new TableCell({
+          borders: bNone, width:{size:W/2,type:WidthType.DXA},
+          margins:{top:80,bottom:80,left:160,right:160},
+          children:[
+            new Paragraph({children:[bold('Nombre y firma del Cliente / Autorizado',18)]}),
+            new Paragraph({children:[bold(g('ci-destinatario')||'_________________________',18)]}),
+            new Paragraph({spacing:{before:240},children:[normal('Fecha: _____________________',18)]}),
+          ]
+        }),
+        new TableCell({
+          borders: bNone, width:{size:W/2,type:WidthType.DXA},
+          margins:{top:80,bottom:80,left:160,right:160},
+          children:[
+            new Paragraph({children:[bold('Resolución Estratégica VAZSE, S.A. de C.V.',18)]}),
+            new Paragraph({children:[normal('Agente Aduanal  ·  Patente 1734',18)]}),
+            new Paragraph({spacing:{before:240},children:[normal('Fecha: _____________________',18)]}),
+          ]
+        }),
+      ]})
+    ]),
+
+    new Paragraph({ spacing:{before:240}, alignment:AlignmentType.CENTER,
+      children:[new TextRun({text:'Documento confidencial — Resolución Estratégica VAZSE, S.A. de C.V.',
+        size:16, italics:true, font:'Arial', color:'888888'})] }),
+  ];
+
+  const doc = new Document({
+    sections:[{
+      properties:{ page:{ size:{width:12240,height:15840},
+        margin:{top:1080,right:1080,bottom:1080,left:1080} } },
+      children
+    }]
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'CartaInstrucciones_' + ref + '.docx';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Carta descargada ✓', 'ok');
+}
+
 
 // ── ARRANQUE ──────────────────────────────────────────
 // Listen for online/offline events
