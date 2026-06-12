@@ -591,6 +591,7 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .mmb-theme .app{border-top:3px solid #CC0000}
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 </head>
 <body>
 <!-- PANTALLA LOGIN VAZSE -->
@@ -5524,12 +5525,11 @@ function g(id) { return document.getElementById(id)?.value || ''; }
 async function descargarCarta() {
   const ref = g('ci-ref') || 'SIN-REF';
 
-  // Load docx from CDN
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js';
-  document.head.appendChild(script);
-
-  await new Promise((res, rej) => { script.onload = res; script.onerror = rej; });
+  // docx loaded via <head> script
+  if (typeof docx === 'undefined') {
+    toast('Error: librería docx no disponible', 'err');
+    return;
+  }
 
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
           AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign,
