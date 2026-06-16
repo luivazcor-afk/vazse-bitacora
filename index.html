@@ -511,6 +511,18 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
   background:#F7F5F1;border-radius:0 0 16px 16px
 }
 
+
+/* ══ BÚSQUEDA GLOBAL — highlight & nav ══════════════════ */
+@keyframes rowHighlight{
+  0%{background:#D6E9FF}25%{background:#D6E9FF}
+  100%{background:transparent}
+}
+.row-highlight{animation:rowHighlight 1.6s ease-out}
+.g-result-item{display:flex;gap:10px;align-items:center;padding:8px 16px;cursor:pointer;transition:background .1s}
+.g-result-item:hover,.g-result-item.kbd-focus{background:#F5F3EF}
+.g-result-section{padding:7px 12px 3px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em}
+.g-result-section+.g-result-section,.g-result-item+.g-result-section{border-top:0.5px solid rgba(0,0,0,.06);margin-top:2px}
+
 /* ══ TAB PANELS ══════════════════════════════════════ */
 .tab-panel{display:none}
 .tab-panel.active{display:block}
@@ -733,7 +745,7 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 
   <!-- BÚSQUEDA GLOBAL -->
   <div style="margin-bottom:1rem;position:relative">
-    <input type="text" id="global-buscar" placeholder="🔍  Buscar en viajes y cobranza..." oninput="busquedaGlobal()"
+    <input type="text" id="global-buscar" placeholder="🔍  Buscar en viajes y cobranza..." oninput="busquedaGlobal()" onkeydown="navBusquedaGlobal(event)"
       style="width:100%;padding:9px 14px;font-size:13px;border:0.5px solid rgba(0,0,0,.22);border-radius:10px;background:#fff;font-family:inherit;color:#1a1a18">
     <div id="global-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid rgba(0,0,0,.15);border-radius:10px;margin-top:4px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:320px;overflow-y:auto"></div>
   </div>
@@ -3545,6 +3557,35 @@ function irACobranza(id) {
   if(r){ document.getElementById('c-buscar').value = r.folio||r.cliente||''; filtrarCobranza(); }
 }
 
+function irACatalogo(tipo, id) {
+  document.getElementById('global-buscar').value = '';
+  document.getElementById('global-results').style.display = 'none';
+  // Switch main tab to catálogos
+  document.querySelectorAll('.tabs > .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-catalogos').classList.add('active');
+  document.querySelector('.tabs > .tab[onclick*="catalogos"]').classList.add('active');
+  // Switch cat sub-tab
+  setTimeout(function() {
+    const catBtn = document.querySelector('.cat-tab[onclick*="' + tipo + '"]');
+    if (catBtn) catBtn.click();
+    // Highlight the row
+    setTimeout(function() {
+      const tableId = tipo === 'clientes' ? 'cat-cli-tbody'
+                    : tipo === 'proveedores-cat' ? 'cat-prov-tbody'
+                    : 'cat-svc-tbody';
+      const tbody = document.getElementById(tableId);
+      if (!tbody) return;
+      const row = tbody.querySelector('tr[data-id="' + id + '"]');
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.classList.add('row-highlight');
+        setTimeout(function() { row.classList.remove('row-highlight'); }, 1700);
+      }
+    }, 80);
+  }, 40);
+}
+
 // Close global search on outside click
 document.addEventListener('click', e => {
   if (!e.target.closest('#global-buscar') && !e.target.closest('#global-results'))
@@ -3895,7 +3936,10 @@ function diasBadge(dias, estado) {
 }
 
 // ── BÚSQUEDA GLOBAL actualizada ────────────────────────
+let _gbIdx = -1; // keyboard nav index
+
 function busquedaGlobal() {
+  _gbIdx = -1;
   const q = document.getElementById('global-buscar').value.trim().toLowerCase();
   const res = document.getElementById('global-results');
   if (!q || q.length < 2) { res.style.display = 'none'; return; }
@@ -3908,7 +3952,19 @@ function busquedaGlobal() {
     [r.folio,r.cliente,r.referencia,r.notas].join(' ').toLowerCase().includes(q)
   ).slice(0,5);
 
-  if (!matchV.length && !matchC.length) {
+  const matchCli = catClientes.filter(r =>
+    [r.nombre,r.rfc,r.contacto,r.notas].join(' ').toLowerCase().includes(q)
+  ).slice(0,4);
+
+  const matchProv = catProveedores.filter(r =>
+    [r.nombre,r.rfc,r.tipo,r.contacto,r.notas].join(' ').toLowerCase().includes(q)
+  ).slice(0,4);
+
+  const matchSvc = catServicios.filter(r =>
+    [r.nombre,r.clave,r.desc].join(' ').toLowerCase().includes(q)
+  ).slice(0,3);
+
+  if (!matchV.length && !matchC.length && !matchCli.length && !matchProv.length && !matchSvc.length) {
     res.style.display = 'block';
     res.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#888780">Sin resultados</div>';
     return;
@@ -3916,23 +3972,73 @@ function busquedaGlobal() {
 
   let html = '';
   if (matchV.length) {
-    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em">Viajes</div>';
-    html += matchV.map(r => `<div onclick="irAViaje(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
+    html += '<div class="g-result-section">Viajes</div>';
+    html += matchV.map(r => `<div class="g-result-item" onclick="irAViaje(${r.id})">
       <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${fmtFecha(r.fecha)}</span>
       <span style="font-size:12px">${r.cliente||'—'}${r.contenedor?' · '+r.contenedor:''}</span>
       <span style="font-size:11px;color:#888780;margin-left:auto">${r.referencia||''}</span>
     </div>`).join('');
   }
   if (matchC.length) {
-    html += '<div style="padding:8px 12px 4px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em;border-top:0.5px solid rgba(0,0,0,.06)">Cobranza</div>';
-    html += matchC.map(r => `<div onclick="irACobranza(${r.id})" style="padding:8px 16px;cursor:pointer;display:flex;gap:10px;align-items:center" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">
+    html += '<div class="g-result-section">Cobranza</div>';
+    html += matchC.map(r => `<div class="g-result-item" onclick="irACobranza(${r.id})">
       <span style="font-size:11px;font-weight:500;color:#185FA5;min-width:80px">${r.folio||'—'}</span>
       <span style="font-size:12px">${r.cliente||'—'}</span>
       <span style="font-size:11px;color:#888780;margin-left:auto">${fmt(r.monto)}</span>
     </div>`).join('');
   }
+  if (matchCli.length) {
+    html += '<div class="g-result-section">Clientes</div>';
+    html += matchCli.map(r => `<div class="g-result-item" onclick="irACatalogo('clientes',${r.id})">
+      <span style="font-size:13px">👥</span>
+      <span style="font-size:12px;font-weight:500">${r.nombre}</span>
+      <span style="font-size:11px;color:#888780;margin-left:auto">${r.rfc||''}</span>
+    </div>`).join('');
+  }
+  if (matchProv.length) {
+    html += '<div class="g-result-section">Proveedores</div>';
+    html += matchProv.map(r => `<div class="g-result-item" onclick="irACatalogo('proveedores-cat',${r.id})">
+      <span style="font-size:13px">🏢</span>
+      <span style="font-size:12px;font-weight:500">${r.nombre}</span>
+      <span style="font-size:11px;color:#888780;margin-left:auto">${r.tipo||''}</span>
+    </div>`).join('');
+  }
+  if (matchSvc.length) {
+    html += '<div class="g-result-section">Servicios</div>';
+    html += matchSvc.map(r => `<div class="g-result-item" onclick="irACatalogo('servicios',${r.id})">
+      <span style="font-size:13px">🛠️</span>
+      <span style="font-size:12px;font-weight:500">${r.nombre}</span>
+      <span style="font-size:11px;color:#888780;margin-left:auto">${r.clave||''}</span>
+    </div>`).join('');
+  }
   res.innerHTML = html;
   res.style.display = 'block';
+}
+
+function navBusquedaGlobal(e) {
+  const res = document.getElementById('global-results');
+  if (res.style.display === 'none') return;
+  const items = res.querySelectorAll('.g-result-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    items.forEach(i=>i.classList.remove('kbd-focus'));
+    _gbIdx = (_gbIdx + 1) % items.length;
+    items[_gbIdx].classList.add('kbd-focus');
+    items[_gbIdx].scrollIntoView({block:'nearest'});
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    items.forEach(i=>i.classList.remove('kbd-focus'));
+    _gbIdx = (_gbIdx - 1 + items.length) % items.length;
+    items[_gbIdx].classList.add('kbd-focus');
+    items[_gbIdx].scrollIntoView({block:'nearest'});
+  } else if (e.key === 'Enter' && _gbIdx >= 0) {
+    e.preventDefault();
+    items[_gbIdx].click();
+  } else if (e.key === 'Escape') {
+    res.style.display = 'none';
+    _gbIdx = -1;
+  }
 }
 
 
@@ -4729,7 +4835,7 @@ function renderCatClientes() {
     const domsBadge = doms.length > 0
       ? '<span class="seg-badge" title="'+doms.map(d=>d.nombre||d.dir).join(', ')+'">📍 '+doms.length+'</span>'
       : '—';
-    return `<tr>
+    return `<tr data-id="${e.id}">
       <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:#888780">${e.rfc||''}</span></td>
       <td style="font-size:12px">${e.contacto||'—'}</td>
       <td style="font-size:12px">${e.tel||'—'}</td>
@@ -4754,7 +4860,7 @@ function renderCatProveedores() {
     const tels = [e.tel1,e.tel2].filter(Boolean).join(', ') || e.tel || '—';
     const emails = [e.email1,e.email2].filter(Boolean).map(em=>'<a href="mailto:'+em+'">'+em+'</a>').join('<br>') || (e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—');
     const cuentas = (e.cuentas||[]).map(cu=>'<div style="font-size:11px"><strong>'+cu.banco+'</strong> '+cu.cuenta+(cu.clabe?' · CLABE: '+cu.clabe:'')+'</div>').join('') || '—';
-    return `<tr>
+    return `<tr data-id="${e.id}">
       <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:#888780">${e.rfc||''}</span></td>
       <td><span class="badge b-otro" style="font-size:10px">${e.tipo||'otro'}</span></td>
       <td style="font-size:12px">${e.contacto||'—'}</td>
@@ -4925,7 +5031,7 @@ function renderCatServicios() {
     tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>Sin servicios registrados</p></div></td></tr>';
     return;
   }
-  tbody.innerHTML = catServicios.map(e => `<tr>
+  tbody.innerHTML = catServicios.map(e => `<tr data-id="${e.id}">
     <td style="font-weight:500">${e.nombre}</td>
     <td style="font-size:12px;color:#888780">${e.clave||'—'}</td>
     <td style="font-size:12px">${e.unidad||'—'}</td>
