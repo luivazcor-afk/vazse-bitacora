@@ -573,8 +573,14 @@ html[data-theme=dark] .topbar,.topbar-inner{background:#1A1917}
 html[data-theme=dark] .form-card{background:#252320;border-color:rgba(255,255,255,.08)}
 html[data-theme=dark] .section-label{color:#A8A5A0}
 html[data-theme=dark] .fg label{color:#A8A5A0}
-html[data-theme=dark] .fg input,.fg select,.fg textarea,
-html[data-theme=dark] input[type=text],input[type=number],input[type=date],select,textarea{
+html[data-theme=dark] .fg input,
+html[data-theme=dark] .fg select,
+html[data-theme=dark] .fg textarea,
+html[data-theme=dark] input[type=text],
+html[data-theme=dark] input[type=number],
+html[data-theme=dark] input[type=date],
+html[data-theme=dark] select,
+html[data-theme=dark] textarea{
   background:#333028!important;border-color:rgba(255,255,255,.12)!important;
   color:#E8E5DF!important
 }
@@ -2781,6 +2787,7 @@ async function cargar() {
       setStatus('v', 'err', 'Sin conexión y sin caché');
       setStatus('c', 'err', 'Sin conexión y sin caché');
       toast('Sin conexión y sin datos en caché', 'err');
+      filtrarViajes(); filtrarCobranza(); filtrarPagos();
     }
     return;
   }
@@ -2846,6 +2853,7 @@ async function cargar() {
       setStatus('v', 'err', 'Error de conexión');
       setStatus('c', 'err', 'Error de conexión');
       toast('No se pudo conectar', 'err');
+      filtrarViajes(); filtrarCobranza(); filtrarPagos();
     }
   }
 }
@@ -3100,7 +3108,7 @@ async function agregarViaje() {
 
     limpiarErrores(['v-fecha','v-tipo','v-cliente']);
     filtrarViajes(); actualizarGraficaV(); filtrarCobranza(); filtrarPagos();
-    guardarPlantilla(registro);
+    try { guardarPlantilla(registro); } catch(_pe) {}
     registrarHistorial('agregar','Viaje',registro.cliente+' · '+registro.tipo+' · '+fmtFecha(fecha));
     setStatus('v','ok','Guardado');
     const msg = esFlete && registro.maniobras > 0
