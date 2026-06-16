@@ -551,6 +551,79 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .sk-cell.sk-w15{width:15%}.sk-cell.sk-w10{width:10%}
 .sk-cell.sk-badge{height:20px;width:70px;border-radius:10px}
 
+
+/* ══ REPORT TABS ══════════════════════════════════════ */
+.report-tabs{
+  display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;
+  padding:10px 12px;background:#F5F3EF;border-radius:12px;
+  border:0.5px solid rgba(0,0,0,.07)
+}
+.report-tab{
+  padding:5px 12px;font-size:12px;font-weight:500;
+  border:0.5px solid rgba(0,0,0,.13);border-radius:7px;
+  background:#fff;cursor:pointer;color:#4A4A47;
+  transition:all .13s;white-space:nowrap
+}
+.report-tab:hover{background:#EBF3FC;color:#185FA5;border-color:rgba(24,95,165,.3)}
+.report-tab.active{background:#185FA5;color:#fff;border-color:#185FA5}
+
+/* ══ FLUJO DE CAJA CARDS ══════════════════════════════ */
+.flujo-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;margin-bottom:1rem
+}
+.flujo-card{
+  background:#fff;border:0.5px solid rgba(0,0,0,.08);border-radius:12px;
+  padding:.875rem 1rem;box-shadow:0 1px 3px rgba(0,0,0,.04)
+}
+.flujo-label{font-size:11px;font-weight:500;color:#8A8880;margin-bottom:5px}
+.flujo-val{font-size:20px;font-weight:600;letter-spacing:-.02em;color:#1C1C1A}
+.flujo-val.pos{color:#0F6E56}
+.flujo-val.neg{color:#C0392B}
+.flujo-sub{font-size:11px;color:#B0AEA9;margin-top:3px}
+
+/* ══ TOP 5 LIST ════════════════════════════════════════ */
+.top5-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 4px;border-bottom:0.5px solid rgba(0,0,0,.06)
+}
+.top5-item:last-child{border-bottom:none}
+.top5-rank{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+  background:#F0EDE8;color:#8A8880
+}
+.top5-rank.gold{background:#FFF3C4;color:#8A6800}
+.top5-rank.silver{background:#EBEBEB;color:#5A5A5A}
+.top5-rank.bronze{background:#FDECD9;color:#7A4500}
+.top5-bar{
+  height:5px;border-radius:3px;background:#E8E5DF;
+  margin-top:5px;overflow:hidden
+}
+.top5-bar-fill{height:100%;border-radius:3px;background:#185FA5}
+
+/* ══ REPORT PANEL ══════════════════════════════════════ */
+.report-panel{
+  background:#fff;border:0.5px solid rgba(0,0,0,.08);
+  border-radius:13px;padding:1.25rem;margin-bottom:1rem;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);display:none
+}
+.report-panel.active{display:block}
+.chart-card{
+  background:#fff;border:0.5px solid rgba(0,0,0,.08);
+  border-radius:13px;padding:1.25rem;
+  box-shadow:0 1px 3px rgba(0,0,0,.04)
+}
+.chart-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:.875rem
+}
+.rep-mes-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1rem;flex-wrap:wrap;gap:8px
+}
+
 /* ══ MODO OSCURO ═════════════════════════════════════ */
 #dark-toggle{
   width:32px;height:32px;border-radius:8px;border:none;cursor:pointer;
@@ -621,7 +694,7 @@ html[data-theme=dark] .autocomplete-list{background:#252320;border-color:rgba(25
 html[data-theme=dark] .autocomplete-list div:hover{background:#333028}
 html[data-theme=dark] .estado-select{background:#333028;color:#E8E5DF;border-color:rgba(255,255,255,.12)}
 html[data-theme=dark] .report-panel{background:#252320;border-color:rgba(255,255,255,.08)}
-html[data-theme=dark] .report-tabs-wrap{background:#2A2824}
+html[data-theme=dark] .report-tabs{background:#1E1C1A;border-color:rgba(255,255,255,.06)}
 html[data-theme=dark] .report-tab{color:#888780}
 html[data-theme=dark] .report-tab.active{background:#333028;color:#E8E5DF}
 html[data-theme=dark] #c-banner-venc{background:#3D3010;border-color:#705A00}
@@ -632,6 +705,105 @@ html[data-theme=dark] .plantilla-dropdown{background:#252320;border-color:rgba(2
 html[data-theme=dark] .plantilla-item:hover{background:#333028}
 html[data-theme=dark] .plantilla-item-ruta{color:#E8E5DF}
 html[data-theme=dark] .plantilla-item-meta{color:#888780}
+
+/* ── Dark mode: metric values & nav buttons ─────── */
+html[data-theme=dark] .metric-val{color:#E8E5DF}
+html[data-theme=dark] .metric-label{color:#888780}
+html[data-theme=dark] .brand-title{color:#E8E5DF}
+html[data-theme=dark] .brand-sub{color:#666360}
+html[data-theme=dark] .mes-nav{color:#E8E5DF}
+html[data-theme=dark] .mes-nav button{background:#333028;border-color:rgba(255,255,255,.12);color:#D8D5CF}
+html[data-theme=dark] .mes-nav button:hover{background:#3D3A33}
+html[data-theme=dark] .btn-todo{background:#333028;border-color:rgba(255,255,255,.12);color:#888780}
+html[data-theme=dark] .btn-todo.active{background:#3D3010;color:#D4C090;border-color:#705A00}
+/* ── Dark mode: report tabs ─────────────────────── */
+html[data-theme=dark] .report-tab{background:#2A2824;border-color:rgba(255,255,255,.1);color:#888780}
+html[data-theme=dark] .report-tab:hover{background:#333028;color:#D8D5CF;border-color:rgba(255,255,255,.18)}
+html[data-theme=dark] .report-tab.active{background:#185FA5;color:#fff;border-color:#185FA5}
+/* ── Dark mode: flujo cards ──────────────────────── */
+html[data-theme=dark] .flujo-card{background:#242120;border-color:rgba(255,255,255,.07)}
+html[data-theme=dark] .flujo-label{color:#888780}
+html[data-theme=dark] .flujo-val{color:#E8E5DF}
+html[data-theme=dark] .flujo-sub{color:#666360}
+/* ── Dark mode: top5 list ────────────────────────── */
+html[data-theme=dark] .top5-item{border-color:rgba(255,255,255,.06)}
+html[data-theme=dark] .top5-rank{background:#2A2824;color:#888780}
+html[data-theme=dark] .top5-rank.gold{background:#3D3010;color:#D4A800}
+html[data-theme=dark] .top5-rank.silver{background:#2E2E2E;color:#A0A0A0}
+html[data-theme=dark] .top5-rank.bronze{background:#3A2010;color:#C87030}
+html[data-theme=dark] .top5-bar{background:#333028}
+/* ── Dark mode: chart ────────────────────────────── */
+html[data-theme=dark] .chart-wrap{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .chart-header{color:#A8A5A0}
+html[data-theme=dark] .chart-title{color:#888780}
+html[data-theme=dark] .chart-legend{color:#888780}
+/* ── Dark mode: small buttons ────────────────────── */
+html[data-theme=dark] .btn-sm{background:#2A2824;border-color:rgba(255,255,255,.1);color:#D8D5CF}
+html[data-theme=dark] .btn-sm:hover{background:#333028;border-color:rgba(255,255,255,.18)}
+html[data-theme=dark] .btn-sm.del{color:#E07070;border-color:rgba(224,112,112,.25)}
+html[data-theme=dark] .btn-sm.del:hover{background:#3D1010}
+html[data-theme=dark] .btn-sm.dup{color:#85B7EB;border-color:rgba(133,183,235,.25)}
+html[data-theme=dark] .btn-sm.dup:hover{background:#1A2A3A}
+html[data-theme=dark] .btn-sm.view{color:#6DC4A5;border-color:rgba(109,196,165,.25)}
+html[data-theme=dark] .btn-sm.view:hover{background:#1A2E28}
+/* ── Dark mode: search & filters ─────────────────── */
+html[data-theme=dark] .search-wrap input{background:#333028!important;border-color:rgba(255,255,255,.12)!important;color:#E8E5DF!important}
+html[data-theme=dark] .filtros select,
+html[data-theme=dark] .filtros input{background:#333028!important;border-color:rgba(255,255,255,.12)!important;color:#E8E5DF!important}
+html[data-theme=dark] .filtros .filtro-count{color:#888780}
+html[data-theme=dark] .filtro-clear{color:#E07070}
+html[data-theme=dark] .filtro-clear:hover{background:#3D1010}
+/* ── Dark mode: modals ───────────────────────────── */
+html[data-theme=dark] .cat-modal{background:#252320;border:0.5px solid rgba(255,255,255,.1)}
+html[data-theme=dark] .cat-modal-close{background:#333028;color:#A8A5A0}
+html[data-theme=dark] .cat-modal-close:hover{background:#3D3A33;color:#E8E5DF}
+html[data-theme=dark] .cat-modal-title{color:#E8E5DF}
+html[data-theme=dark] .edit-modal{background:#252320}
+html[data-theme=dark] .edit-modal-header{border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .edit-modal-title{color:#E8E5DF}
+html[data-theme=dark] .edit-modal-footer{background:#1E1C1A;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .modal-footer{background:#1E1C1A;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .modal-close:hover{background:rgba(255,255,255,.1);color:#E8E5DF}
+/* ── Dark mode: flete section ───────────────────── */
+html[data-theme=dark] .flete-section{background:#1E1C1A;border-color:rgba(255,255,255,.06)}
+html[data-theme=dark] .flete-section-title{color:#666360}
+/* ── Dark mode: table outer wrapper ─────────────── */
+html[data-theme=dark] .table-outer{border-color:rgba(255,255,255,.07)}
+html[data-theme=dark] .balance-table th{background:#1A1816;color:#888780;border-color:rgba(255,255,255,.07)}
+html[data-theme=dark] .balance-table td{border-color:rgba(255,255,255,.05)}
+html[data-theme=dark] .balance-table tr:hover td{background:#2A2824}
+html[data-theme=dark] .bal-nombre{color:#E8E5DF}
+/* ── Dark mode: offline banner ───────────────────── */
+html[data-theme=dark] .offline-banner{background:#2A2010;border-color:rgba(229,160,40,.3);color:#C4A060}
+/* ── Dark mode: autocomplete ────────────────────── */
+html[data-theme=dark] .ac-item{color:#D8D5CF;border-color:rgba(255,255,255,.05)}
+html[data-theme=dark] .ac-item:hover,
+html[data-theme=dark] .ac-item.focused{background:#333028}
+html[data-theme=dark] .ac-item strong{color:#85B7EB}
+/* ── Dark mode: pagination ───────────────────────── */
+html[data-theme=dark] .pagination{color:#666360}
+/* ── Dark mode: seg/seguimiento items ───────────── */
+html[data-theme=dark] .seg-item{color:#888780;border-color:rgba(255,255,255,.05)}
+html[data-theme=dark] .seg-fecha{color:#555350}
+/* ── Dark mode: carta modal ─────────────────────── */
+html[data-theme=dark] .carta-modal{background:#252320}
+html[data-theme=dark] .carta-body{color:#D8D5CF}
+html[data-theme=dark] .carta-section-title{color:#6AABDB;border-color:rgba(106,171,219,.2)}
+html[data-theme=dark] .carta-field label{color:#A8A5A0}
+html[data-theme=dark] .carta-field input,
+html[data-theme=dark] .carta-field select,
+html[data-theme=dark] .carta-field textarea{background:#333028!important;border-color:rgba(255,255,255,.12)!important;color:#E8E5DF!important}
+html[data-theme=dark] .carta-footer{background:#1E1C1A;border-color:rgba(255,255,255,.08)}
+/* ── Dark mode: global search ────────────────────── */
+html[data-theme=dark] .g-result-section{color:#666360;border-color:rgba(255,255,255,.06)}
+html[data-theme=dark] .g-result-section+.g-result-section,
+html[data-theme=dark] .g-result-item+.g-result-section{border-color:rgba(255,255,255,.06)}
+/* ── Dark mode: row highlight for dark ───────────── */
+html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
+@keyframes rowHighlightDark{
+  0%{background:#1A3A5A}25%{background:#1A3A5A}
+  100%{background:transparent}
+}
 
 /* ══ PLANTILLAS DE RUTAS ════════════════════════════ */
 #btn-plantilla{
