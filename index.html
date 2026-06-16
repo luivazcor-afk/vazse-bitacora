@@ -523,6 +523,121 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .g-result-section{padding:7px 12px 3px;font-size:10px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.06em}
 .g-result-section+.g-result-section,.g-result-item+.g-result-section{border-top:0.5px solid rgba(0,0,0,.06);margin-top:2px}
 
+
+/* ══ BANNER VENCIMIENTO ═══════════════════════════════ */
+#c-banner-venc{display:none;margin:0 0 12px;padding:11px 16px;border-radius:10px;
+  background:#FEF3CD;border:1px solid #F0C040;
+  display:flex;align-items:center;gap:10px;animation:fadeIn .25s ease}
+#c-banner-venc.danger{background:#FDECEC;border-color:#E07070}
+#c-banner-venc .bv-icon{font-size:18px;flex-shrink:0}
+#c-banner-venc .bv-text{flex:1;font-size:12.5px;color:#5C4B00;line-height:1.45}
+#c-banner-venc.danger .bv-text{color:#7A1E1E}
+#c-banner-venc .bv-count{font-weight:600;font-size:13px}
+#c-banner-venc .bv-link{font-size:11px;font-weight:500;color:#185FA5;cursor:pointer;
+  white-space:nowrap;flex-shrink:0;text-decoration:underline;text-underline-offset:2px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+
+/* ══ SKELETON LOADER ═════════════════════════════════ */
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.sk-cell{
+  height:13px;border-radius:4px;
+  background:linear-gradient(90deg,#e8e5df 25%,#f5f3ef 50%,#e8e5df 75%);
+  background-size:800px 100%;
+  animation:shimmer 1.4s infinite linear;
+}
+.sk-row td{padding:10px 12px}
+.sk-cell.sk-w30{width:30%}.sk-cell.sk-w20{width:20%}
+.sk-cell.sk-w15{width:15%}.sk-cell.sk-w10{width:10%}
+.sk-cell.sk-badge{height:20px;width:70px;border-radius:10px}
+
+/* ══ MODO OSCURO ═════════════════════════════════════ */
+#dark-toggle{
+  width:32px;height:32px;border-radius:8px;border:none;cursor:pointer;
+  background:rgba(0,0,0,.06);font-size:15px;display:flex;align-items:center;
+  justify-content:center;transition:background .15s;flex-shrink:0
+}
+#dark-toggle:hover{background:rgba(0,0,0,.12)}
+html[data-theme=dark] #dark-toggle{background:rgba(255,255,255,.12)}
+html[data-theme=dark] #dark-toggle:hover{background:rgba(255,255,255,.2)}
+
+html[data-theme=dark]{color-scheme:dark}
+html[data-theme=dark] body{background:#1A1917;color:#E8E5DF}
+html[data-theme=dark] .membrete{background:#252320;border-color:rgba(255,255,255,.08);box-shadow:none}
+html[data-theme=dark] .tabs{background:#252320}
+html[data-theme=dark] .tab{color:#888780}
+html[data-theme=dark] .tab:hover{background:rgba(255,255,255,.06);color:#E8E5DF}
+html[data-theme=dark] .tab.active{background:#333028;color:#E8E5DF}
+html[data-theme=dark] .tab-panel{background:transparent}
+html[data-theme=dark] .topbar,.topbar-inner{background:#1A1917}
+html[data-theme=dark] .form-card{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .section-label{color:#A8A5A0}
+html[data-theme=dark] .fg label{color:#A8A5A0}
+html[data-theme=dark] .fg input,.fg select,.fg textarea,
+html[data-theme=dark] input[type=text],input[type=number],input[type=date],select,textarea{
+  background:#333028!important;border-color:rgba(255,255,255,.12)!important;
+  color:#E8E5DF!important
+}
+html[data-theme=dark] .fg input::placeholder,.fg textarea::placeholder{color:#666360!important}
+html[data-theme=dark] .table-wrap{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] table th{background:#1E1C19;color:#A8A5A0;border-color:rgba(255,255,255,.06)}
+html[data-theme=dark] table td{border-color:rgba(255,255,255,.05)}
+html[data-theme=dark] table tr:hover td{background:#2D2B27}
+html[data-theme=dark] .metric{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .chart-card{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .metrics-bar{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .sk-cell{background:linear-gradient(90deg,#2A2824 25%,#333028 50%,#2A2824 75%);background-size:800px 100%}
+html[data-theme=dark] .modal-overlay{background:rgba(0,0,0,.7)}
+html[data-theme=dark] .modal-card{background:#252320;border-color:rgba(255,255,255,.1)}
+html[data-theme=dark] .btn{background:#333028;color:#E8E5DF;border-color:rgba(255,255,255,.12)}
+html[data-theme=dark] .btn:hover{background:#3D3A33}
+html[data-theme=dark] .viaje-card,.cob-card{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .g-result-item:hover,.g-result-item.kbd-focus{background:#333028}
+html[data-theme=dark] #global-results{background:#252320;border-color:rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+html[data-theme=dark] .autocomplete-list{background:#252320;border-color:rgba(255,255,255,.1)}
+html[data-theme=dark] .autocomplete-list div:hover{background:#333028}
+html[data-theme=dark] .estado-select{background:#333028;color:#E8E5DF;border-color:rgba(255,255,255,.12)}
+html[data-theme=dark] .report-panel{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .report-tabs-wrap{background:#2A2824}
+html[data-theme=dark] .report-tab{color:#888780}
+html[data-theme=dark] .report-tab.active{background:#333028;color:#E8E5DF}
+html[data-theme=dark] #c-banner-venc{background:#3D3010;border-color:#705A00}
+html[data-theme=dark] #c-banner-venc.danger{background:#3D1010;border-color:#8B0000}
+html[data-theme=dark] #c-banner-venc .bv-text{color:#D4C090}
+html[data-theme=dark] #c-banner-venc.danger .bv-text{color:#D49090}
+html[data-theme=dark] .plantilla-dropdown{background:#252320;border-color:rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+html[data-theme=dark] .plantilla-item:hover{background:#333028}
+html[data-theme=dark] .plantilla-item-ruta{color:#E8E5DF}
+html[data-theme=dark] .plantilla-item-meta{color:#888780}
+
+/* ══ PLANTILLAS DE RUTAS ════════════════════════════ */
+#btn-plantilla{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;font-size:11.5px;font-weight:500;color:#185FA5;
+  background:rgba(24,95,165,.08);border:0.5px solid rgba(24,95,165,.2);
+  border-radius:7px;cursor:pointer;transition:all .15s;white-space:nowrap
+}
+#btn-plantilla:hover{background:rgba(24,95,165,.14);border-color:rgba(24,95,165,.35)}
+.plantilla-dropdown{
+  position:absolute;z-index:1000;
+  background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:280px;max-width:360px;
+  overflow:hidden;padding:6px 0
+}
+.plantilla-item{
+  display:flex;flex-direction:column;gap:2px;
+  padding:10px 14px;cursor:pointer;transition:background .1s
+}
+.plantilla-item:hover{background:#F5F3EF}
+.plantilla-item-ruta{font-size:12.5px;font-weight:500;color:#1C1C1A}
+.plantilla-item-meta{font-size:11px;color:#888780}
+.plantilla-empty{padding:12px 14px;font-size:12px;color:#888780;text-align:center}
+.plantilla-header{
+  padding:7px 14px 5px;font-size:10px;font-weight:500;
+  color:#888780;text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:0.5px solid rgba(0,0,0,.06);margin-bottom:2px
+}
+
 /* ══ TAB PANELS ══════════════════════════════════════ */
 .tab-panel{display:none}
 .tab-panel.active{display:block}
@@ -720,9 +835,12 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
     <img src="https://i.imgur.com/dNpSrLC.png" alt="VAZSE"
       onerror="this.style.display='none';document.getElementById('logo-txt').style.display='block'">
     <span id="logo-txt" style="display:none;font-size:18px;font-weight:500;color:#185FA5">VAZSE</span>
-    <div class="membrete-right">
-      <div class="membrete-title">Resolución Estratégica VAZSE</div>
-      <div class="membrete-sub">Sistema de control de viajes y cobranza</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="membrete-right">
+        <div class="membrete-title">Resolución Estratégica VAZSE</div>
+        <div class="membrete-sub">Sistema de control de viajes y cobranza</div>
+      </div>
+      <button id="dark-toggle" onclick="toggleDark()" title="Modo oscuro">🌙</button>
     </div>
   </div>
 
@@ -824,7 +942,13 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
     </div>
 
     <div class="form-card">
-      <div class="section-label">Nuevo registro</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="section-label" style="margin-bottom:0">Nuevo registro</div>
+        <div style="position:relative">
+          <button id="btn-plantilla" onclick="togglePlantillas(event)">📋 Usar plantilla</button>
+          <div id="plantilla-dropdown" class="plantilla-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0"></div>
+        </div>
+      </div>
       <div class="form-grid">
         <div class="fg"><label>Fecha</label><input type="date" id="v-fecha"></div>
         <div class="fg autocomplete-wrap"><label>Tipo / Servicio</label>
@@ -965,6 +1089,13 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
       <div class="metric"><div class="metric-label">Cobrado</div><div class="metric-val pos" id="c-cobrado">$0.00</div></div>
       <div class="metric"><div class="metric-label">Pendiente</div><div class="metric-val warn" id="c-pendiente">$0.00</div></div>
       <div class="metric"><div class="metric-label">Vencido</div><div class="metric-val neg" id="c-vencido">$0.00</div></div>
+    </div>
+
+    <!-- Banner: facturas próximas a vencer -->
+    <div id="c-banner-venc" style="display:none">
+      <span class="bv-icon">⚠️</span>
+      <span class="bv-text"><span class="bv-count" id="bv-count"></span> — <span id="bv-total"></span> en riesgo<br><span id="bv-detalle" style="font-size:11px;opacity:.8"></span></span>
+      <span class="bv-link" onclick="filtrarPorVencer()">Ver facturas →</span>
     </div>
 
     <div class="form-card">
@@ -2503,9 +2634,128 @@ function cargarCache() {
   } catch(e) { return null; }
 }
 
+
+// ═══════════════════════════════════════════
+// DARK MODE
+// ═══════════════════════════════════════════
+function toggleDark() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('vazse_theme', newTheme);
+  const btn = document.getElementById('dark-toggle');
+  if (btn) btn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('vazse_theme');
+  const sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = saved || (sysDark ? 'dark' : 'light');
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    // Actualizar icono después del DOM
+    document.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('dark-toggle');
+      if (btn) btn.textContent = '☀️';
+    });
+  }
+})();
+
+// ═══════════════════════════════════════════
+// SKELETON LOADER
+// ═══════════════════════════════════════════
+function mostrarSkeleton(tbodyId, cols) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const widths = ['sk-w30','sk-w20','sk-w15','sk-w10','sk-badge'];
+  const rows = Array.from({length: 6}, () =>
+    `<tr class="sk-row">${Array.from({length: cols}, (_,i) =>
+      `<td><div class="sk-cell ${widths[i % widths.length]}"></div></td>`
+    ).join('')}</tr>`
+  ).join('');
+  tbody.innerHTML = rows;
+}
+
+// ═══════════════════════════════════════════
+// PLANTILLAS DE RUTAS FRECUENTES
+// ═══════════════════════════════════════════
+const _PLANTILLAS_KEY = 'vazse_plantillas';
+const _PLANTILLAS_MAX = 5;
+
+function cargarPlantillas() {
+  try { return JSON.parse(localStorage.getItem(_PLANTILLAS_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function guardarPlantilla(registro) {
+  const campos = ['tipo','cliente','unidad','origen','destino','costo','cobrado'];
+  const entrada = {};
+  campos.forEach(k => { if (registro[k]) entrada[k] = registro[k]; });
+  if (!entrada.cliente || (!entrada.origen && !entrada.destino)) return; // no vale sin ruta
+  let lista = cargarPlantillas();
+  // Quitar duplicado exacto (mismo cliente+origen+destino+tipo)
+  lista = lista.filter(p =>
+    !(p.cliente === entrada.cliente && p.origen === entrada.origen &&
+      p.destino === entrada.destino && p.tipo === entrada.tipo)
+  );
+  lista.unshift(entrada);
+  lista = lista.slice(0, _PLANTILLAS_MAX);
+  localStorage.setItem(_PLANTILLAS_KEY, JSON.stringify(lista));
+}
+
+function togglePlantillas(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('plantilla-dropdown');
+  if (!dd) return;
+  if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
+  const lista = cargarPlantillas();
+  if (!lista.length) {
+    dd.innerHTML = '<div class="plantilla-empty">Aún no hay rutas guardadas.<br><span style="font-size:10px">Se guardan automáticamente al agregar viajes.</span></div>';
+  } else {
+    dd.innerHTML = '<div class="plantilla-header">Últimas rutas</div>' +
+      lista.map((p, i) => {
+        const ruta = [p.origen, p.destino].filter(Boolean).join(' → ') || '—';
+        const meta = [p.tipo ? p.tipo.replace('_',' ') : '', p.unidad].filter(Boolean).join(' · ');
+        return `<div class="plantilla-item" onclick="aplicarPlantilla(${i})">
+          <span class="plantilla-item-ruta">${p.cliente} — ${ruta}</span>
+          ${meta ? '<span class="plantilla-item-meta">'+meta+'</span>' : ''}
+        </div>`;
+      }).join('');
+  }
+  dd.style.display = 'block';
+}
+
+function aplicarPlantilla(idx) {
+  const lista = cargarPlantillas();
+  const p = lista[idx];
+  if (!p) return;
+  document.getElementById('plantilla-dropdown').style.display = 'none';
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+  set('v-tipo',     p.tipo     || '');
+  set('v-cliente',  p.cliente  || '');
+  set('v-unidad',   p.unidad   || '');
+  set('v-origen',   p.origen   || '');
+  set('v-destino',  p.destino  || '');
+  set('v-costo',    p.costo    || '');
+  set('v-cobradof', p.cobrado  || '');
+  // Trigger flete section toggle si aplica
+  if (typeof toggleFleteSectionAC === 'function') toggleFleteSectionAC();
+  toast(`Plantilla cargada: ${p.cliente}`, 'inf');
+}
+
+// Cerrar dropdown al click fuera
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('plantilla-dropdown');
+  if (dd && !dd.contains(e.target) && e.target.id !== 'btn-plantilla')
+    dd.style.display = 'none';
+});
+
 async function cargar() {
   setStatus('v', 'loading', 'Sincronizando...');
   setStatus('c', 'loading', 'Sincronizando...');
+  mostrarSkeleton('v-tbody', 12);
+  mostrarSkeleton('c-tbody', 9);
+  mostrarSkeleton('p-tbody', 8);
 
   if (!estaOnline()) {
     // Load from cache
@@ -2850,6 +3100,7 @@ async function agregarViaje() {
 
     limpiarErrores(['v-fecha','v-tipo','v-cliente']);
     filtrarViajes(); actualizarGraficaV(); filtrarCobranza(); filtrarPagos();
+    guardarPlantilla(registro);
     registrarHistorial('agregar','Viaje',registro.cliente+' · '+registro.tipo+' · '+fmtFecha(fecha));
     setStatus('v','ok','Guardado');
     const msg = esFlete && registro.maniobras > 0
@@ -2866,9 +3117,12 @@ async function agregarViaje() {
 }
 
 async function eliminarViaje(id, fecha, tipo, costo) {
-  if (!confirm('¿Eliminar este registro?')) return;
-  // Find the original index in viajes array (1-based for Sheets, +2 for header)
   const r = viajes.find(v => v.id === id);
+  const _ctx = r
+    ? `¿Eliminar viaje de ${r.cliente||'—'}${r.origen||r.destino ? ' ('+[r.origen,r.destino].filter(Boolean).join(' → ')+')' : ''}?`
+    : '¿Eliminar este viaje?';
+  if (!confirm(_ctx)) return;
+  // Find the original index in viajes array (1-based for Sheets, +2 for header)
   if (!r) { toast('Registro no encontrado','err'); return; }
   const fechaNorm = fmtFecha(r.fecha);
   const costoNum  = parseFloat(r.costo);
@@ -2889,6 +3143,8 @@ function duplicarViaje(id) {
   const r = viajes.find(v => v.id === id);
   if (!r) return;
   const hoy = new Date().toISOString().split('T')[0];
+
+  // ── Campos base ────────────────────────────────────────
   document.getElementById('v-fecha').value = hoy;
   document.getElementById('v-tipo').value = r.tipo || 'carga';
   document.getElementById('v-cliente').value = r.cliente || '';
@@ -2897,15 +3153,46 @@ function duplicarViaje(id) {
   document.getElementById('v-destino').value = r.destino || '';
   document.getElementById('v-costo').value = r.costo || '';
   document.getElementById('v-cobradof').value = r.cobrado || '';
-  document.getElementById('v-referencia').value = generarFolioAuto();
   document.getElementById('v-notas').value = r.notas || '';
-  // Switch to viajes tab and scroll to form
-  document.querySelectorAll('.tabs > .tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+
+  // ── Nuevo folio con fecha de hoy ───────────────────────
+  document.getElementById('v-referencia').value = generarFolioAuto();
+
+  // ── Campos de flete (contenedor / patio / maniobras) ──
+  const esFlete = (r.tipo === 'flete_full' || r.tipo === 'maniobras' ||
+                   r.tipo === 'flete' || r.contenedor);
+  if (esFlete) {
+    const contenedorEl  = document.getElementById('v-contenedor');
+    const patioEl       = document.getElementById('v-patio');
+    const estadoEl      = document.getElementById('v-estado-flete');
+    const manCostoEl    = document.getElementById('v-maniobras-costo');
+    const manCobEl      = document.getElementById('v-maniobras-cobrado');
+    const manDescEl     = document.getElementById('v-maniobras-desc');
+    if (contenedorEl) contenedorEl.value = r.contenedor || '';
+    if (patioEl)      patioEl.value      = r.patio      || '';
+    if (estadoEl)     estadoEl.value     = 'libre';        // siempre inicia libre
+    if (manCostoEl)   manCostoEl.value   = r.maniobras      || '';
+    if (manCobEl)     manCobEl.value     = r.maniobrasCobrado || '';
+    if (manDescEl)    manDescEl.value    = r.maniobrasDesc   || '';
+    // Asegura que el panel de flete esté visible
+    const fletePanel = document.getElementById('v-flete-extra');
+    if (fletePanel) fletePanel.style.display = 'block';
+  }
+
+  // ── Navegar a tab Viajes y hacer scroll al form ────────
+  document.querySelectorAll('.tabs > .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-viajes').classList.add('active');
   document.querySelector('.tabs > .tab[onclick*="viajes"]').classList.add('active');
-  setTimeout(()=>document.getElementById('v-btn-add').scrollIntoView({behavior:'smooth',block:'center'}),100);
-  toast('Registro duplicado — revisa y guarda', 'inf');
+
+  // Toast informativo con la ruta
+  const ruta = [r.origen, r.destino].filter(Boolean).join(' → ');
+  const msg  = ruta ? `Duplicado: ${ruta} — ajusta referencia y guarda`
+                    : 'Duplicado con fecha de hoy — revisa y guarda';
+  setTimeout(() => {
+    document.getElementById('v-btn-add').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast(msg, 'inf');
+  }, 100);
 }
 
 function exportarViajes() {
@@ -3101,12 +3388,68 @@ async function cambiarEstado(folio, nuevoEstado) {
 }
 
 async function eliminarCobranza(id, folio) {
-  if (!confirm('¿Eliminar esta factura?')) return;
+  const _rc = cobranzas.find(c => c.id === id);
+  const _ctxc = _rc
+    ? `¿Eliminar factura ${_rc.folio||folio} de ${_rc.cliente||'—'} por ${fmt(_rc.monto)}?`
+    : `¿Eliminar factura ${folio}?`;
+  if (!confirm(_ctxc)) return;
   try {
     await sendPost({action:'cobranza_delete',folio});
     cobranzas = cobranzas.filter(r=>r.id!==id);
     filtrarCobranza(); toast('Factura eliminada','ok');
   } catch(e){ toast('No se pudo eliminar','err'); }
+}
+
+function actualizarBannerVenc() {
+  const banner = document.getElementById('c-banner-venc');
+  if (!banner) return;
+  const hoy  = new Date(); hoy.setHours(0,0,0,0);
+  const lim  = new Date(hoy); lim.setDate(lim.getDate() + 3);
+
+  const prox = cobranzas.filter(r => {
+    if (!r.fechaVencimiento) return false;
+    if (r.estado === 'cobrada' || r.estado === 'cancelada') return false;
+    const fv = new Date(r.fechaVencimiento + 'T00:00:00');
+    return fv >= hoy && fv <= lim;
+  });
+  const venc = cobranzas.filter(r => {
+    if (!r.fechaVencimiento) return false;
+    if (r.estado === 'cobrada' || r.estado === 'cancelada') return false;
+    const fv = new Date(r.fechaVencimiento + 'T00:00:00');
+    return fv < hoy;
+  });
+
+  const total = prox.length + venc.length;
+  if (total === 0) { banner.style.display = 'none'; return; }
+
+  const monto = [...prox, ...venc].reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
+
+  let countTxt = '';
+  const parts = [];
+  if (venc.length)  parts.push(`${venc.length} vencida${venc.length > 1 ? 's' : ''}`);
+  if (prox.length)  parts.push(`${prox.length} vence${prox.length > 1 ? 'n' : ''} en ≤3 días`);
+  countTxt = parts.join(' · ');
+
+  // Detalle de clientes
+  const clientes = [...new Set([...venc, ...prox].map(r => r.cliente).filter(Boolean))];
+  const detalle  = clientes.slice(0, 3).join(', ') + (clientes.length > 3 ? ` y ${clientes.length - 3} más` : '');
+
+  document.getElementById('bv-count').textContent  = countTxt;
+  document.getElementById('bv-total').textContent  = fmt(monto);
+  document.getElementById('bv-detalle').textContent = detalle;
+
+  banner.className = venc.length ? 'danger' : '';
+  banner.style.display = 'flex';
+}
+
+function filtrarPorVencer() {
+  // Quitar filtros activos y mostrar solo pendientes/vencidas
+  document.getElementById('c-buscar').value   = '';
+  document.getElementById('c-fil-desde').value = '';
+  document.getElementById('c-fil-hasta').value  = '';
+  document.getElementById('c-fil-estado').value = 'pendiente';
+  filtrarCobranza();
+  document.getElementById('c-buscar').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 function filtrarCobranza() {
@@ -3128,7 +3471,7 @@ function filtrarCobranza() {
     if(typeof vb==='string')vb=vb.toLowerCase();
     return va<vb?cSortDir:va>vb?-cSortDir:0;
   });
-  cPag=1; renderCobranza(); actualizarMetricasC();
+  cPag=1; renderCobranza(); actualizarMetricasC(); actualizarBannerVenc();
 }
 
 function ordenarC(col){
@@ -4616,7 +4959,11 @@ async function cambiarEstadoPago(folio, estado) {
 }
 
 async function eliminarPago(id, folio) {
-  if(!confirm('¿Eliminar este pago?')) return;
+  const _rp = pagos.find(p => p.id === id);
+  const _ctxp = _rp
+    ? `¿Eliminar pago ${_rp.folio||folio} a ${_rp.proveedor||'—'} por ${fmt(_rp.monto)}?`
+    : `¿Eliminar pago ${folio}?`;
+  if(!confirm(_ctxp)) return;
   try {
     await sendPost({action:'pago_delete', folio});
     pagos = pagos.filter(p=>p.id!==id);
