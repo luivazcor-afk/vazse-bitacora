@@ -552,6 +552,19 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .sk-cell.sk-badge{height:20px;width:70px;border-radius:10px}
 
 
+/* ══ DOMICILIO SELECTOR (Carta) ══════════════════════ */
+.dom-btn{
+  padding:5px 12px;font-size:12px;font-weight:500;
+  border:0.5px solid rgba(0,0,0,.16);border-radius:8px;
+  background:#F5F3EF;cursor:pointer;color:#4A4A47;
+  transition:all .13s;white-space:nowrap
+}
+.dom-btn:hover{background:#EBF3FC;color:#185FA5;border-color:rgba(24,95,165,.3)}
+.dom-btn.dom-btn-active{background:#185FA5;color:#fff;border-color:#185FA5}
+html[data-theme=dark] .dom-btn{background:#2A2824;border-color:rgba(255,255,255,.12);color:#A8A5A0}
+html[data-theme=dark] .dom-btn:hover{background:#333028;color:#E8E5DF}
+html[data-theme=dark] .dom-btn.dom-btn-active{background:#185FA5;color:#fff;border-color:#185FA5}
+
 /* ══ REPORT TABS ══════════════════════════════════════ */
 .report-tabs{
   display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;
@@ -2306,6 +2319,10 @@ html[data-theme=dark]{
         <div class="carta-grid">
           <div class="carta-field full carta-grid"><label>Destinatario / Razón social</label>
             <input type="text" id="ci-destinatario"></div>
+          <div class="carta-field full carta-grid" id="ci-dom-selector-wrap" style="display:none">
+            <label>Domicilio de entrega</label>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap" id="ci-dom-btns"></div>
+          </div>
           <div class="carta-field full carta-grid"><label>Dirección</label>
             <input type="text" id="ci-direccion"></div>
           <div class="carta-field"><label>Contacto / Persona que recibe</label>
@@ -6584,18 +6601,30 @@ function abrirCarta(viajeId) {
 
   // Pre-fill from catClientes
   const cli = catClientes.find(x => x.nombre.toUpperCase() === (v.cliente||'').toUpperCase());
+  // Reset domicilio selector
+  const domWrap = document.getElementById('ci-dom-selector-wrap');
+  const domBtns = document.getElementById('ci-dom-btns');
+  domWrap.style.display = 'none';
+  domBtns.innerHTML = '';
   if (cli) {
     document.getElementById('ci-destinatario').value  = cli.nombre || '';
     document.getElementById('ci-rfc').value           = cli.rfc || '';
     document.getElementById('ci-fact-razon').value    = cli.nombre || '';
     document.getElementById('ci-email-fact').value    = cli.email || '';
-    // First domicilio if available
-    if (cli.domicilios && cli.domicilios.length > 0) {
-      const dom = cli.domicilios[0];
-      document.getElementById('ci-direccion').value      = dom.dir || '';
-      document.getElementById('ci-contacto-entrega').value = dom.contacto || '';
-      document.getElementById('ci-tel-entrega').value    = dom.tel || '';
-      document.getElementById('ci-horario').value        = dom.horario || '';
+    const doms = (cli.domicilios || []).filter(d => d.dir || d.nombre);
+    if (doms.length > 0) {
+      // Always fill with first domicilio
+      aplicarDomicilioCarta(doms[0]);
+      if (doms.length > 1) {
+        // Show selector buttons
+        domWrap.style.display = '';
+        domBtns.innerHTML = doms.map((d, i) => `
+          <button class="dom-btn${i===0?' dom-btn-active':''}" onclick="seleccionarDomCarta(${i})" data-idx="${i}">
+            ${d.nombre || 'Domicilio '+(i+1)}
+          </button>`).join('');
+        // Store domicilios in a temp global for the onclick handler
+        window._cartaDoms = doms;
+      }
     } else {
       document.getElementById('ci-contacto-entrega').value = cli.contacto || '';
       document.getElementById('ci-tel-entrega').value      = cli.tel || '';
@@ -6606,8 +6635,25 @@ function abrirCarta(viajeId) {
   document.getElementById('carta-overlay').classList.add('show');
 }
 
+function aplicarDomicilioCarta(dom) {
+  document.getElementById('ci-direccion').value         = dom.dir || '';
+  document.getElementById('ci-contacto-entrega').value  = dom.contacto || '';
+  document.getElementById('ci-tel-entrega').value       = dom.tel || '';
+  document.getElementById('ci-horario').value           = dom.horario || '';
+}
+
+function seleccionarDomCarta(idx) {
+  if (!window._cartaDoms) return;
+  aplicarDomicilioCarta(window._cartaDoms[idx]);
+  // Update active button
+  document.querySelectorAll('#ci-dom-btns .dom-btn').forEach((b, i) => {
+    b.classList.toggle('dom-btn-active', i === idx);
+  });
+}
+
 function cerrarCarta() {
   document.getElementById('carta-overlay').classList.remove('show');
+  window._cartaDoms = null;
 }
 
 function g(id) { return document.getElementById(id)?.value || ''; }
