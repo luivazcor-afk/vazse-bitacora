@@ -646,6 +646,32 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .ef-step:hover{background:var(--color-background-tertiary);color:var(--color-text-primary)}
 .ef-step.current{background:#185FA5;color:#fff}
 .ef-arrow{font-size:9px;color:var(--color-text-tertiary)}
+
+/* ══ VALIDACIÓN CAMPOS ════════════════════════════════ */
+.campo-error{
+  border-color:#E24B4A !important;
+  background:#FFFAFA !important;
+  box-shadow:0 0 0 3px rgba(226,75,74,.12) !important;
+  animation:shake .3s ease;
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-4px)}
+  40%{transform:translateX(4px)}
+  60%{transform:translateX(-3px)}
+  80%{transform:translateX(3px)}
+}
+.error-msg{
+  font-size:11px;color:#A32D2D;font-weight:500;
+  margin-top:3px;display:flex;align-items:center;gap:3px;
+}
+.error-msg::before{content:'⚠';font-size:10px}
+.fg input.campo-error:focus,.fg select.campo-error:focus{
+  border-color:#E24B4A !important;
+  box-shadow:0 0 0 3px rgba(226,75,74,.18) !important;
+}
+.fg label.label-error{color:#A32D2D;font-weight:600}
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
@@ -2644,7 +2670,7 @@ function toggleFleteSection() {
 
 async function agregarViaje() {
   if (!validarCampos(['v-fecha','v-tipo','v-cliente'])) {
-    toast('Completa los campos requeridos','err'); return;
+    toast('Completa los campos marcados en rojo','err'); return;
   }
   const fecha = document.getElementById('v-fecha').value;
   const tipo = document.getElementById('v-tipo').value;
@@ -2945,7 +2971,7 @@ async function subirArchivoConToken(file, progressId, token) {
 
 async function agregarCobranza() {
   if (!validarCampos(['c-folio','c-cliente','c-monto'])) {
-    toast('Completa los campos requeridos','err'); return;
+    toast('Completa los campos marcados en rojo','err'); return;
   }
   const folio = document.getElementById('c-folio').value.trim();
   const cliente = document.getElementById('c-cliente').value.trim();
@@ -4809,28 +4835,59 @@ function cargarTodo() {
 }
 
 // ── VALIDACIÓN DE CAMPOS ────────────────────────────
+function limpiarError(el) {
+  if (!el) return;
+  el.classList.remove('campo-error');
+  const errEl = el.parentNode.querySelector('.error-msg');
+  if (errEl) errEl.remove();
+  const lbl = el.parentNode.querySelector('label');
+  if (lbl) lbl.classList.remove('label-error');
+}
+
 function validarCampos(campos) {
   let ok = true;
+  let primerError = null;
   campos.forEach(function(id) {
     const el = document.getElementById(id);
     if (!el) return;
-    // Remove previous error
-    el.classList.remove('campo-error');
-    const errEl = el.parentNode.querySelector('.error-msg');
-    if (errEl) errEl.remove();
-    // Check empty
+    limpiarError(el);
     const val = el.value ? el.value.trim() : '';
     if (!val) {
       el.classList.add('campo-error');
       const msg = document.createElement('div');
       msg.className = 'error-msg';
-      msg.textContent = 'Campo requerido';
+      // Mensaje específico por campo
+      const labels = {
+        'v-tipo': 'Selecciona el tipo de servicio',
+        'v-cliente': 'Ingresa el cliente',
+        'v-fecha': 'Ingresa la fecha',
+        'p-folio': 'Ingresa el folio',
+        'p-proveedor-input': 'Ingresa el proveedor',
+        'p-monto': 'Ingresa el monto',
+        'c-cliente': 'Ingresa el cliente',
+        'c-monto': 'Ingresa el monto',
+      };
+      msg.textContent = labels[id] || 'Campo requerido';
       el.parentNode.appendChild(msg);
+      // Resaltar label
+      const lbl = el.parentNode.querySelector('label');
+      if (lbl) lbl.classList.add('label-error');
+      // Auto-clear on input
+      el.addEventListener('input', function onInput() {
+        if (el.value.trim()) { limpiarError(el); el.removeEventListener('input', onInput); }
+      }, {once: true});
+      el.addEventListener('change', function onChange() {
+        if (el.value.trim()) { limpiarError(el); el.removeEventListener('change', onChange); }
+      }, {once: true});
+      if (!primerError) primerError = el;
       ok = false;
-    } else {
-      el.classList.remove('campo-error');
     }
   });
+  // Focus primer campo con error
+  if (primerError) {
+    primerError.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(() => primerError.focus(), 300);
+  }
   return ok;
 }
 
