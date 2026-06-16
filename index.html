@@ -1075,6 +1075,7 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
       <button class="report-tab" onclick="cambiarReporte('unidades',this)">Por proveedor</button>
       <button class="report-tab" onclick="cambiarReporte('tipos',this)">Por tipo</button>
       <button class="report-tab" onclick="cambiarReporte('cob-clientes',this)">Cobranza</button>
+      <button class="report-tab" onclick="cambiarReporte('rentabilidad',this)">💹 Rentabilidad</button>
     </div>
 
     <!-- POR CLIENTE -->
@@ -1290,7 +1291,60 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
     </div>
   </div>
 
-  <!-- ════════════════════════════════════════════
+  
+    <!-- RENTABILIDAD POR CLIENTE -->
+    <div id="rep-rentabilidad" class="report-panel">
+      <div class="topbar" style="margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+        <div class="brand">
+          <div class="brand-title" style="font-size:14px">💹 Rentabilidad por cliente</div>
+          <div class="brand-sub">Ordenado de mayor a menor utilidad · Período cargado</div>
+        </div>
+        <div class="btns">
+          <select id="rent-periodo" onchange="renderReporteRentabilidad()"
+            style="font-size:12px;padding:6px 10px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;background:#fff">
+            <option value="cargado">Período cargado</option>
+            <option value="mes">Este mes</option>
+            <option value="trimestre">Este trimestre</option>
+            <option value="anio">Este año</option>
+            <option value="todo">Todo el histórico</option>
+          </select>
+          <button class="btn" onclick="exportarRentabilidad()">⬇ Excel</button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="metrics" id="rent-kpis" style="margin-bottom:1rem">
+        <div class="metric"><div class="metric-label">Clientes activos</div><div class="metric-val info" id="rent-k-clientes">—</div></div>
+        <div class="metric"><div class="metric-label">Total cobrado</div><div class="metric-val pos" id="rent-k-cobrado">—</div></div>
+        <div class="metric"><div class="metric-label">Total costo</div><div class="metric-val neg" id="rent-k-costo">—</div></div>
+        <div class="metric"><div class="metric-label">Utilidad total</div><div class="metric-val pos" id="rent-k-util">—</div></div>
+        <div class="metric"><div class="metric-label">Margen promedio</div><div class="metric-val info" id="rent-k-margen">—</div></div>
+      </div>
+
+      <!-- Tabla principal -->
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:700px;background:#fff">
+            <thead>
+              <tr>
+                <th style="background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:left;border-bottom:0.5px solid rgba(0,0,0,.08)">Cliente</th>
+                <th style="background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:center;border-bottom:0.5px solid rgba(0,0,0,.08)">Viajes</th>
+                <th style="background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:right;border-bottom:0.5px solid rgba(0,0,0,.08)">Cobrado</th>
+                <th style="background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:right;border-bottom:0.5px solid rgba(0,0,0,.08)">Costo</th>
+                <th style="background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:right;border-bottom:0.5px solid rgba(0,0,0,.08)">Utilidad</th>
+                <th style="background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:right;border-bottom:0.5px solid rgba(0,0,0,.08)">Margen %</th>
+                <th style="background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;text-align:left;border-bottom:0.5px solid rgba(0,0,0,.08)">Barra</th>
+              </tr>
+            </thead>
+            <tbody id="rent-tbody">
+              <tr><td colspan="7"><div class="empty-state"><p>Sin datos</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+<!-- ════════════════════════════════════════════
        PESTAÑA 5 — HISTORIAL
   ═══════════════════════════════════════════════ -->
   <div id="panel-historial" class="tab-panel">
@@ -3540,6 +3594,7 @@ function cambiarReporte(id, btn) {
   if(id==='unidades') renderReporteUnidades();
   if(id==='tipos') renderReporteTipos();
   if(id==='cob-clientes') renderReporteCobClientes();
+  if(id==='rentabilidad') renderReporteRentabilidad();
 }
 
 function agrupar(campo) {
@@ -4181,6 +4236,111 @@ function renderReporteTop5() {
 }
 
 // ── COBRANZA POR CLIENTE ──────────────────────────────
+// ── REPORTE RENTABILIDAD POR CLIENTE ─────────────────
+function getViajesFiltradosPeriodo() {
+  const periodo = document.getElementById('rent-periodo')?.value || 'cargado';
+  const hoy = new Date();
+  const añoActual = hoy.getFullYear();
+  const mesActual = hoy.getMonth();
+
+  if (periodo === 'cargado') return [...viajes];
+
+  return viajes.filter(v => {
+    if (!v.fecha) return false;
+    const d = new Date(v.fecha);
+    if (periodo === 'mes') return d.getFullYear()===añoActual && d.getMonth()===mesActual;
+    if (periodo === 'trimestre') {
+      const trimActual = Math.floor(mesActual/3);
+      return d.getFullYear()===añoActual && Math.floor(d.getMonth()/3)===trimActual;
+    }
+    if (periodo === 'anio') return d.getFullYear()===añoActual;
+    return true; // todo
+  });
+}
+
+function renderReporteRentabilidad() {
+  const data = getViajesFiltradosPeriodo();
+  const tbody = document.getElementById('rent-tbody');
+  if (!tbody) return;
+
+  // Agrupar por cliente
+  const map = {};
+  data.forEach(v => {
+    const cli = v.cliente || '(sin cliente)';
+    if (!map[cli]) map[cli] = {cobrado:0, costo:0, count:0};
+    map[cli].cobrado += parseFloat(v.cobrado)||0;
+    map[cli].costo   += parseFloat(v.costo)||0;
+    map[cli].count++;
+  });
+
+  // Ordenar por utilidad desc
+  const rows = Object.entries(map).map(([k,v]) => ({
+    cliente: k,
+    cobrado: v.cobrado,
+    costo:   v.costo,
+    util:    v.cobrado - v.costo,
+    margen:  v.cobrado > 0 ? ((v.cobrado - v.costo) / v.cobrado * 100) : 0,
+    count:   v.count
+  })).sort((a,b) => b.util - a.util);
+
+  // KPIs
+  const totCob  = rows.reduce((s,r)=>s+r.cobrado,0);
+  const totCost = rows.reduce((s,r)=>s+r.costo,0);
+  const totUtil = totCob - totCost;
+  const avgMarg = totCob > 0 ? (totUtil/totCob*100) : 0;
+  const maxUtil = rows.length ? rows[0].util : 1;
+
+  document.getElementById('rent-k-clientes').textContent = rows.length;
+  document.getElementById('rent-k-cobrado').textContent  = fmt(totCob);
+  document.getElementById('rent-k-costo').textContent    = fmt(totCost);
+  document.getElementById('rent-k-util').textContent     = fmt(totUtil);
+  document.getElementById('rent-k-margen').textContent   = avgMarg.toFixed(1) + '%';
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><p>Sin datos para el período</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r,i) => {
+    const pct    = maxUtil > 0 ? Math.max(0, (r.util / maxUtil * 100)) : 0;
+    const margenColor = r.margen >= 20 ? '#0F6E56' : r.margen >= 10 ? '#854F0B' : '#C0392B';
+    const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1)+'.';
+    return `<tr style="border-bottom:0.5px solid rgba(0,0,0,.055)">
+      <td style="padding:9px 12px;font-weight:500;color:#1C1C1A">
+        <span style="color:#B0AEA9;font-size:11px;margin-right:6px">${rank}</span>${r.cliente}
+        <div style="font-size:10px;color:#B0AEA9;margin-top:1px">${r.count} viaje${r.count!==1?'s':''}</div>
+      </td>
+      <td style="padding:9px 12px;text-align:center;color:#6B6A67;font-size:12px">${r.count}</td>
+      <td style="padding:9px 12px;text-align:right;color:#0F6E56;font-weight:500">${fmt(r.cobrado)}</td>
+      <td style="padding:9px 12px;text-align:right;color:#C0392B;font-weight:500">${fmt(r.costo)}</td>
+      <td style="padding:9px 12px;text-align:right;font-weight:600;color:${r.util>=0?'#0F6E56':'#C0392B'}">${fmt(r.util)}</td>
+      <td style="padding:9px 12px;text-align:right;font-weight:600;color:${margenColor}">${r.margen.toFixed(1)}%</td>
+      <td style="padding:9px 12px;min-width:100px">
+        <div style="background:rgba(0,0,0,.06);border-radius:4px;height:8px;overflow:hidden">
+          <div style="background:${r.util>=0?'#1D9E75':'#E24B4A'};height:100%;width:${Math.min(100,Math.max(0,pct)).toFixed(1)}%;border-radius:4px;transition:width .4s"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function exportarRentabilidad() {
+  const rows = [];
+  rows.push(['#','Cliente','Viajes','Cobrado','Costo','Utilidad','Margen %']);
+  document.querySelectorAll('#rent-tbody tr').forEach((tr,i) => {
+    const tds = tr.querySelectorAll('td');
+    if (tds.length < 6) return;
+    rows.push([i+1, tds[0].innerText.split('\n')[0].replace(/[🥇🥈🥉]/g,'').trim(),
+      tds[1].innerText, tds[2].innerText, tds[3].innerText,
+      tds[4].innerText, tds[5].innerText]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Rentabilidad');
+  XLSX.writeFile(wb, 'Rentabilidad_Clientes.xlsx');
+}
+
+
 function renderReporteCobClientes() {
   const map = {};
   cobranzas.forEach(r => {
