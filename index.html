@@ -687,7 +687,8 @@ html[data-theme=dark] .pagination button{background:#333028;color:#D8D5CF;border
 html[data-theme=dark] .pagination button:hover{background:#3D3A33}
 html[data-theme=dark] .pagination button.active{background:#185FA5}
 html[data-theme=dark] .empty-state{background:transparent;color:#666360}
-html[data-theme=dark] .viaje-card,.cob-card{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .viaje-card{background:#252320;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .cob-card{background:#252320;border-color:rgba(255,255,255,.08)}
 html[data-theme=dark] .g-result-item:hover,.g-result-item.kbd-focus{background:#333028}
 html[data-theme=dark] #global-results{background:#252320;border-color:rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(0,0,0,.5)}
 html[data-theme=dark] .autocomplete-list{background:#252320;border-color:rgba(255,255,255,.1)}
@@ -798,6 +799,34 @@ html[data-theme=dark] .carta-footer{background:#1E1C1A;border-color:rgba(255,255
 html[data-theme=dark] .g-result-section{color:#666360;border-color:rgba(255,255,255,.06)}
 html[data-theme=dark] .g-result-section+.g-result-section,
 html[data-theme=dark] .g-result-item+.g-result-section{border-color:rgba(255,255,255,.06)}
+/* ── Dark mode: alert banner ─────────────────────── */
+html[data-theme=dark] .alert-banner{background:#3D3010;border-color:#705A00;color:#D4C090}
+html[data-theme=dark] #alert-eir{background:#3D3010!important;border-color:#705A00!important;color:#D4C090!important}
+html[data-theme=dark] #alert-vencidos{background:#3D1010;border-color:#8B0000;color:#D49090}
+/* ── Dark mode: timeline ─────────────────────────── */
+html[data-theme=dark] .timeline-wrap{color:#D8D5CF}
+html[data-theme=dark] .tl-item{border-color:rgba(255,255,255,.06)}
+html[data-theme=dark] .tl-date{color:#666360}
+html[data-theme=dark] .tl-title{color:#E8E5DF}
+html[data-theme=dark] .tl-sub{color:#888780}
+html[data-theme=dark] .tl-icon{filter:brightness(.75)}
+/* ── Dark mode: mobile cards ─────────────────────── */
+html[data-theme=dark] .card-cliente{color:#E8E5DF}
+html[data-theme=dark] .card-meta{color:#888780}
+html[data-theme=dark] .card-monto{color:#E8E5DF}
+html[data-theme=dark] .card-actions{border-color:rgba(255,255,255,.06)}
+/* ── Dark mode: badges ───────────────────────────── */
+html[data-theme=dark] .ef-sin-eir{background:#3D2A00;color:#D4A060;border-color:rgba(212,160,96,.3)}
+html[data-theme=dark] .seg-badge{background:#1A2840;color:#85B7EB}
+html[data-theme=dark] .dias-ok{background:#0E2A1F;color:#6DC4A5}
+html[data-theme=dark] .dias-warn{background:#2A1E0A;color:#D4A060}
+html[data-theme=dark] .dias-venc{background:#2A0A0A;color:#E07070}
+html[data-theme=dark] .ef-libre{background:#2A2824;color:#A8A5A0;border-color:rgba(255,255,255,.12)}
+html[data-theme=dark] .ef-patio{background:#2A1E0A;color:#D4A060;border-color:rgba(212,160,96,.3)}
+html[data-theme=dark] .ef-proceso{background:#1A2840;color:#85B7EB;border-color:rgba(133,183,235,.3)}
+html[data-theme=dark] .ef-entregado{background:#0E2A1F;color:#6DC4A5;border-color:rgba(109,196,165,.3)}
+/* ── Dark mode: card bottom divider ──────────────── */
+html[data-theme=dark] .chart-card div[style*="border-top"]{border-color:rgba(255,255,255,.06)!important}
 /* ── Dark mode: row highlight for dark ───────────── */
 html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
 @keyframes rowHighlightDark{
@@ -968,6 +997,94 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
 .ef-step:hover{background:var(--color-background-tertiary);color:var(--color-text-primary)}
 .ef-step.current{background:#185FA5;color:#fff}
 .ef-arrow{font-size:9px;color:var(--color-text-tertiary)}
+
+/* ══ CSS VARIABLES (light defaults) ══════════════════ */
+:root{
+  --color-background-primary:#fff;
+  --color-background-secondary:#F5F3EF;
+  --color-background-tertiary:#EBE9E4;
+  --color-border-secondary:rgba(0,0,0,.10);
+  --color-text-primary:#1C1C1A;
+  --color-text-secondary:#6B6A67;
+  --color-text-tertiary:#B0AEA9
+}
+html[data-theme=dark]{
+  --color-background-primary:#252320;
+  --color-background-secondary:#2A2824;
+  --color-background-tertiary:#333028;
+  --color-border-secondary:rgba(255,255,255,.10);
+  --color-text-primary:#E8E5DF;
+  --color-text-secondary:#A8A5A0;
+  --color-text-tertiary:#555350
+}
+
+/* ══ ALERT BANNER ═════════════════════════════════════ */
+.alert-banner{
+  display:none;align-items:center;gap:8px;
+  background:#FEF3CD;border:1px solid #F0C040;
+  border-radius:10px;padding:9px 14px;margin-bottom:12px;
+  font-size:12.5px;color:#5C4B00;cursor:pointer;transition:background .12s
+}
+.alert-banner.show{display:flex}
+.alert-banner:hover{filter:brightness(.97)}
+
+/* ══ TIMELINE (Contenedor tab) ════════════════════════ */
+.timeline-wrap{display:flex;flex-direction:column;gap:0}
+.tl-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:8px 0;border-bottom:0.5px solid rgba(0,0,0,.06)
+}
+.tl-item:last-child{border-bottom:none}
+.tl-icon{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px
+}
+.tl-content{flex:1;min-width:0}
+.tl-date{font-size:10.5px;color:#999895;font-weight:500;margin-bottom:2px}
+.tl-title{font-size:12.5px;font-weight:500;color:#1C1C1A}
+.tl-sub{font-size:11px;color:#8A8880;margin-top:2px}
+
+/* ══ MOBILE CARDS ══════════════════════════════════════ */
+.viaje-card,.cob-card{
+  background:#fff;border:0.5px solid rgba(0,0,0,.09);border-radius:13px;
+  padding:.875rem 1rem;margin-bottom:8px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04)
+}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.card-cliente{font-size:13.5px;font-weight:500;color:#1C1C1A;margin-bottom:3px}
+.card-meta{font-size:11.5px;color:#8A8880;display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.card-monto{font-size:16px;font-weight:600;color:#1C1C1A;letter-spacing:-.01em}
+.card-util-pos{color:#0F6E56;font-weight:500}
+.card-util-neg{color:#C0392B;font-weight:500}
+.card-actions{display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(0,0,0,.06)}
+
+/* ══ BADGES ════════════════════════════════════════════ */
+.ef-sin-eir{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:500;padding:3px 8px;
+  border-radius:20px;background:#FEF3E2;color:#92400E;
+  border:0.5px solid rgba(146,64,14,.25)
+}
+.seg-badge{
+  display:inline-flex;align-items:center;
+  font-size:11px;font-weight:500;padding:2px 6px;
+  border-radius:10px;background:#E9F0FB;color:#185FA5;cursor:pointer
+}
+.dias-badge{
+  display:inline-flex;align-items:center;
+  font-size:10px;font-weight:600;padding:2px 6px;
+  border-radius:10px;white-space:nowrap
+}
+.dias-ok{background:#E1F5EE;color:#0F6E56}
+.dias-warn{background:#FEF3E2;color:#92400E}
+.dias-venc{background:#FDECEC;color:#C0392B}
+
+/* ══ DATE RANGE WRAP ══════════════════════════════════ */
+.date-range-wrap{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  margin-bottom:1rem;font-size:12px;color:#6B6A67
+}
+.date-range-wrap label{font-size:11px;font-weight:500;color:#8A8880}
 
 /* ══ VALIDACIÓN CAMPOS ════════════════════════════════ */
 .campo-error{
