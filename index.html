@@ -609,6 +609,43 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .mmb-theme .btn-add{background:#CC0000}
 .mmb-theme .btn-add:hover{background:#A00000}
 .mmb-theme .app{border-top:3px solid #CC0000}
+
+/* ══ PIPELINE ESTADO FLETE ═══════════════════════════ */
+.ef-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:500;padding:4px 9px;
+  border-radius:20px;white-space:nowrap;cursor:pointer;
+  border:0.5px solid transparent;transition:all .15s;
+  user-select:none
+}
+.ef-badge:hover{filter:brightness(.95);transform:scale(1.02)}
+.ef-badge:active{transform:scale(.97)}
+.ef-libre{background:#F1EFE8;color:#5F5E5A;border-color:#D3D1C7}
+.ef-patio{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.ef-proceso{background:#EBF3FC;color:#185FA5;border-color:#B5D4F4}
+.ef-entregado{background:#E1F5EE;color:#0F6E56;border-color:#9FE1CB}
+
+/* pipeline tooltip */
+.ef-pipeline-wrap{position:relative;display:inline-block}
+.ef-pipeline-tip{
+  position:absolute;bottom:calc(100% + 6px);left:50%;
+  transform:translateX(-50%);
+  background:var(--color-background-primary);
+  border:0.5px solid var(--color-border-secondary);
+  border-radius:10px;padding:6px;
+  display:none;z-index:500;
+  box-shadow:0 4px 16px rgba(0,0,0,.12);
+  white-space:nowrap
+}
+.ef-pipeline-wrap:hover .ef-pipeline-tip{display:flex;gap:4px;align-items:center}
+.ef-step{
+  font-size:10px;font-weight:500;padding:4px 8px;
+  border-radius:6px;cursor:pointer;transition:all .12s;
+  color:var(--color-text-secondary);background:var(--color-background-secondary)
+}
+.ef-step:hover{background:var(--color-background-tertiary);color:var(--color-text-primary)}
+.ef-step.current{background:#185FA5;color:#fff}
+.ef-arrow{font-size:9px;color:var(--color-text-tertiary)}
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
@@ -784,10 +821,10 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
             <div class="fg"><label>Patio de entrega</label><input type="text" id="v-patio" placeholder="Nombre del patio"></div>
             <div class="fg"><label>Estado operativo</label>
               <select id="v-estado-flete">
-                <option value="en_transito">🚛 En tránsito</option>
+                <option value="libre">○ Libre</option>
                 <option value="en_patio">🏭 En patio</option>
-                <option value="entregado">✅ Entregado</option>
-                <option value="liberado">📋 Liberado</option>
+                <option value="en_proceso">⚙️ En proceso</option>
+                <option value="entregado">✓ Entregado</option>
               </select>
             </div>
             <div class="flete-divider">Maniobras (genera línea separada en cobranza)</div>
@@ -3196,7 +3233,7 @@ function abrirEditViaje(id) {
   document.getElementById('ev-maniobras-costo').value = r.maniobras || '';
   document.getElementById('ev-maniobras-cobrado').value = r.maniobrasCobrado || '';
   document.getElementById('ev-maniobras-desc').value = r.maniobrasDesc || '';
-  document.getElementById('ev-estado-flete').value = r.estadoFlete || 'en_transito';
+  document.getElementById('ev-estado-flete').value = efNormalizar(r.estadoFlete || 'libre');
   // Show/hide flete section
   toggleFleteSectionEdit();
   document.getElementById('ev-overlay').classList.add('show');
@@ -3600,16 +3637,65 @@ function renderHistorial() {
 }
 
 // ── CONTENEDORES ──────────────────────────────────────
-function efBadge(estado) {
-  const m = {
-    en_transito:'ef-transito', en_patio:'ef-patio',
-    entregado:'ef-entregado', liberado:'ef-liberado'
-  };
-  const labels = {
-    en_transito:'🚛 En tránsito', en_patio:'🏭 En patio',
-    entregado:'✅ Entregado', liberado:'📋 Liberado'
-  };
-  return `<span class="ef-badge ${m[estado]||'ef-transito'}">${labels[estado]||estado}</span>`;
+// ── PIPELINE ESTADO FLETE ────────────────────────────
+const EF_ESTADOS = ['libre','en_patio','en_proceso','entregado'];
+const EF_LABELS  = {
+  libre:'Libre', en_patio:'En patio',
+  en_proceso:'En proceso', entregado:'Entregado'
+};
+const EF_CLASS = {
+  libre:'ef-libre', en_patio:'ef-patio',
+  en_proceso:'ef-proceso', entregado:'ef-entregado'
+};
+const EF_ICON = {
+  libre:'○', en_patio:'🏭', en_proceso:'⚙️', entregado:'✓'
+};
+
+function efNormalizar(estado) {
+  // Migrate old states
+  const map = {en_transito:'libre', liberado:'libre', '':'libre'};
+  return map[estado] !== undefined ? map[estado] : (EF_ESTADOS.includes(estado) ? estado : 'libre');
+}
+
+function efBadge(estado, viajeId) {
+  const e = efNormalizar(estado);
+  const cls = EF_CLASS[e] || 'ef-libre';
+  const lbl = EF_LABELS[e] || e;
+  const icon = EF_ICON[e] || '○';
+
+  const steps = EF_ESTADOS.map(s => {
+    const isCurr = s === e;
+    return `<span class="ef-step${isCurr?' current':''}"
+      onclick="event.stopPropagation();avanzarFlete(${viajeId},'${s}')"
+    >${EF_LABELS[s]}</span>`;
+  }).join('<span class="ef-arrow">›</span>');
+
+  return `<span class="ef-pipeline-wrap">
+    <span class="ef-badge ${cls}" onclick="event.stopPropagation();avanzarFleteNext(${viajeId},'${e}')" title="Click para avanzar · Hover para elegir">
+      ${icon} ${lbl}
+    </span>
+    <div class="ef-pipeline-tip">${steps}</div>
+  </span>`;
+}
+
+async function avanzarFleteNext(viajeId, estadoActual) {
+  const idx = EF_ESTADOS.indexOf(estadoActual);
+  const next = EF_ESTADOS[Math.min(idx + 1, EF_ESTADOS.length - 1)];
+  if (next === estadoActual) return;
+  await avanzarFlete(viajeId, next);
+}
+
+async function avanzarFlete(viajeId, nuevoEstado) {
+  const v = viajes.find(x => x.id === viajeId);
+  if (!v) return;
+  const estadoAnterior = efNormalizar(v.estadoFlete);
+  if (estadoAnterior === nuevoEstado) return;
+  const updated = {...v, estadoFlete: nuevoEstado};
+  await sendPost({action:'update_viaje', referencia:v.referencia, registro:updated});
+  const i = viajes.findIndex(x => x.id === viajeId);
+  if (i !== -1) viajes[i] = updated;
+  filtrarViajes();
+  toast(`${v.referencia} → ${EF_LABELS[nuevoEstado]}`, 'ok');
 }
 
 function buscarContenedor() {
@@ -3660,7 +3746,7 @@ function buscarContenedor() {
           <div style="font-size:12px;color:#888780;margin-top:2px">${r.cliente||'—'} · ${fmtFecha(r.fecha)} · ${r.unidad||'—'}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          ${efBadge(r.estadoFlete||'en_transito')}
+          ${efBadge(r.estadoFlete||'libre', r.id)}
           ${r.urlEir ? '<a href="'+r.urlEir+'" target="_blank" class="btn-sm view">📋 EIR</a>' : '<span class="ef-badge ef-sin-eir">⚠️ Sin EIR</span>'}
           <button class="btn-sm view" onclick="abrirEditViaje(${r.id})">✏️ Editar</button>
         </div>
