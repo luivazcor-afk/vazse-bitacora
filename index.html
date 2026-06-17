@@ -773,6 +773,12 @@ html[data-theme=dark] .cat-modal-close{background:#333028;color:#A8A5A0}
 html[data-theme=dark] .cat-modal-close:hover{background:#3D3A33;color:#E8E5DF}
 html[data-theme=dark] .cat-modal-title{color:#E8E5DF}
 html[data-theme=dark] .edit-modal{background:#252320}
+html[data-theme=dark] .edit-grid{background:#252320}
+html[data-theme=dark] .edit-footer{background:#1E1C1A;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .edit-close{color:#888780}
+html[data-theme=dark] .edit-close:hover{background:rgba(255,255,255,.1);color:#E8E5DF}
+html[data-theme=dark] .ev-flete-inner{background:#1E1C1A;border-color:rgba(255,255,255,.07)}
+html[data-theme=dark] .ev-flete-inner > div:first-child{color:#6AABDB}
 html[data-theme=dark] .edit-modal-header{border-color:rgba(255,255,255,.08)}
 html[data-theme=dark] .edit-modal-title{color:#E8E5DF}
 html[data-theme=dark] .edit-modal-footer{background:#1E1C1A;border-color:rgba(255,255,255,.08)}
@@ -921,6 +927,28 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
 #ev-overlay.show,#ec-overlay.show{display:flex}
 
 /* Edit modal content */
+.edit-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;padding:1.25rem
+}
+.edit-footer{
+  padding:.875rem 1.25rem;border-top:0.5px solid rgba(0,0,0,.08);
+  display:flex;gap:8px;justify-content:flex-end;
+  background:#FAFAF9;border-radius:0 0 16px 16px
+}
+.edit-close{
+  background:none;border:none;font-size:18px;cursor:pointer;
+  color:#8A8880;padding:2px 7px;border-radius:6px;line-height:1
+}
+.edit-close:hover{background:#F5F3EF;color:#1C1C1A}
+.ev-flete-inner{
+  background:#F7F5F1;border:0.5px solid rgba(0,0,0,.09);
+  border-radius:10px;padding:1rem
+}
+.ev-flete-inner > div:first-child{
+  font-size:11px;font-weight:500;color:#185FA5;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px
+}
 .edit-modal{
   background:#fff;border-radius:16px;width:100%;
   max-width:700px;max-height:90vh;overflow-y:auto;
@@ -2425,7 +2453,7 @@ html[data-theme=dark]{
       <div class="fg" style="grid-column:1/-1"><label>Notas</label><textarea id="ev-notas" style="min-height:52px"></textarea></div>
 
       <!-- CAMPOS FLETE EN EDICIÓN -->
-      <div id="ev-flete-section" style="display:none;grid-column:1/-1;background:#f7f6f3;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:1rem">
+      <div id="ev-flete-section" class="ev-flete-inner" style="display:none;grid-column:1/-1">
         <div style="font-size:11px;font-weight:500;color:#185FA5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🚛 Datos del flete</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
           <div class="fg"><label>N° Contenedor</label><input type="text" id="ev-contenedor" placeholder="MSCU1234567"></div>
