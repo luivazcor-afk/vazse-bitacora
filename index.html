@@ -50,6 +50,30 @@ body{
 .tab:hover{color:#1C1C1A;background:rgba(255,255,255,.5)}
 .tab.active{background:#fff;color:#1C1C1A;
   box-shadow:0 1px 4px rgba(0,0,0,.1),0 0 0 0.5px rgba(0,0,0,.06)}
+
+/* ══ CATÁLOGOS SEGMENTED CONTROL ═══════════════════ */
+.cat-tabs{
+  display:flex;gap:0;
+  background:#E8E5DF;
+  border-radius:10px;padding:3px;
+  width:fit-content;margin-bottom:1.25rem;
+  overflow:hidden;
+}
+.cat-tab{
+  flex:0 0 auto;padding:6px 18px;font-size:12px;font-weight:500;
+  border:none;background:transparent;border-radius:8px;cursor:pointer;
+  color:#6B6860;transition:all .15s ease;white-space:nowrap;
+}
+.cat-tab:hover{color:#1C1C1A;background:rgba(255,255,255,.5)}
+.cat-tab.active{
+  background:#fff;color:#1C1C1A;
+  box-shadow:0 1px 4px rgba(0,0,0,.12);
+}
+html[data-theme=dark] .cat-tabs{background:#2C2A27}
+html[data-theme=dark] .cat-tab{color:#8A8780}
+html[data-theme=dark] .cat-tab:hover{color:#E8E5DF;background:rgba(255,255,255,.08)}
+html[data-theme=dark] .cat-tab.active{background:#3A3835;color:#F0EDE8;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+
 .tab-icon{font-size:14px}
 
 /* ══ TOPBAR ══════════════════════════════════════════ */
@@ -1563,6 +1587,7 @@ html[data-theme=dark]{
       </div>
       <div class="btns">
         <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / PDF</button>
+        <button class="btn" onclick="exportarXLSX()" style="background:#1D9E75;color:#fff;border:none;font-weight:500">⬇ Excel completo</button>
       </div>
     </div>
 
@@ -3557,6 +3582,88 @@ function duplicarViaje(id) {
     document.getElementById('v-btn-add').scrollIntoView({ behavior: 'smooth', block: 'center' });
     toast(msg, 'inf');
   }, 100);
+}
+
+
+// ══════════════════════════════════════════════════════
+//  EXPORTAR XLSX COMPLETO (Resumen + Viajes + Cobranza + Pagos)
+// ══════════════════════════════════════════════════════
+function exportarXLSX() {
+  const wb = XLSX.utils.book_new();
+  const hoy = new Date();
+  const fecha = hoy.toISOString().split('T')[0];
+
+  // ── Hoja 1: Resumen KPIs ─────────────────────────
+  const totalCobrado  = viajes.reduce((s,r)=>s+(r.cobrado||0),0);
+  const totalCosto    = viajes.reduce((s,r)=>s+(r.costo||0),0);
+  const utilidad      = totalCobrado - totalCosto;
+  const margen        = totalCobrado>0 ? (utilidad/totalCobrado*100).toFixed(1)+'%' : '0%';
+  const totalCobranza = cobranzas.reduce((s,r)=>s+(r.monto||0),0);
+  const cobrado       = cobranzas.filter(r=>r.estado==='pagado').reduce((s,r)=>s+(r.monto||0),0);
+  const pendiente     = totalCobranza - cobrado;
+  const totalPagos    = pagos.reduce((s,r)=>s+(r.monto||0),0);
+
+  const resumenData = [
+    ['REPORTE EJECUTIVO VAZSE', '', fecha],
+    [],
+    ['VIAJES', '', ''],
+    ['Total viajes', viajes.length, ''],
+    ['Total cobrado', totalCobrado, ''],
+    ['Total costo', totalCosto, ''],
+    ['Utilidad', utilidad, ''],
+    ['Margen', margen, ''],
+    [],
+    ['COBRANZA', '', ''],
+    ['Total facturado', totalCobranza, ''],
+    ['Cobrado / Pagado', cobrado, ''],
+    ['Pendiente', pendiente, ''],
+    [],
+    ['PAGOS A PROVEEDORES', '', ''],
+    ['Total pagos', pagos.length, ''],
+    ['Monto total pagado', totalPagos, ''],
+  ];
+  const wsRes = XLSX.utils.aoa_to_sheet(resumenData);
+  wsRes['!cols'] = [{wch:28},{wch:16},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen');
+
+  // ── Hoja 2: Viajes ────────────────────────────────
+  const hViajes = ['Fecha','Tipo','Cliente','Proveedor','Origen','Destino','Costo','Cobrado','Utilidad','Referencia','Notas'];
+  const dViajes = viajes.map(r=>[
+    fmtFecha(r.fecha), r.tipo||'', r.cliente||'', r.unidad||'',
+    r.origen||'', r.destino||'',
+    r.costo||0, r.cobrado||0, (r.cobrado||0)-(r.costo||0),
+    r.referencia||'', r.notas||''
+  ]);
+  const tkV = viajes.reduce((s,r)=>s+(r.costo||0),0);
+  const tcV = viajes.reduce((s,r)=>s+(r.cobrado||0),0);
+  dViajes.push([], ['','','','','','TOTALES', tkV, tcV, tcV-tkV,'','']);
+  const wsV = XLSX.utils.aoa_to_sheet([hViajes,...dViajes]);
+  wsV['!cols']=[{wch:12},{wch:11},{wch:20},{wch:16},{wch:18},{wch:18},{wch:12},{wch:12},{wch:12},{wch:18},{wch:28}];
+  XLSX.utils.book_append_sheet(wb, wsV, 'Viajes');
+
+  // ── Hoja 3: Cobranza ─────────────────────────────
+  const hCob = ['Folio','Cliente','Monto','Emisión','Vencimiento','Estado','Referencia','Notas'];
+  const dCob = cobranzas.map(r=>[
+    r.folio||'', r.cliente||'', r.monto||0,
+    fmtFecha(r.fechaEmision), fmtFecha(r.fechaVencimiento),
+    r.estado||'', r.referencia||'', r.notas||''
+  ]);
+  const wsCob = XLSX.utils.aoa_to_sheet([hCob,...dCob]);
+  wsCob['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:13},{wch:11},{wch:20},{wch:28}];
+  XLSX.utils.book_append_sheet(wb, wsCob, 'Cobranza');
+
+  // ── Hoja 4: Pagos ────────────────────────────────
+  const hPag = ['Fecha','Proveedor','Monto','Estado','Referencia','Notas'];
+  const dPag = pagos.map(r=>[
+    fmtFecha(r.fecha), r.proveedor||'', r.monto||0,
+    r.estado||'', r.referencia||'', r.notas||''
+  ]);
+  const wsPag = XLSX.utils.aoa_to_sheet([hPag,...dPag]);
+  wsPag['!cols']=[{wch:12},{wch:22},{wch:12},{wch:11},{wch:20},{wch:28}];
+  XLSX.utils.book_append_sheet(wb, wsPag, 'Pagos');
+
+  XLSX.writeFile(wb, `VAZSE_${fecha}.xlsx`);
+  toast('Excel exportado: Resumen, Viajes, Cobranza, Pagos ✓', 'ok');
 }
 
 function exportarViajes() {
