@@ -7092,6 +7092,32 @@ renderCatProveedores();
 renderCatServicios();
 actualizarEstadoOffline();
 mostrarEstadoConexion();
+// ═══════════════════════════════════════════
+// DEEP-LINK: ?tab=xxx al cargar la página
+// ═══════════════════════════════════════════
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var tab = params.get('tab');
+  if (!tab) return;
+  tab = tab.toLowerCase();
+  var validTabs = ['viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
+  if (validTabs.indexOf(tab) >= 0) {
+    setTimeout(function() {
+      var btn = document.querySelector('.tabs .tab[onclick*="' + tab + '"]');
+      cambiarTab(tab, btn);
+    }, 300);
+  } else if (tab === 'servicios') {
+    setTimeout(function() {
+      var catBtn = document.querySelector('.tabs .tab[onclick*="catalogos"]');
+      cambiarTab('catalogos', catBtn);
+      setTimeout(function() {
+        var svcBtn = document.querySelector('.cat-tab[onclick*="servicios"], button[onclick*="servicios"]');
+        if (svcBtn) svcBtn.click();
+      }, 200);
+    }, 300);
+  }
+})();
+
 </script>
 </body>
 </html>
