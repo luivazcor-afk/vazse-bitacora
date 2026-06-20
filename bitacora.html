@@ -1495,7 +1495,13 @@ html[data-theme=dark]{
           <div class="brand-sub"><span class="dot dot-loading" id="c-dot"></span><span id="c-status">Conectando...</span></div>
         </div>
       </div>
-      <div class="btns">
+      <div class="btns" style="align-items:center">
+        <div class="mes-nav" style="display:flex;align-items:center;gap:2px;background:#f1efeb;border-radius:8px;padding:3px 6px">
+          <button onclick="navMes(-1)" class="mes-nav-btn" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">‹</button>
+          <span id="mes-cargado-label-c" class="mes-nav-label" style="font-size:12px;font-weight:500;min-width:84px;text-align:center">Este mes</span>
+          <button onclick="navMes(1)" class="mes-nav-btn" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">›</button>
+        </div>
+        <button class="btn" onclick="cargarTodo()" style="font-size:11px" title="Ver todos los registros">📂 Todo</button>
         <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
         <button class="btn" id="btn-export-c" onclick="exportarCobranza()" disabled>↓ Excel</button>
       </div>
@@ -6010,12 +6016,14 @@ function calcDesglose(montoConIva) {
 
 // ── NAVEGACIÓN DE MES ────────────────────────────────
 function actualizarLabelMes() {
-  const el = document.getElementById('mes-cargado-label');
-  if (!el) return;
-  if (cargandoTodo || !mesCargado) { el.textContent = 'Todos'; return; }
-  const [y, m] = mesCargado.split('-');
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  el.textContent = meses[parseInt(m)-1] + ' ' + y;
+  const texto = (cargandoTodo || !mesCargado)
+    ? 'Todos'
+    : meses[parseInt(mesCargado.split('-')[1])-1] + ' ' + mesCargado.split('-')[0];
+  ['mes-cargado-label','mes-cargado-label-c'].forEach(function(id){
+    const el = document.getElementById(id);
+    if (el) el.textContent = texto;
+  });
 }
 // Mostrar el mes actual en la etiqueta desde la carga inicial
 document.addEventListener('DOMContentLoaded', actualizarLabelMes);
