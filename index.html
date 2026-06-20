@@ -546,6 +546,7 @@ function renderShell(vals){
         <div data-action="toggle-theme" class="theme-btn" title="Cambiar tema" style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;font-size:15px;color:var(--t2);border:1px solid var(--bd3);border-radius:8px;cursor:pointer;user-select:none">${vals.themeIcon}</div>
         <a href="bitacora.html" class="nav-tab sync-btn" style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--t2);border:1px solid var(--bd3);border-radius:8px;padding:8px 13px;cursor:pointer;text-decoration:none">↻ Sincronizar</a>
         <div data-action="export" class="export-btn" style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#fff;background:var(--brand);border-radius:8px;padding:8px 14px;cursor:pointer">Exportar XLSX</div>
+        <div data-action="config" title="Configuración de empresa" style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;font-size:17px;color:var(--t2);border:1px solid var(--bd3);border-radius:8px;cursor:pointer;user-select:none;transition:all .15s" onmouseover="this.style.borderColor='var(--brand)';this.style.color='var(--brand)'" onmouseout="this.style.borderColor='var(--bd3)';this.style.color='var(--t2)'">⚙</div>
         <div data-action="logout" class="logout-btn" title="Cerrar sesión" style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--neg);border:1px solid var(--bd3);border-radius:8px;padding:8px 13px;cursor:pointer;user-select:none">🔒 Salir</div>
       </div>
     </div>
@@ -625,6 +626,7 @@ document.addEventListener('click', (e) => {
     else if(a==='toggle-theme') applyTheme(state.theme==='dark'?'light':'dark');
     else if(a==='export') exportarXLSX();
     else if(a==='logout') cerrarSesion();
+    else if(a==='config') abrirConfig();
     return;
   }
 
@@ -661,6 +663,151 @@ window.addEventListener('storage', (e) => {
   state.theme = theme;
   render();
 })();
+
+// ── CONFIGURACIÓN DE EMPRESA ────────────────────────────────
+const CFG_KEY = 'vazse_empresa_config';
+
+function cargarConfig() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
+    ['razon','rfc','regimen','cfdi','direccion','metodo-pago',
+     'agente','patente','tel','aduana',
+     'email-cobranza','email-ops','email-facturas','email-gerencia'].forEach(k => {
+      const el = document.getElementById('cfg-' + k);
+      if (el && c[k]) el.value = c[k];
+    });
+  } catch(e){}
+}
+
+function guardarConfig() {
+  const c = {};
+  ['razon','rfc','regimen','cfdi','direccion','metodo-pago',
+   'agente','patente','tel','aduana',
+   'email-cobranza','email-ops','email-facturas','email-gerencia'].forEach(k => {
+    const el = document.getElementById('cfg-' + k);
+    if (el) c[k] = el.value.trim();
+  });
+  try { localStorage.setItem(CFG_KEY, JSON.stringify(c)); } catch(e){}
+  cerrarConfig();
+  // Toast de confirmación
+  const t = document.createElement('div');
+  t.textContent = '✓ Configuración guardada';
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--pos);color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:500;z-index:999;animation:pageIn .3s ease';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+function abrirConfig() {
+  cargarConfig();
+  const ov = document.getElementById('cfg-overlay');
+  ov.style.display = 'flex';
+}
+
+function cerrarConfig() {
+  document.getElementById('cfg-overlay').style.display = 'none';
+}
+
+document.getElementById('cfg-overlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarConfig();
+});
 </script>
+
+<!-- ── MODAL CONFIGURACIÓN EMPRESA ─────────────────────────── -->
+<div id="cfg-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:14px;width:min(640px,96vw);max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.22)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px 14px;border-bottom:1px solid var(--bd)">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--t1)">⚙ Configuración de empresa</div>
+        <div style="font-size:11.5px;color:var(--t4);margin-top:2px">Los datos se guardan en este navegador y se usan para autocompletar formularios</div>
+      </div>
+      <button onclick="cerrarConfig()" style="border:none;background:none;font-size:20px;color:var(--t3);cursor:pointer;line-height:1;padding:4px 8px">✕</button>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:20px">
+
+      <!-- DATOS FISCALES -->
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--brand);margin-bottom:10px">📄 Datos fiscales</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Razón social</label>
+            <input id="cfg-razon" type="text" placeholder="Resolución Estratégica VAZSE, S.A. de C.V." style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">RFC</label>
+            <input id="cfg-rfc" type="text" placeholder="REV000000XXX" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Régimen fiscal</label>
+            <input id="cfg-regimen" type="text" placeholder="601 – General de Ley Personas Morales" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Uso CFDI por defecto</label>
+            <input id="cfg-cfdi" type="text" placeholder="G03 – Gastos en general" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Dirección fiscal</label>
+            <input id="cfg-direccion" type="text" placeholder="Calle, número, colonia, CP, ciudad" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Método de pago por defecto</label>
+            <input id="cfg-metodo-pago" type="text" placeholder="PPD – Pago en parcialidades" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+        </div>
+      </div>
+
+      <!-- OPERACIONES -->
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--brand);margin-bottom:10px">🏛 Operaciones / Agencia</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Nombre del agente aduanal</label>
+            <input id="cfg-agente" type="text" placeholder="Lic. Nombre del agente" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Patente aduanal</label>
+            <input id="cfg-patente" type="text" placeholder="1734" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Teléfono operativo</label>
+            <input id="cfg-tel" type="text" placeholder="+52 (322) 000-0000" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Aduana principal</label>
+            <input id="cfg-aduana" type="text" placeholder="Manzanillo" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+        </div>
+      </div>
+
+      <!-- CORREOS -->
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--brand);margin-bottom:10px">✉ Correos de contacto</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Correo de cobranza</label>
+            <input id="cfg-email-cobranza" type="email" placeholder="cobranza@vazse.com" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Correo de operaciones</label>
+            <input id="cfg-email-ops" type="email" placeholder="operaciones@vazse.com" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Correo para recibir facturas</label>
+            <input id="cfg-email-facturas" type="email" placeholder="facturas@vazse.com" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;color:var(--t3)">Correo gerencia</label>
+            <input id="cfg-email-gerencia" type="email" placeholder="gerencia@vazse.com" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div style="padding:14px 24px 18px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:10px">
+      <button onclick="cerrarConfig()" style="padding:8px 18px;border:1px solid var(--bd3);border-radius:8px;background:transparent;color:var(--t2);font-size:13px;cursor:pointer">Cancelar</button>
+      <button onclick="guardarConfig()" style="padding:8px 20px;border:none;border-radius:8px;background:var(--brand);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
