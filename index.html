@@ -6909,8 +6909,7 @@ function verificarAuth() {
   const auth = localStorage.getItem('vazse_auth');
   const el = document.getElementById('login-screen');
   if (!auth) {
-    // Redirigir al entry point principal (Resumen/bundle)
-    window.location.replace('index.html');
+    if (el) el.style.display = 'flex';
     return false;
   }
   if (el) el.style.display = 'none';
