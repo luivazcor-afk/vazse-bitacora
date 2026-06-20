@@ -3997,12 +3997,16 @@ function verDoc(url,titulo){
   document.getElementById('modal-title').textContent=titulo;
   document.getElementById('modal-link').href=url;
   const body=document.getElementById('modal-body');
-  const esImagen=/\.(jpg|jpeg|png|gif|webp)/i.test(url)||(url.includes('drive.google.com')&&!url.includes('.pdf'));
+  // Solo imagen si tiene extensión de imagen Y NO es Drive
+  const esImagen=/\.(jpg|jpeg|png|gif|webp)/i.test(url) && !url.includes('drive.google.com');
   if(esImagen){
     body.innerHTML=`<img src="${url}" alt="${titulo}" style="max-width:100%;max-height:500px;border-radius:8px;object-fit:contain">`;
   }else{
-    const embedUrl=url.replace('/view','/preview');
-    body.innerHTML=`<iframe src="${embedUrl}" style="width:100%;height:520px;border:none;border-radius:8px"></iframe>`;
+    // Drive: /view → /preview; cualquier otro PDF: embed directo
+    const embedUrl = url.includes('drive.google.com')
+      ? url.replace('/view','/preview').replace(/[?&]usp=[^&]*/,'')
+      : url;
+    body.innerHTML=`<iframe src="${embedUrl}" style="width:100%;height:520px;border:none;border-radius:8px" allow="autoplay"></iframe>`;
   }
   document.getElementById('modal-overlay').classList.add('show');
 }
