@@ -671,22 +671,34 @@ function cargarConfig() {
   try {
     const c = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
     ['razon','rfc','regimen','cfdi','direccion','metodo-pago',
-     'agente','patente','tel','aduana',
+     'agente','tel',
      'email-cobranza','email-ops','email-facturas','email-gerencia'].forEach(k => {
       const el = document.getElementById('cfg-' + k);
       if (el && c[k]) el.value = c[k];
     });
+    // Cargar listas
+    const patentes = c.patentes ? JSON.parse(c.patentes) : [];
+    const aduanas  = c.aduanas  ? JSON.parse(c.aduanas)  : [];
+    document.getElementById('cfg-patentes-list').innerHTML = '';
+    document.getElementById('cfg-aduanas-list').innerHTML  = '';
+    patentes.forEach(function(p) { agregarPatente(p); });
+    aduanas.forEach(function(a)  { agregarAduana(a); });
+    if (!patentes.length) agregarPatente();
+    if (!aduanas.length)  agregarAduana();
   } catch(e){}
 }
 
 function guardarConfig() {
   const c = {};
   ['razon','rfc','regimen','cfdi','direccion','metodo-pago',
-   'agente','patente','tel','aduana',
+   'agente','tel',
    'email-cobranza','email-ops','email-facturas','email-gerencia'].forEach(k => {
     const el = document.getElementById('cfg-' + k);
     if (el) c[k] = el.value.trim();
   });
+  // Guardar listas de patentes y aduanas
+  c.patentes = JSON.stringify(getCfgLista('patentes'));
+  c.aduanas  = JSON.stringify(getCfgLista('aduanas'));
   try { localStorage.setItem(CFG_KEY, JSON.stringify(c)); } catch(e){}
   cerrarConfig();
   // Toast de confirmación
@@ -707,6 +719,35 @@ function cerrarConfig() {
   document.getElementById('cfg-overlay').style.display = 'none';
 }
 
+function agregarPatente(data) {
+  const list = document.getElementById('cfg-patentes-list');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 2fr auto;gap:6px;align-items:center';
+  row.innerHTML = '<input type="text" placeholder="1734" value="'+(data&&data.patente?data.patente:'')+'" class="cfg-pat-num" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
+    + '<input type="text" placeholder="Nombre / descripción (opcional)" value="'+(data&&data.nombre?data.nombre:'')+'" class="cfg-pat-nom" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
+    + '<button onclick="this.closest('div').remove()" style="height:32px;width:32px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--t3);cursor:pointer;font-size:15px">✕</button>';
+  list.appendChild(row);
+}
+function agregarAduana(data) {
+  const list = document.getElementById('cfg-aduanas-list');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center';
+  row.innerHTML = '<input type="text" placeholder="160" value="'+(data&&data.clave?data.clave:'')+'" class="cfg-ad-clave" style="height:32px;width:60px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
+    + '<input type="text" placeholder="Manzanillo" value="'+(data&&data.nombre?data.nombre:'')+'" class="cfg-ad-nom" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
+    + '<button onclick="this.closest('div').remove()" style="height:32px;width:32px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--t3);cursor:pointer;font-size:15px">✕</button>';
+  list.appendChild(row);
+}
+function getCfgLista(tipo) {
+  if (tipo === 'patentes') {
+    return Array.from(document.querySelectorAll('#cfg-patentes-list > div')).map(function(row) {
+      return { patente: row.querySelector('.cfg-pat-num').value.trim(), nombre: row.querySelector('.cfg-pat-nom').value.trim() };
+    }).filter(function(p) { return p.patente; });
+  } else {
+    return Array.from(document.querySelectorAll('#cfg-aduanas-list > div')).map(function(row) {
+      return { clave: row.querySelector('.cfg-ad-clave').value.trim(), nombre: row.querySelector('.cfg-ad-nom').value.trim() };
+    }).filter(function(a) { return a.clave || a.nombre; });
+  }
+}
 document.getElementById('cfg-overlay').addEventListener('click', function(e) {
   if (e.target === this) cerrarConfig();
 });
@@ -742,7 +783,41 @@ document.getElementById('cfg-overlay').addEventListener('click', function(e) {
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
             <label style="font-size:11px;color:var(--t3)">Uso CFDI por defecto</label>
-            <input id="cfg-cfdi" type="text" placeholder="G03 – Gastos en general" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+            <select id="cfg-cfdi" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+              <option value="">— Seleccionar —</option>
+              <optgroup label="Gastos e ingresos">
+                <option value="G01 – Adquisición de mercancias">G01 – Adquisición de mercancias</option>
+                <option value="G02 – Devoluciones, descuentos o bonificaciones">G02 – Devoluciones, descuentos o bonificaciones</option>
+                <option value="G03 – Gastos en general">G03 – Gastos en general</option>
+              </optgroup>
+              <optgroup label="Inversiones">
+                <option value="I01 – Construcciones">I01 – Construcciones</option>
+                <option value="I02 – Mobilario y equipo de oficina">I02 – Mobilario y equipo de oficina</option>
+                <option value="I03 – Equipo de transporte">I03 – Equipo de transporte</option>
+                <option value="I04 – Equipo de cómputo y accesorios">I04 – Equipo de cómputo y accesorios</option>
+                <option value="I05 – Dados, troqueles, moldes y herramental">I05 – Dados, troqueles, moldes y herramental</option>
+                <option value="I06 – Comunicaciones telefónicas">I06 – Comunicaciones telefónicas</option>
+                <option value="I07 – Comunicaciones satelitales">I07 – Comunicaciones satelitales</option>
+                <option value="I08 – Otra maquinaria y equipo">I08 – Otra maquinaria y equipo</option>
+              </optgroup>
+              <optgroup label="Deducciones personales">
+                <option value="D01 – Honorarios médicos y gastos hospitalarios">D01 – Honorarios médicos y gastos hospitalarios</option>
+                <option value="D02 – Gastos médicos por incapacidad">D02 – Gastos médicos por incapacidad</option>
+                <option value="D03 – Gastos funerales">D03 – Gastos funerales</option>
+                <option value="D04 – Donativos">D04 – Donativos</option>
+                <option value="D05 – Intereses créditos hipotecarios">D05 – Intereses créditos hipotecarios</option>
+                <option value="D06 – Aportaciones voluntarias al SAR">D06 – Aportaciones voluntarias al SAR</option>
+                <option value="D07 – Primas seguros gastos médicos">D07 – Primas seguros gastos médicos</option>
+                <option value="D08 – Transportación escolar obligatoria">D08 – Transportación escolar obligatoria</option>
+                <option value="D09 – Depósitos planes de pensiones">D09 – Depósitos planes de pensiones</option>
+                <option value="D10 – Pagos servicios educativos (colegiaturas)">D10 – Pagos servicios educativos (colegiaturas)</option>
+              </optgroup>
+              <optgroup label="Otros">
+                <option value="S01 – Sin efectos fiscales">S01 – Sin efectos fiscales</option>
+                <option value="CP01 – Pagos">CP01 – Pagos</option>
+                <option value="CN01 – Nómina">CN01 – Nómina</option>
+              </optgroup>
+            </select>
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
             <label style="font-size:11px;color:var(--t3)">Dirección fiscal</label>
@@ -764,16 +839,24 @@ document.getElementById('cfg-overlay').addEventListener('click', function(e) {
             <input id="cfg-agente" type="text" placeholder="Lic. Nombre del agente" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size:11px;color:var(--t3)">Patente aduanal</label>
-            <input id="cfg-patente" type="text" placeholder="1734" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
             <label style="font-size:11px;color:var(--t3)">Teléfono operativo</label>
             <input id="cfg-tel" type="text" placeholder="+52 (322) 000-0000" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size:11px;color:var(--t3)">Aduana principal</label>
-            <input id="cfg-aduana" type="text" placeholder="Manzanillo" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
+          <!-- Patentes múltiples -->
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <label style="font-size:11px;color:var(--t3)">Patentes aduanales</label>
+              <button onclick="agregarPatente()" style="font-size:11px;padding:3px 10px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--brand);cursor:pointer">+ Agregar</button>
+            </div>
+            <div id="cfg-patentes-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+          <!-- Aduanas múltiples -->
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <label style="font-size:11px;color:var(--t3)">Aduanas</label>
+              <button onclick="agregarAduana()" style="font-size:11px;padding:3px 10px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--brand);cursor:pointer">+ Agregar</button>
+            </div>
+            <div id="cfg-aduanas-list" style="display:flex;flex-direction:column;gap:6px"></div>
           </div>
         </div>
       </div>

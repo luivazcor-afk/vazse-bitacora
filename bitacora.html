@@ -2354,9 +2354,9 @@ html[data-theme=dark]{
           <div class="carta-field"><label>Referencia VAZSE</label>
             <input type="text" id="ci-ref" readonly style="background:#f7f6f3"></div>
           <div class="carta-field"><label>Patente</label>
-            <input type="text" id="ci-patente" placeholder="1734"></div>
+            <select id="ci-patente"><option value="">— Seleccionar —</option></select></div>
           <div class="carta-field"><label>Aduana</label>
-            <input type="text" id="ci-aduana" placeholder="160 – Manzanillo"></div>
+            <select id="ci-aduana"><option value="">— Seleccionar —</option></select></div>
           <div class="carta-field"><label>Régimen aduanero</label>
             <select id="ci-regimen">
               <option value="">— Seleccionar —</option>
@@ -2532,7 +2532,41 @@ html[data-theme=dark]{
           </div>
           <div class="carta-field" id="ci-cfdi-wrap">
             <label>Uso del CFDI</label>
-            <input type="text" id="ci-cfdi" placeholder="G03 – Gastos en general">
+            <select id="ci-cfdi">
+              <option value="">— Seleccionar —</option>
+              <optgroup label="Gastos e ingresos">
+                <option value="G01 – Adquisición de mercancias">G01 – Adquisición de mercancias</option>
+                <option value="G02 – Devoluciones, descuentos o bonificaciones">G02 – Devoluciones, descuentos o bonificaciones</option>
+                <option value="G03 – Gastos en general">G03 – Gastos en general</option>
+              </optgroup>
+              <optgroup label="Inversiones">
+                <option value="I01 – Construcciones">I01 – Construcciones</option>
+                <option value="I02 – Mobilario y equipo de oficina">I02 – Mobilario y equipo de oficina</option>
+                <option value="I03 – Equipo de transporte">I03 – Equipo de transporte</option>
+                <option value="I04 – Equipo de cómputo y accesorios">I04 – Equipo de cómputo y accesorios</option>
+                <option value="I05 – Dados, troqueles, moldes y herramental">I05 – Dados, troqueles, moldes y herramental</option>
+                <option value="I06 – Comunicaciones telefónicas">I06 – Comunicaciones telefónicas</option>
+                <option value="I07 – Comunicaciones satelitales">I07 – Comunicaciones satelitales</option>
+                <option value="I08 – Otra maquinaria y equipo">I08 – Otra maquinaria y equipo</option>
+              </optgroup>
+              <optgroup label="Deducciones personales">
+                <option value="D01 – Honorarios médicos y gastos hospitalarios">D01 – Honorarios médicos y gastos hospitalarios</option>
+                <option value="D02 – Gastos médicos por incapacidad">D02 – Gastos médicos por incapacidad</option>
+                <option value="D03 – Gastos funerales">D03 – Gastos funerales</option>
+                <option value="D04 – Donativos">D04 – Donativos</option>
+                <option value="D05 – Intereses créditos hipotecarios">D05 – Intereses créditos hipotecarios</option>
+                <option value="D06 – Aportaciones voluntarias al SAR">D06 – Aportaciones voluntarias al SAR</option>
+                <option value="D07 – Primas seguros gastos médicos">D07 – Primas seguros gastos médicos</option>
+                <option value="D08 – Transportación escolar obligatoria">D08 – Transportación escolar obligatoria</option>
+                <option value="D09 – Depósitos planes de pensiones">D09 – Depósitos planes de pensiones</option>
+                <option value="D10 – Pagos servicios educativos (colegiaturas)">D10 – Pagos servicios educativos (colegiaturas)</option>
+              </optgroup>
+              <optgroup label="Otros">
+                <option value="S01 – Sin efectos fiscales">S01 – Sin efectos fiscales</option>
+                <option value="CP01 – Pagos">CP01 – Pagos</option>
+                <option value="CN01 – Nómina">CN01 – Nómina</option>
+              </optgroup>
+            </select>
           </div>
           <div class="carta-field" id="ci-metodo-pago-wrap">
             <label>Método de pago</label>
@@ -3356,6 +3390,7 @@ async function cargar() {
       toast('Hay ' + cola.length + ' cambio(s) pendiente(s) de sincronizar', 'inf');
     } else {
       toast('Datos sincronizados', 'ok');
+    poblarSelectsFromConfig();
     }
   } catch(e) {
     // Try cache on error
@@ -4117,6 +4152,37 @@ function verDoc(url,titulo){
 }
 
 function cerrarModal(e){ if(e.target===document.getElementById('modal-overlay'))cerrarModalBtn(); }
+function poblarSelectsFromConfig() {
+  const cfg = getCfgEmpresa();
+  // Patentes
+  const selPat = document.getElementById('ci-patente');
+  if (selPat) {
+    const currentPat = selPat.value;
+    selPat.innerHTML = '<option value="">— Seleccionar —</option>';
+    const patentes = cfg.patentes ? JSON.parse(cfg.patentes) : [];
+    patentes.forEach(function(p) {
+      const opt = document.createElement('option');
+      opt.value = p.patente;
+      opt.textContent = p.patente + (p.nombre ? ' – ' + p.nombre : '');
+      selPat.appendChild(opt);
+    });
+    if (currentPat) selPat.value = currentPat;
+  }
+  // Aduanas
+  const selAd = document.getElementById('ci-aduana');
+  if (selAd) {
+    const currentAd = selAd.value;
+    selAd.innerHTML = '<option value="">— Seleccionar —</option>';
+    const aduanas = cfg.aduanas ? JSON.parse(cfg.aduanas) : [];
+    aduanas.forEach(function(a) {
+      const opt = document.createElement('option');
+      opt.value = a.clave + (a.nombre ? ' – ' + a.nombre : '');
+      opt.textContent = a.clave + (a.nombre ? ' – ' + a.nombre : '');
+      selAd.appendChild(opt);
+    });
+    if (currentAd) selAd.value = currentAd;
+  }
+}
 function getCfgEmpresa() {
   try { return JSON.parse(localStorage.getItem('vazse_empresa_config') || '{}'); } catch(e) { return {}; }
 }
