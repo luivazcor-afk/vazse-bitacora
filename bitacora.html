@@ -2500,23 +2500,64 @@ html[data-theme=dark]{
       <div class="carta-section">
         <div class="carta-section-title">6. Instrucciones de Facturación</div>
         <div class="carta-grid">
-          <div class="carta-field full carta-grid"><label>Facturar a (razón social)</label>
-            <input type="text" id="ci-fact-razon"></div>
-          <div class="carta-field"><label>RFC</label>
-            <input type="text" id="ci-rfc"></div>
-          <div class="carta-field"><label>Régimen fiscal</label>
-            <input type="text" id="ci-regimen-fiscal" placeholder="601 – General de Ley"></div>
-          <div class="carta-field"><label>Uso del CFDI</label>
-            <input type="text" id="ci-cfdi" placeholder="G03 – Gastos en general"></div>
-          <div class="carta-field"><label>Método de pago</label>
-            <input type="text" id="ci-metodo-pago" placeholder="PPD – Pago en parcialidades"></div>
-          <div class="carta-field"><label>Forma de pago</label>
-            <input type="text" id="ci-forma-pago" placeholder="99 – Por definir"></div>
-          <div class="carta-field"><label>Quien paga el flete</label>
-            <select id="ci-paga-flete"><option value="Origen">Origen</option>
-              <option value="Destino">Destino</option></select></div>
-          <div class="carta-field"><label>Correo para factura</label>
-            <input type="email" id="ci-email-fact"></div>
+          <!-- Selector de modalidad -->
+          <div class="carta-field full carta-grid">
+            <label>Modalidad de facturación</label>
+            <select id="ci-fact-modalidad" onchange="cambiarModalidadFact(this.value)" style="border-color:var(--brand);color:var(--brandsofttx);font-weight:500">
+              <option value="cliente">Nosotros facturamos al cliente</option>
+              <option value="tercero">Un tercero nos factura a nosotros (VAZSE)</option>
+              <option value="na">Sin facturación / No aplica</option>
+            </select>
+          </div>
+
+          <!-- Aviso modo tercero -->
+          <div class="carta-field full carta-grid" id="ci-fact-aviso" style="display:none">
+            <div style="background:#EAF1F8;border:0.5px solid #B5D4F4;border-radius:7px;padding:8px 12px;font-size:11.5px;color:#185FA5">
+              Datos de <strong>Resolución Estratégica VAZSE, S.A. de C.V.</strong> precargados — el tercero usará estos datos para emitir la factura.
+            </div>
+          </div>
+
+          <!-- Campos dinámicos -->
+          <div class="carta-field full carta-grid" id="ci-fact-razon-wrap">
+            <label id="ci-fact-razon-lbl">Facturar a (razón social)</label>
+            <input type="text" id="ci-fact-razon">
+          </div>
+          <div class="carta-field" id="ci-rfc-wrap">
+            <label>RFC</label>
+            <input type="text" id="ci-rfc">
+          </div>
+          <div class="carta-field" id="ci-regimen-fiscal-wrap">
+            <label>Régimen fiscal</label>
+            <input type="text" id="ci-regimen-fiscal" placeholder="601 – General de Ley">
+          </div>
+          <div class="carta-field" id="ci-cfdi-wrap">
+            <label>Uso del CFDI</label>
+            <input type="text" id="ci-cfdi" placeholder="G03 – Gastos en general">
+          </div>
+          <div class="carta-field" id="ci-metodo-pago-wrap">
+            <label>Método de pago</label>
+            <input type="text" id="ci-metodo-pago" placeholder="PPD – Pago en parcialidades">
+          </div>
+          <div class="carta-field" id="ci-forma-pago-wrap">
+            <label>Forma de pago</label>
+            <input type="text" id="ci-forma-pago" placeholder="99 – Por definir">
+          </div>
+          <div class="carta-field" id="ci-paga-flete-wrap">
+            <label>Quien paga el flete</label>
+            <select id="ci-paga-flete">
+              <option value="Origen">Origen</option>
+              <option value="Destino">Destino</option>
+            </select>
+          </div>
+          <div class="carta-field" id="ci-email-fact-wrap">
+            <label id="ci-email-fact-lbl">Correo para factura</label>
+            <input type="email" id="ci-email-fact">
+          </div>
+          <!-- Campo exclusivo modo tercero -->
+          <div class="carta-field" id="ci-tercero-wrap" style="display:none">
+            <label>Tercero que factura</label>
+            <input type="text" id="ci-tercero" placeholder="Nombre del proveedor / agente">
+          </div>
         </div>
       </div>
 
@@ -4076,6 +4117,39 @@ function verDoc(url,titulo){
 }
 
 function cerrarModal(e){ if(e.target===document.getElementById('modal-overlay'))cerrarModalBtn(); }
+function cambiarModalidadFact(val) {
+  const VAZSE_RAZON = 'Resolución Estratégica VAZSE, S.A. de C.V.';
+  const VAZSE_RFC   = 'REV[RFC_PENDIENTE]';
+  const VAZSE_REGIMEN = '601 – General de Ley Personas Morales';
+  const razon = document.getElementById('ci-fact-razon');
+  const rfc   = document.getElementById('ci-rfc');
+  const reg   = document.getElementById('ci-regimen-fiscal');
+  const aviso = document.getElementById('ci-fact-aviso');
+  const terceroWrap = document.getElementById('ci-tercero-wrap');
+  const emailWrap   = document.getElementById('ci-email-fact-wrap');
+  const allFields   = ['ci-fact-razon-wrap','ci-rfc-wrap','ci-regimen-fiscal-wrap',
+    'ci-cfdi-wrap','ci-metodo-pago-wrap','ci-forma-pago-wrap','ci-paga-flete-wrap'];
+  const show = val !== 'na';
+  allFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = show ? '' : 'none';
+  });
+  if (emailWrap) emailWrap.style.display = show ? '' : 'none';
+  if (aviso)      aviso.style.display      = val === 'tercero' ? '' : 'none';
+  if (terceroWrap) terceroWrap.style.display = val === 'tercero' ? '' : 'none';
+  if (val === 'tercero') {
+    if (razon && !razon.value) razon.value = VAZSE_RAZON;
+    if (rfc   && !rfc.value)   rfc.value   = VAZSE_RFC;
+    if (reg   && !reg.value)   reg.value   = VAZSE_REGIMEN;
+    if (razon) razon.readOnly = true;
+    if (rfc)   rfc.readOnly   = true;
+    if (reg)   reg.readOnly   = true;
+  } else {
+    if (razon) { razon.readOnly = false; if (razon.value === VAZSE_RAZON) razon.value = ''; }
+    if (rfc)   { rfc.readOnly   = false; if (rfc.value   === VAZSE_RFC)   rfc.value   = ''; }
+    if (reg)   { reg.readOnly   = false; if (reg.value   === VAZSE_REGIMEN) reg.value = ''; }
+  }
+}
 function cerrarModalBtn(){
   document.getElementById('modal-overlay').classList.remove('show');
   document.getElementById('modal-body').innerHTML='';
@@ -7157,13 +7231,21 @@ body{
     row('Observaciones de entrega:',gv('ci-obs-entrega')),
   ].join(''))}
 
-  ${sec('6','INSTRUCCIONES DE FACTURACIÓN',[
-    row('Facturar a (razón social):',gv('ci-fact-razon')),
-    row('RFC:',gv('ci-rfc'),'Régimen fiscal:',gv('ci-regimen-fiscal')),
-    row('Uso del CFDI:',gv('ci-cfdi'),'Método de pago:',gv('ci-metodo-pago')),
-    row('Forma de pago:',gv('ci-forma-pago'),'Quien paga el flete:',gv('ci-paga-flete')),
-    row('Correo para envío de factura:',gv('ci-email-fact')),
-  ].join(''))}
+  ${(()=>{
+    const mod = gv('ci-fact-modalidad');
+    if (mod === 'na') return sec('6','INSTRUCCIONES DE FACTURACIÓN',
+      row('Facturación:','No aplica'));
+    const rows = [
+      row('Modalidad:', mod==='tercero' ? 'Tercero factura a VAZSE' : 'VAZSE factura al cliente'),
+      row('Facturar a (razón social):',gv('ci-fact-razon')),
+      row('RFC:',gv('ci-rfc'),'Régimen fiscal:',gv('ci-regimen-fiscal')),
+      row('Uso del CFDI:',gv('ci-cfdi'),'Método de pago:',gv('ci-metodo-pago')),
+      row('Forma de pago:',gv('ci-forma-pago'),'Quien paga el flete:',gv('ci-paga-flete')),
+      row('Correo para envío de factura:',gv('ci-email-fact')),
+    ];
+    if (mod === 'tercero') rows.push(row('Tercero que factura:',gv('ci-tercero')));
+    return sec('6','INSTRUCCIONES DE FACTURACIÓN', rows.join(''));
+  })()}
 
   ${sec('7','OBSERVACIONES GENERALES',
     `<tr><td style="padding:3px 7px;border:0.5px solid #dde3ea;font-size:8pt;min-height:22pt;color:#1a2540">
