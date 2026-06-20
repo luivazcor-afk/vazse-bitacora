@@ -666,6 +666,7 @@ window.addEventListener('storage', (e) => {
 
 // ── CONFIGURACIÓN DE EMPRESA ────────────────────────────────
 const CFG_KEY = 'vazse_empresa_config';
+const SCRIPT_URL_CFG = 'https://script.google.com/macros/s/AKfycbwy13y5H6wGxrSZzIOwGWXBBOwSOjTvipHvnFOiTzT7F556kHSLnHAsSj_SYbUDZUIJ/exec';
 
 function cargarConfig() {
   try {
@@ -699,14 +700,22 @@ function guardarConfig() {
   // Guardar listas de patentes y aduanas
   c.patentes = JSON.stringify(getCfgLista('patentes'));
   c.aduanas  = JSON.stringify(getCfgLista('aduanas'));
+  // 1. Guardar en localStorage
   try { localStorage.setItem(CFG_KEY, JSON.stringify(c)); } catch(e){}
   cerrarConfig();
-  // Toast de confirmación
-  const t = document.createElement('div');
-  t.textContent = '✓ Configuración guardada';
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--pos);color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:500;z-index:999;animation:pageIn .3s ease';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2800);
+  // 2. Guardar en Google Sheets (no-cors, fire-and-forget)
+  const encoded = encodeURIComponent(JSON.stringify(c));
+  const sheetUrl = SCRIPT_URL_CFG + '?action=saveConfig&data=' + encoded;
+  const toastMsg = function(ok) {
+    const t = document.createElement('div');
+    t.textContent = ok ? '✓ Configuración guardada en Sheets' : '✓ Configuración guardada (local)';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--pos);color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:500;z-index:999;animation:pageIn .3s ease';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  };
+  fetch(sheetUrl, { method: 'GET', mode: 'no-cors' })
+    .then(() => toastMsg(true))
+    .catch(() => toastMsg(false));
 }
 
 function abrirConfig() {

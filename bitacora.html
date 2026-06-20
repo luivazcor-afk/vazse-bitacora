@@ -3390,7 +3390,11 @@ async function cargar() {
       toast('Hay ' + cola.length + ' cambio(s) pendiente(s) de sincronizar', 'inf');
     } else {
       toast('Datos sincronizados', 'ok');
-    poblarSelectsFromConfig();
+    // Leer empresaConfig del Sheet y actualizar localStorage
+      if (data && data.empresaConfig && typeof data.empresaConfig === 'object') {
+        try { localStorage.setItem('vazse_empresa_config', JSON.stringify(data.empresaConfig)); } catch(e){}
+      }
+      poblarSelectsFromConfig();
     }
   } catch(e) {
     // Try cache on error
