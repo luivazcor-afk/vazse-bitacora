@@ -4117,13 +4117,25 @@ function verDoc(url,titulo){
 }
 
 function cerrarModal(e){ if(e.target===document.getElementById('modal-overlay'))cerrarModalBtn(); }
+function getCfgEmpresa() {
+  try { return JSON.parse(localStorage.getItem('vazse_empresa_config') || '{}'); } catch(e) { return {}; }
+}
+
 function cambiarModalidadFact(val) {
-  const VAZSE_RAZON = 'Resolución Estratégica VAZSE, S.A. de C.V.';
-  const VAZSE_RFC   = 'REV[RFC_PENDIENTE]';
-  const VAZSE_REGIMEN = '601 – General de Ley Personas Morales';
+  const cfg = getCfgEmpresa();
+  const VAZSE_RAZON   = cfg.razon   || 'Resolución Estratégica VAZSE, S.A. de C.V.';
+  const VAZSE_RFC     = cfg.rfc     || '';
+  const VAZSE_REGIMEN = cfg.regimen || '601 – General de Ley Personas Morales';
+  const VAZSE_CFDI    = cfg.cfdi    || '';
+  const VAZSE_METODO  = cfg['metodo-pago'] || '';
+  const VAZSE_EMAIL   = cfg['email-facturas'] || '';
+
   const razon = document.getElementById('ci-fact-razon');
   const rfc   = document.getElementById('ci-rfc');
   const reg   = document.getElementById('ci-regimen-fiscal');
+  const cfdi  = document.getElementById('ci-cfdi');
+  const metodo = document.getElementById('ci-metodo-pago');
+  const email = document.getElementById('ci-email-fact');
   const aviso = document.getElementById('ci-fact-aviso');
   const terceroWrap = document.getElementById('ci-tercero-wrap');
   const emailWrap   = document.getElementById('ci-email-fact-wrap');
@@ -4134,20 +4146,21 @@ function cambiarModalidadFact(val) {
     const el = document.getElementById(id);
     if (el) el.style.display = show ? '' : 'none';
   });
-  if (emailWrap) emailWrap.style.display = show ? '' : 'none';
-  if (aviso)      aviso.style.display      = val === 'tercero' ? '' : 'none';
+  if (emailWrap)   emailWrap.style.display   = show ? '' : 'none';
+  if (aviso)       aviso.style.display       = val === 'tercero' ? '' : 'none';
   if (terceroWrap) terceroWrap.style.display = val === 'tercero' ? '' : 'none';
+
   if (val === 'tercero') {
-    if (razon && !razon.value) razon.value = VAZSE_RAZON;
-    if (rfc   && !rfc.value)   rfc.value   = VAZSE_RFC;
-    if (reg   && !reg.value)   reg.value   = VAZSE_REGIMEN;
-    if (razon) razon.readOnly = true;
-    if (rfc)   rfc.readOnly   = true;
-    if (reg)   reg.readOnly   = true;
+    if (razon)  { razon.value  = VAZSE_RAZON;   razon.readOnly  = true; }
+    if (rfc)    { rfc.value    = VAZSE_RFC;      rfc.readOnly    = true; }
+    if (reg)    { reg.value    = VAZSE_REGIMEN;  reg.readOnly    = true; }
+    if (cfdi && VAZSE_CFDI && !cfdi.value)   cfdi.value   = VAZSE_CFDI;
+    if (metodo && VAZSE_METODO && !metodo.value) metodo.value = VAZSE_METODO;
+    if (email  && VAZSE_EMAIL  && !email.value)  email.value  = VAZSE_EMAIL;
   } else {
-    if (razon) { razon.readOnly = false; if (razon.value === VAZSE_RAZON) razon.value = ''; }
-    if (rfc)   { rfc.readOnly   = false; if (rfc.value   === VAZSE_RFC)   rfc.value   = ''; }
-    if (reg)   { reg.readOnly   = false; if (reg.value   === VAZSE_REGIMEN) reg.value = ''; }
+    if (razon) razon.readOnly = false;
+    if (rfc)   rfc.readOnly   = false;
+    if (reg)   reg.readOnly   = false;
   }
 }
 function cerrarModalBtn(){
