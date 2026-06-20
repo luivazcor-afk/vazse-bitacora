@@ -2390,14 +2390,12 @@ html[data-theme=dark]{
         <div class="carta-grid">
           <div class="carta-field carta-grid full"><label>Descripción</label>
             <input type="text" id="ci-desc" placeholder="TAPONES DE CAUCHO"></div>
-          <div class="carta-field"><label>Fracción arancelaria</label>
+          <div class="carta-field"><label>Clave SAT</label>
             <input type="text" id="ci-fraccion" placeholder="4016.99.99"></div>
           <div class="carta-field"><label>País de origen</label>
             <input type="text" id="ci-origen-mercia" placeholder="China"></div>
           <div class="carta-field"><label>Factura / Invoice</label>
             <input type="text" id="ci-factura" placeholder="AE260507-SEA"></div>
-          <div class="carta-field"><label>Proveedor</label>
-            <input type="text" id="ci-proveedor-mercia" placeholder="AE PRODUCTS TRADING LIMITED"></div>
         </div>
       </div>
 
@@ -7071,8 +7069,8 @@ body{
 
   ${sec('4','DESCRIPCIÓN DE MERCANCÍA',[
     row('Descripción:',gv('ci-desc')),
-    row('Fracción arancelaria:',gv('ci-fraccion'),'País de origen:',gv('ci-origen-mercia')),
-    row('Factura / Invoice:',gv('ci-factura'),'Proveedor:',gv('ci-proveedor-mercia')),
+    row('Clave SAT:',gv('ci-fraccion'),'País de origen:',gv('ci-origen-mercia')),
+    row('Factura / Invoice:',gv('ci-factura')),
   ].join(''))}
 
   ${sec('5','INSTRUCCIONES DE ENTREGA',[
