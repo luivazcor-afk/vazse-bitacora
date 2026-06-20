@@ -1250,7 +1250,10 @@ html[data-theme=dark]{
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="cambiarTab('viajes',this)">
+    <button class="tab active" onclick="cambiarTab('resumen',this)">
+      <span class="tab-icon">📊</span> Resumen
+    </button>
+    <button class="tab" onclick="cambiarTab('viajes',this)">
       <span class="tab-icon">🚚</span> Viajes
     </button>
     <button class="tab" onclick="cambiarTab('cobranza',this)">
@@ -1276,7 +1279,13 @@ html[data-theme=dark]{
   <!-- ════════════════════════════════════════════
        PESTAÑA 1 — VIAJES
   ═══════════════════════════════════════════════ -->
-  <div id="panel-viajes" class="tab-panel active">
+  <div id="panel-resumen" class="tab-panel" style="padding:0;margin:-1.25rem;height:calc(100vh - 120px);min-height:600px">
+    <iframe id="resumen-iframe" src="" frameborder="0"
+      style="width:100%;height:100%;border:none;display:block"
+      allow="same-origin"></iframe>
+  </div>
+
+  <div id="panel-viajes" class="tab-panel">
 
     <div class="topbar">
       <div class="brand">
@@ -1289,7 +1298,7 @@ html[data-theme=dark]{
         </div>
       </div>
       <div class="btns" style="align-items:center">
-        <a href="Resumen_VAZSE.html" target="_blank" class="btn" style="font-size:11px;padding:5px 10px;text-decoration:none">📊 Resumen</a>
+        
         <button class="btn" onclick="cerrarSesion()" title="Cerrar sesión" style="font-size:11px;padding:5px 10px">🔒 Salir</button>
         <div style="display:flex;align-items:center;gap:2px;background:#f1efeb;border-radius:8px;padding:3px 6px">
           <button onclick="navMes(-1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">‹</button>
@@ -2898,9 +2907,13 @@ document.getElementById('v-fecha').addEventListener('change', function() {
 document.getElementById('v-referencia').value = generarFolioAuto();
 
 // ── TABS ──────────────────────────────────────────────
-const _TODOS_PANELES = ['viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
+const _TODOS_PANELES = ['resumen','viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
 
 function cambiarTab(id, btn) {
+  if (id === 'resumen') {
+    var ifr = document.getElementById('resumen-iframe');
+    if (ifr && !ifr.src) ifr.src = 'Resumen_VAZSE.html';
+  }
   // Ocultar todos los paneles explícitamente por ID
   _TODOS_PANELES.forEach(function(pid) {
     var p = document.getElementById('panel-' + pid);
@@ -7188,7 +7201,7 @@ if (verificarAuth()) {
     if (p) {
       p.classList.remove('active');
       p.style.display = '';
-      if (pid === 'viajes') p.classList.add('active');
+      if (pid === 'resumen') p.classList.add('active');
     }
   });
   cargar();
@@ -7207,7 +7220,7 @@ mostrarEstadoConexion();
   var tab = params.get('tab');
   if (!tab) return;
   tab = tab.toLowerCase();
-  var validTabs = ['viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
+  var validTabs = ['resumen','viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
   if (validTabs.indexOf(tab) >= 0) {
     setTimeout(function() {
       var btn = document.querySelector('.tabs .tab[onclick*="' + tab + '"]');
