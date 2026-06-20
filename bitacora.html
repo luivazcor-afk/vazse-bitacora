@@ -6021,6 +6021,7 @@ function navMes(delta) {
   d.setMonth(d.getMonth() + delta);
   mesCargado = d.toISOString().substring(0,7);
   cargandoTodo = false;
+  actualizarLabelMes();
   cargar();
 }
 
