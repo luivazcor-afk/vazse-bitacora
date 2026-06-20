@@ -2357,8 +2357,31 @@ html[data-theme=dark]{
             <input type="text" id="ci-patente" placeholder="1734"></div>
           <div class="carta-field"><label>Aduana</label>
             <input type="text" id="ci-aduana" placeholder="160 – Manzanillo"></div>
-          <div class="carta-field"><label>Régimen</label>
-            <input type="text" id="ci-regimen" placeholder="IMD – Importación Definitiva"></div>
+          <div class="carta-field"><label>Régimen aduanero</label>
+            <select id="ci-regimen">
+              <option value="">— Seleccionar —</option>
+              <option value="No aplica">No aplica</option>
+              <optgroup label="Definitivos">
+                <option value="Importación Definitiva (Art. 96 LA)">Importación Definitiva (Art. 96 LA)</option>
+              </optgroup>
+              <optgroup label="Temporales">
+                <option value="Temporal – mismo estado (Art. 106 LA)">Temporal – mismo estado (Art. 106 LA)</option>
+                <option value="Temporal IMMEX – elaboración/transformación (Art. 108 LA)">Temporal IMMEX – elaboración/transformación (Art. 108 LA)</option>
+              </optgroup>
+              <optgroup label="Depósito fiscal">
+                <option value="Depósito Fiscal (Art. 119 LA)">Depósito Fiscal (Art. 119 LA)</option>
+              </optgroup>
+              <optgroup label="Tránsito">
+                <option value="Tránsito Interno (Art. 127 LA)">Tránsito Interno (Art. 127 LA)</option>
+                <option value="Tránsito Internacional (Art. 129 LA)">Tránsito Internacional (Art. 129 LA)</option>
+              </optgroup>
+              <optgroup label="Elaboración / Transformación">
+                <option value="Elaboración, Transformación o Reparación en Recinto Fiscalizado (Art. 135 LA)">Elaboración / Transformación en Recinto Fiscalizado (Art. 135 LA)</option>
+              </optgroup>
+              <optgroup label="Recinto Fiscalizado Estratégico">
+                <option value="Recinto Fiscalizado Estratégico – RFE (Art. 14-D y 135-A LA)">Recinto Fiscalizado Estratégico – RFE (Art. 14-D y 135-A LA)</option>
+              </optgroup>
+            </select></div>
           <div class="carta-field"><label>Fecha de pago</label>
             <input type="date" id="ci-fecha-pago"></div>
         </div>
