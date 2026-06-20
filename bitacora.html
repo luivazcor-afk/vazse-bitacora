@@ -2375,7 +2375,42 @@ html[data-theme=dark]{
           <div class="carta-field"><label>Línea naviera</label>
             <input type="text" id="ci-naviera" placeholder="ZIM Integrated Shipping"></div>
           <div class="carta-field"><label>Tipo de contenedor</label>
-            <input type="text" id="ci-tipo-cont" placeholder="CR – 39' High Cube"></div>
+            <select id="ci-tipo-cont">
+              <option value="">— Seleccionar —</option>
+              <optgroup label="Carga seca">
+                <option value="20 DC – Dry Container">20 DC – Dry Container (20 pies)</option>
+                <option value="40 DC – Dry Container">40 DC – Dry Container (40 pies)</option>
+                <option value="40 HC – High Cube">40 HC – High Cube (40 pies, 9'6")</option>
+                <option value="45 HC – High Cube">45 HC – High Cube (45 pies)</option>
+              </optgroup>
+              <optgroup label="Refrigerados">
+                <option value="20 RF – Reefer">20 RF – Reefer (20 pies)</option>
+                <option value="40 RF – Reefer">40 RF – Reefer (40 pies)</option>
+                <option value="40 RH – Reefer High Cube">40 RH – Reefer High Cube</option>
+              </optgroup>
+              <optgroup label="Techo abierto">
+                <option value="20 OT – Open Top">20 OT – Open Top (20 pies)</option>
+                <option value="40 OT – Open Top">40 OT – Open Top (40 pies)</option>
+              </optgroup>
+              <optgroup label="Plataforma / Flat Rack">
+                <option value="20 FR – Flat Rack">20 FR – Flat Rack (20 pies)</option>
+                <option value="40 FR – Flat Rack">40 FR – Flat Rack (40 pies)</option>
+              </optgroup>
+              <optgroup label="Tanque">
+                <option value="20 TK – Tank Container">20 TK – Tank Container</option>
+              </optgroup>
+              <optgroup label="Isotanques">
+                <option value="20 T11 – Isotanque T11">20 T11 – Isotanque T11</option>
+                <option value="20 T14 – Isotanque T14">20 T14 – Isotanque T14</option>
+                <option value="20 T20 – Isotanque T20">20 T20 – Isotanque T20</option>
+                <option value="20 T50 – Isotanque T50">20 T50 – Isotanque T50</option>
+                <option value="20 T75 – Isotanque T75">20 T75 – Isotanque T75 (criogénico)</option>
+              </optgroup>
+              <optgroup label="Ventilado">
+                <option value="20 VC – Ventilated Container">20 VC – Ventilated Container</option>
+                <option value="40 VC – Ventilated Container">40 VC – Ventilated Container</option>
+              </optgroup>
+            </select></div>
         </div>
       </div>
 
