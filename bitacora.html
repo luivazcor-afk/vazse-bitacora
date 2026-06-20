@@ -369,7 +369,11 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
   background:#F7F5F1;border:0.5px solid rgba(0,0,0,.09);
   border-radius:10px;padding:1rem;margin-top:4px
 }
-.flete-section.show{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.flete-section.show{display:block;gap:0}
+.flete-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.flete-grid .fg{margin:0}
+.flete-grid .flete-divider{grid-column:1/-1}
+.flete-grid [style*="grid-column:1/-1"]{grid-column:1/-1}
 .flete-section-title{
   grid-column:1/-1;font-size:11px;font-weight:600;color:#6B6A67;
   text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;
@@ -1405,7 +1409,7 @@ html[data-theme=dark]{
             <div class="flete-divider">Maniobras (genera línea separada en cobranza)</div>
             <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="v-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
             <div class="fg"><label>Cobrado maniobras ($)</label><input type="number" id="v-maniobras-cobrado" placeholder="0.00" min="0" step="0.01"></div>
-            <div class="fg"><label>Descripción maniobras</label><input type="text" id="v-maniobras-desc" placeholder="Descarga, posicionamiento, etc."></div>
+            <div class="fg" style="grid-column:1/-1"><label>Descripción maniobras</label><input type="text" id="v-maniobras-desc" placeholder="Descarga, posicionamiento, etc."></div>
             <div class="flete-divider">EIR — Equipment Interchange Receipt</div>
             <div class="fg" style="grid-column:1/-1">
               <label>Adjuntar EIR</label>
@@ -2513,7 +2517,7 @@ html[data-theme=dark]{
       <!-- CAMPOS FLETE EN EDICIÓN -->
       <div id="ev-flete-section" class="ev-flete-inner" style="display:none;grid-column:1/-1">
         <div style="font-size:11px;font-weight:500;color:#185FA5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🚛 Datos del flete</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+        <div class="flete-grid">
           <div class="fg"><label>N° Contenedor</label><input type="text" id="ev-contenedor" placeholder="MSCU1234567"></div>
           <div class="fg"><label>Patio de entrega</label><input type="text" id="ev-patio" placeholder="Nombre del patio"></div>
           <div class="fg"><label>Estado operativo</label>
@@ -2526,7 +2530,7 @@ html[data-theme=dark]{
           </div>
           <div class="fg"><label>Costo maniobras ($)</label><input type="number" id="ev-maniobras-costo" placeholder="0.00" min="0" step="0.01"></div>
           <div class="fg"><label>Cobrado maniobras ($)</label><input type="number" id="ev-maniobras-cobrado" placeholder="0.00" min="0" step="0.01"></div>
-          <div class="fg"><label>Descripción maniobras</label><input type="text" id="ev-maniobras-desc" placeholder="Descarga, posicionamiento..."></div>
+          <div class="fg" style="grid-column:1/-1"><label>Descripción maniobras</label><input type="text" id="ev-maniobras-desc" placeholder="Descarga, posicionamiento..."></div>
           <div class="fg" style="grid-column:1/-1">
             <label>EIR adjunto</label>
             <div id="ev-eir-current" style="display:none;margin-bottom:6px">
