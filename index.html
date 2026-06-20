@@ -1282,7 +1282,7 @@ html[data-theme=dark]{
   <div id="panel-resumen" class="tab-panel" style="padding:0;margin:-1.25rem;height:calc(100vh - 120px);min-height:600px">
     <iframe id="resumen-iframe" src="" frameborder="0"
       style="width:100%;height:100%;border:none;display:block"
-      allow="same-origin"></iframe>
+></iframe>
   </div>
 
   <div id="panel-viajes" class="tab-panel">
@@ -2912,7 +2912,7 @@ const _TODOS_PANELES = ['resumen','viajes','cobranza','reportes','contenedores',
 function cambiarTab(id, btn) {
   if (id === 'resumen') {
     var ifr = document.getElementById('resumen-iframe');
-    if (ifr && !ifr.src) ifr.src = 'Resumen_VAZSE.html';
+    if (ifr && ifr.getAttribute('src') !== 'Resumen_VAZSE.html') ifr.src = 'Resumen_VAZSE.html';
   }
   // Ocultar todos los paneles explícitamente por ID
   _TODOS_PANELES.forEach(function(pid) {
