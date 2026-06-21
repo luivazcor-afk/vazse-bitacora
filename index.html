@@ -757,8 +757,10 @@ function getCfgLista(tipo) {
     }).filter(function(a) { return a.clave || a.nombre; });
   }
 }
-document.getElementById('cfg-overlay').addEventListener('click', function(e) {
-  if (e.target === this) cerrarConfig();
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('cfg-overlay').addEventListener('click', function(e) {
+    if (e.target === this) cerrarConfig();
+  });
 });
 </script>
 
