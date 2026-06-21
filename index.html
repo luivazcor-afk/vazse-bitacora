@@ -734,7 +734,7 @@ function agregarPatente(data) {
   row.style.cssText = 'display:grid;grid-template-columns:1fr 2fr auto;gap:6px;align-items:center';
   row.innerHTML = '<input type="text" placeholder="1734" value="'+(data&&data.patente?data.patente:'')+'" class="cfg-pat-num" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
     + '<input type="text" placeholder="Nombre / descripción (opcional)" value="'+(data&&data.nombre?data.nombre:'')+'" class="cfg-pat-nom" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
-    + '<button onclick="this.closest(\"div\").remove()" style="height:32px;width:32px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--t3);cursor:pointer;font-size:15px">✕</button>';
+    + '<button onclick="this.closest(\'div\').remove()" style="height:32px;width:32px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--t3);cursor:pointer;font-size:15px">✕</button>';
   list.appendChild(row);
 }
 function agregarAduana(data) {
@@ -743,7 +743,7 @@ function agregarAduana(data) {
   row.style.cssText = 'display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center';
   row.innerHTML = '<input type="text" placeholder="160" value="'+(data&&data.clave?data.clave:'')+'" class="cfg-ad-clave" style="height:32px;width:60px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
     + '<input type="text" placeholder="Manzanillo" value="'+(data&&data.nombre?data.nombre:'')+'" class="cfg-ad-nom" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
-    + '<button onclick="this.closest(\"div\").remove()" style="height:32px;width:32px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--t3);cursor:pointer;font-size:15px">✕</button>';
+    + '<button onclick="this.closest(\'div\').remove()" style="height:32px;width:32px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--t3);cursor:pointer;font-size:15px">✕</button>';
   list.appendChild(row);
 }
 function getCfgLista(tipo) {
