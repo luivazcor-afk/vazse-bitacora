@@ -672,7 +672,7 @@ function cargarConfig() {
   try {
     const c = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
     ['razon','rfc','regimen','cfdi','direccion','metodo-pago',
-     'agente','tel',
+     'tel',
      'email-cobranza','email-ops','email-facturas','email-gerencia'].forEach(k => {
       const el = document.getElementById('cfg-' + k);
       if (el && c[k]) el.value = c[k];
@@ -692,7 +692,7 @@ function cargarConfig() {
 function guardarConfig() {
   const c = {};
   ['razon','rfc','regimen','cfdi','direccion','metodo-pago',
-   'agente','tel',
+   'tel',
    'email-cobranza','email-ops','email-facturas','email-gerencia'].forEach(k => {
     const el = document.getElementById('cfg-' + k);
     if (el) c[k] = el.value.trim();
@@ -733,7 +733,7 @@ function agregarPatente(data) {
   const row = document.createElement('div');
   row.style.cssText = 'display:grid;grid-template-columns:1fr 2fr auto;gap:6px;align-items:center';
   row.innerHTML = '<input type="text" placeholder="1734" value="'+(data&&data.patente?data.patente:'')+'" class="cfg-pat-num" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
-    + '<input type="text" placeholder="Nombre / descripción (opcional)" value="'+(data&&data.nombre?data.nombre:'')+'" class="cfg-pat-nom" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
+    + '<input type="text" placeholder="Nombre de la agencia (opcional)" value="'+(data&&data.nombre?data.nombre:'')+'" class="cfg-pat-nom" style="height:32px;border:1px solid var(--bd3);border-radius:6px;padding:0 8px;font-size:12px;background:var(--surface2);color:var(--t1)">'
     + '<button onclick="this.closest(\'div\').remove()" style="height:32px;width:32px;border:1px solid var(--bd3);border-radius:6px;background:transparent;color:var(--t3);cursor:pointer;font-size:15px">✕</button>';
   list.appendChild(row);
 }
@@ -845,10 +845,6 @@ document.addEventListener('DOMContentLoaded', function() {
       <div>
         <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--brand);margin-bottom:10px">🏛 Operaciones / Agencia</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size:11px;color:var(--t3)">Nombre del agente aduanal</label>
-            <input id="cfg-agente" type="text" placeholder="Lic. Nombre del agente" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
-          </div>
           <div style="display:flex;flex-direction:column;gap:4px">
             <label style="font-size:11px;color:var(--t3)">Teléfono operativo</label>
             <input id="cfg-tel" type="text" placeholder="+52 (322) 000-0000" style="height:34px;border:1px solid var(--bd3);border-radius:7px;padding:0 10px;font-size:13px;background:var(--surface2);color:var(--t1)">
