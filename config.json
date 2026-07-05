@@ -1,5 +1,5 @@
 {
-  "_comentario": "Configuración VAZSE — no commitear con credenciales reales en repos públicos",
+  "_comentario": "Configuración VAZSE — v30 con automatizaciones",
   "empresa":            "VAZSE",
   "empresaNombre":      "Resolución Estratégica VAZSE",
   "empresaRazonSocial": "Resolución Estratégica VAZSE, S.A. de C.V.",
@@ -15,7 +15,7 @@
   "logoUrl":     "https://luivazcor-afk.github.io/vazse-bitacora/logo_R_resolucion.png",
   "faviconUrl":  "https://luivazcor-afk.github.io/vazse-bitacora/logo_R_resolucion.png",
 
-  "scriptUrl":   "https://script.google.com/macros/s/AKfycbwy13y5H6wGxrSZzIOwGWXBBOwSOjTvipHvnFOiTzT7F556kHSLnHAsSj_SYbUDZUIJ/exec",
+  "scriptUrl":   "https://script.google.com/macros/s/AKfycbzgiS_AHAY8-F8rEYgummuEe4ApWoSw2dinm8jLC3eu0AOJ85dLUZx9yfbmWGjbof_V/exec",
 
   "authHash":    "010ca14a016503e006b6607b8a4053619328fcff3635312d875d18b1072b5b25",
   "authSalt":    "vazse_gv_2026",
