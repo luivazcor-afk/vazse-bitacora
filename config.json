@@ -1,0 +1,27 @@
+{
+  "_comentario": "Configuración VAZSE — no commitear con credenciales reales en repos públicos",
+  "empresa":            "VAZSE",
+  "empresaNombre":      "Resolución Estratégica VAZSE",
+  "empresaRazonSocial": "Resolución Estratégica VAZSE, S.A. de C.V.",
+  "empresaSubtitulo":   "Agente Aduanal  ·  Freight Forwarding  ·  Comercio Exterior",
+  "pageTitle":          "Bitácora VAZSE",
+
+  "colorBrand":         "#185FA5",
+  "colorBrandDark":     "#0F4A87",
+  "colorBrandLight":    "#EBF3FC",
+  "colorBrandLighter":  "#D5E8F8",
+  "colorBrandBorder":   "#C5DCF6",
+
+  "logoUrl":     "https://luivazcor-afk.github.io/vazse-bitacora/logo_R_resolucion.png",
+  "faviconUrl":  "https://luivazcor-afk.github.io/vazse-bitacora/logo_R_resolucion.png",
+
+  "scriptUrl":   "https://script.google.com/macros/s/AKfycbwy13y5H6wGxrSZzIOwGWXBBOwSOjTvipHvnFOiTzT7F556kHSLnHAsSj_SYbUDZUIJ/exec",
+
+  "authHash":    "010ca14a016503e006b6607b8a4053619328fcff3635312d875d18b1072b5b25",
+  "authSalt":    "vazse_gv_2026",
+  "sessionHours": 8,
+
+  "emailFactura": "fvalencia@grupovazse.com.mx;facturacion1@grupovazse.com.mx",
+  "emailCC":      "cuentasdegastos@grupovazse.com.mx;ejecutivo1@grupovazse.com.mx",
+  "driveFolder":  "VAZSE_Documentos"
+}
