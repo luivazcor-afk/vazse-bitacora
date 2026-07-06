@@ -2156,6 +2156,10 @@ function aplicarConfig() {
 
   // Session duration
   window._SESSION_MS = CFG.sessionHours * 60 * 60 * 1000;
+
+  // Auth — se asigna aquí porque CFG ya está cargado
+  _AUTH_HASH = CFG.authHash || '';
+  _AUTH_SALT = CFG.authSalt || 'vazse_gv_2026';
 }
 
 /**
@@ -5842,8 +5846,8 @@ function renderBalanceProveedores() {
 // ── LOGIN VAZSE ───────────────────────────────────────
 // Credenciales almacenadas como hash SHA-256 (no texto plano)
 // Hash = SHA256(usuario + ":" + contraseña + ":" + salt)
-const _AUTH_HASH = CFG.authHash;
-const _AUTH_SALT = CFG.authSalt;
+let _AUTH_HASH = '';
+let _AUTH_SALT = 'vazse_gv_2026';
 // _SESSION_MS se lee de window._SESSION_MS (seteado por aplicarConfig())
 const _SESSION_MS = window._SESSION_MS || (8 * 60 * 60 * 1000);
 
