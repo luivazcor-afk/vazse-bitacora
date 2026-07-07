@@ -515,6 +515,47 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
+/* ══ FIX FUSIÓN: reglas base de sub-paneles (perdidas en main) ══ */
+@keyframes tabSwitch{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.cat-panel{display:none}
+.cat-panel.active{display:block;animation:tabSwitch .24s cubic-bezier(.22,.61,.36,1)}
+.cat-tabs{
+  display:inline-flex;gap:3px;margin-bottom:1.1rem;
+  background:#EDEAE3;border-radius:10px;padding:3px;
+  border:0.5px solid #DEDAD2
+}
+.cat-tab{
+  appearance:none;border:none;background:transparent;cursor:pointer;
+  padding:7px 16px;font-size:12.5px;font-weight:500;font-family:inherit;
+  color:#8A8880;border-radius:8px;display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;transition:color .15s,background .15s,box-shadow .15s;
+  -webkit-tap-highlight-color:transparent
+}
+.cat-tab:hover{color:#1C1C1A}
+.cat-tab.active{
+  background:#fff;color:#185FA5;font-weight:600;
+  box-shadow:0 1px 3px rgba(0,0,0,.1),0 0 0 0.5px rgba(0,0,0,.05)
+}
+.report-panel{
+  background:#fff;border:0.5px solid rgba(0,0,0,.08);
+  border-radius:13px;padding:1.25rem;margin-bottom:1rem;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);display:none
+}
+.report-panel.active{display:block}
+.report-tabs{
+  display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;
+  padding:10px 12px;background:#F5F3EF;border-radius:12px;
+  border:0.5px solid rgba(0,0,0,.07)
+}
+.report-tab{
+  padding:5px 12px;font-size:12px;font-weight:500;
+  border:0.5px solid rgba(0,0,0,.13);border-radius:7px;
+  background:#fff;cursor:pointer;color:#4A4A47;
+  transition:all .13s;white-space:nowrap
+}
+.report-tab:hover{background:#EBF3FC;color:#185FA5;border-color:rgba(24,95,165,.3)}
+.report-tab.active{background:#185FA5;color:#fff;border-color:#185FA5}
+
 /* ══ CAT MODAL / OVERLAYS ════════════════════════════ */
 .cat-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.45);
@@ -1050,6 +1091,9 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
   </div>
 
   <div class="tabs">
+    <button class="tab" onclick="cambiarTab('resumen',this)">
+      <span class="tab-icon">📈</span> Resumen
+    </button>
     <button class="tab active" onclick="cambiarTab('viajes',this)">
       <span class="tab-icon">🚚</span> Viajes
     </button>
@@ -1071,6 +1115,69 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
     <button class="tab" onclick="cambiarTab('catalogos',this)">
       <span class="tab-icon">📑</span> Catálogos
     </button>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       PESTAÑA 0 — RESUMEN EJECUTIVO
+  ═══════════════════════════════════════════════ -->
+  <div id="panel-resumen" class="tab-panel">
+    <div class="topbar">
+      <div class="brand" style="gap:8px">
+        <span style="font-size:18px">📈</span>
+        <div>
+          <div class="brand-title" style="font-size:16px">Resumen Ejecutivo</div>
+          <div class="brand-sub" id="resumen-periodo">Todos los registros</div>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn" onclick="renderResumen()">↻ Actualizar</button>
+      </div>
+    </div>
+
+    <!-- KPIs principales -->
+    <div class="metrics" style="margin-bottom:1rem">
+      <div class="metric"><div class="metric-label">Total Cobrado</div><div class="metric-val pos" id="res-cobrado">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Total Costo</div><div class="metric-val neg" id="res-costo">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Utilidad Neta</div><div class="metric-val" id="res-utilidad">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Margen</div><div class="metric-val" id="res-margen">0%</div></div>
+      <div class="metric"><div class="metric-label">Viajes</div><div class="metric-val" id="res-viajes">0</div></div>
+    </div>
+
+    <!-- Cobranza resumen -->
+    <div class="metrics" style="margin-bottom:1.25rem">
+      <div class="metric"><div class="metric-label">Facturado</div><div class="metric-val info" id="res-facturado">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Cobrado (facturas)</div><div class="metric-val pos" id="res-cob-cobrado">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Pendiente</div><div class="metric-val warn" id="res-cob-pendiente">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Vencido</div><div class="metric-val neg" id="res-cob-vencido">$0.00</div></div>
+    </div>
+
+    <div class="report-cols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;margin-bottom:1.25rem">
+      <div class="chart-card">
+        <div class="section-label">Utilidad por mes</div>
+        <div style="position:relative;width:100%;height:240px"><canvas id="res-chart-mensual"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="section-label">Cobranza por estado</div>
+        <div style="position:relative;width:100%;height:240px"><canvas id="res-chart-cobranza"></canvas></div>
+      </div>
+    </div>
+
+    <div class="report-cols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem">
+      <div class="table-wrap">
+        <div class="section-label" style="padding:12px 14px 0">Top 5 clientes por utilidad</div>
+        <table>
+          <thead><tr><th>Cliente</th><th>Viajes</th><th>Utilidad</th></tr></thead>
+          <tbody id="res-top-clientes"><tr><td colspan="3"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <div class="section-label" style="padding:12px 14px 0">Facturas por vencer / vencidas</div>
+        <table>
+          <thead><tr><th>Folio</th><th>Cliente</th><th>Vence</th><th>Monto</th></tr></thead>
+          <tbody id="res-facturas-riesgo"><tr><td colspan="4"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- ════════════════════════════════════════════
@@ -2769,7 +2876,7 @@ document.getElementById('v-fecha').addEventListener('change', function() {
 document.getElementById('v-referencia').value = generarFolioAuto();
 
 // ── TABS ──────────────────────────────────────────────
-const _TODOS_PANELES = ['viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
+const _TODOS_PANELES = ['resumen','viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
 
 function cambiarTab(id, btn) {
   // Ocultar todos los paneles explícitamente por ID
@@ -2789,6 +2896,7 @@ function cambiarTab(id, btn) {
   if (btn) btn.classList.add('active');
   if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   // Renders específicos
+  if (id === 'resumen') setTimeout(renderResumen, 80);
   if (id === 'reportes') setTimeout(renderReporteMensual, 80);
   if (id === 'contenedores') setTimeout(buscarContenedor, 80);
   if (id === 'historial') setTimeout(renderHistorial, 80);
@@ -3046,6 +3154,145 @@ function actualizarMetricasV() {
   document.getElementById('btn-export-v').disabled = viajes.length === 0;
   const btnPdf = document.getElementById('btn-pdf-v');
   if(btnPdf) btnPdf.disabled = viajes.length === 0;
+}
+
+// ══════════════════════════════════════════════════════
+// RESUMEN EJECUTIVO (pestaña nativa)
+// ══════════════════════════════════════════════════════
+let graficaResMensual = null, graficaResCobranza = null;
+
+function renderResumen() {
+  // ── KPIs de viajes (sobre todos los viajes, no filtrados) ──
+  const tc = viajes.reduce((s,r)=>s+(r.cobrado||0)+(r.maniobrasCobrado||0),0);
+  const tk = viajes.reduce((s,r)=>s+(r.costo||0)+(r.maniobras||0),0);
+  const tu = tc - tk;
+  const margen = tc > 0 ? ((tu/tc)*100) : 0;
+  document.getElementById('res-cobrado').textContent  = fmt(tc);
+  document.getElementById('res-costo').textContent    = fmt(tk);
+  const ru = document.getElementById('res-utilidad');
+  ru.textContent = fmt(tu); ru.className = 'metric-val '+(tu>=0?'pos':'neg');
+  const rm = document.getElementById('res-margen');
+  rm.textContent = margen.toFixed(1)+'%';
+  rm.className = 'metric-val '+(margen>=50?'pos':margen>=20?'warn':'neg');
+  document.getElementById('res-viajes').textContent = viajes.length;
+  document.getElementById('resumen-periodo').textContent = viajes.length + ' viaje' + (viajes.length!==1?'s':'') + ' · ' + cobranzas.length + ' factura' + (cobranzas.length!==1?'s':'');
+
+  // ── KPIs de cobranza ──
+  const hoy = new Date().toISOString().split('T')[0];
+  const estadoCalc = r => {
+    const venc = fmtFecha(r.fechaVencimiento);
+    if (venc && venc < hoy && r.estado !== 'pagado') return 'vencido';
+    return r.estado || 'pendiente';
+  };
+  let facturado=0, cobrado=0, pendiente=0, vencido=0;
+  cobranzas.forEach(r => {
+    const m = parseFloat(r.monto) || 0;
+    facturado += m;
+    const e = estadoCalc(r);
+    if (e === 'pagado') cobrado += m;
+    else if (e === 'vencido') vencido += m;
+    else pendiente += m; // pendiente + parcial
+  });
+  document.getElementById('res-facturado').textContent     = fmt(facturado);
+  document.getElementById('res-cob-cobrado').textContent   = fmt(cobrado);
+  document.getElementById('res-cob-pendiente').textContent = fmt(pendiente);
+  document.getElementById('res-cob-vencido').textContent   = fmt(vencido);
+
+  // ── Gráfica: utilidad por mes ──
+  const meses = {};
+  viajes.forEach(r => {
+    const f = fmtFecha(r.fecha);
+    if (!f) return;
+    const mesKey = f.slice(0,7); // YYYY-MM
+    if (!meses[mesKey]) meses[mesKey] = { cobrado:0, costo:0 };
+    meses[mesKey].cobrado += (r.cobrado||0)+(r.maniobrasCobrado||0);
+    meses[mesKey].costo   += (r.costo||0)+(r.maniobras||0);
+  });
+  const mesesOrd = Object.keys(meses).sort().slice(-6);
+  const nombresMes = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const labels = mesesOrd.map(m => { const [y,mo]=m.split('-'); return nombresMes[parseInt(mo)-1]+' '+y.slice(2); });
+  const datosUtil = mesesOrd.map(m => meses[m].cobrado - meses[m].costo);
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  const textColor = isDark ? '#9AA0A9' : '#6B6A67';
+
+  if (graficaResMensual) graficaResMensual.destroy();
+  const ctxM = document.getElementById('res-chart-mensual');
+  if (ctxM) graficaResMensual = new Chart(ctxM, {
+    type: 'bar',
+    data: { labels, datasets: [{
+      label: 'Utilidad', data: datosUtil,
+      backgroundColor: datosUtil.map(v => v>=0 ? '#1D9E75' : '#E24B4A'),
+      borderRadius: 5
+    }]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:textColor,font:{size:11}} },
+        y:{ grid:{color:gridColor}, ticks:{color:textColor,font:{size:11},callback:v=>'$'+(v/1000).toFixed(0)+'k'} }
+      }
+    }
+  });
+
+  // ── Gráfica: cobranza por estado ──
+  if (graficaResCobranza) graficaResCobranza.destroy();
+  const ctxC = document.getElementById('res-chart-cobranza');
+  if (ctxC) graficaResCobranza = new Chart(ctxC, {
+    type: 'doughnut',
+    data: {
+      labels: ['Cobrado','Pendiente','Vencido'],
+      datasets: [{ data:[cobrado,pendiente,vencido], backgroundColor:['#1D9E75','#EF9F27','#E24B4A'], borderWidth:0 }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{position:'bottom', labels:{color:textColor,font:{size:12},padding:12,usePointStyle:true}} }
+    }
+  });
+
+  // ── Top 5 clientes por utilidad ──
+  const porCliente = {};
+  viajes.forEach(r => {
+    const cli = r.cliente || '—';
+    if (!porCliente[cli]) porCliente[cli] = { viajes:0, util:0 };
+    porCliente[cli].viajes++;
+    porCliente[cli].util += ((r.cobrado||0)+(r.maniobrasCobrado||0)) - ((r.costo||0)+(r.maniobras||0));
+  });
+  const top5 = Object.entries(porCliente).sort((a,b)=>b[1].util-a[1].util).slice(0,5);
+  const tbCli = document.getElementById('res-top-clientes');
+  tbCli.innerHTML = top5.length
+    ? top5.map(([cli,d])=>`<tr>
+        <td class="trunc">${cli}</td>
+        <td>${d.viajes}</td>
+        <td class="${d.util>=0?'util-pos':'util-neg'}" style="white-space:nowrap">${fmt(d.util)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="3"><div class="empty-state"><p>Sin datos</p></div></td></tr>';
+
+  // ── Facturas por vencer / vencidas ──
+  const lim = new Date(); lim.setDate(lim.getDate()+7);
+  const limStr = lim.toISOString().split('T')[0];
+  const riesgo = cobranzas
+    .filter(r => {
+      const venc = fmtFecha(r.fechaVencimiento);
+      if (!venc || r.estado === 'pagado') return false;
+      return venc <= limStr; // vencidas o por vencer en ≤7 días
+    })
+    .sort((a,b)=>fmtFecha(a.fechaVencimiento)<fmtFecha(b.fechaVencimiento)?-1:1)
+    .slice(0,8);
+  const tbRis = document.getElementById('res-facturas-riesgo');
+  tbRis.innerHTML = riesgo.length
+    ? riesgo.map(r=>{
+        const venc = fmtFecha(r.fechaVencimiento);
+        const isVenc = venc < hoy;
+        return `<tr>
+          <td style="font-size:12px;font-weight:500">${r.folio||'—'}</td>
+          <td class="trunc">${r.cliente||'—'}</td>
+          <td style="white-space:nowrap;color:${isVenc?'#993C1D':'#854F0B'};font-size:12px">${venc||'—'}</td>
+          <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="4"><div class="empty-state"><p>Sin facturas en riesgo</p></div></td></tr>';
 }
 
 function renderViajes() {
