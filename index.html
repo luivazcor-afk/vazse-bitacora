@@ -556,6 +556,37 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .report-tab:hover{background:#EBF3FC;color:#185FA5;border-color:rgba(24,95,165,.3)}
 .report-tab.active{background:#185FA5;color:#fff;border-color:#185FA5}
 
+/* ══ BADGES DE COBRANZA (light mode base) ════════════ */
+.seg-badge{
+  display:inline-flex;align-items:center;
+  font-size:11px;font-weight:500;padding:2px 6px;
+  border-radius:10px;background:#E9F0FB;color:#185FA5;cursor:pointer
+}
+.dias-badge{
+  display:inline-flex;align-items:center;
+  font-size:10px;font-weight:600;padding:2px 6px;
+  border-radius:10px;white-space:nowrap
+}
+.dias-ok{background:#E1F5EE;color:#0F6E56}
+.dias-warn{background:#FEF3E2;color:#92400E}
+.dias-venc{background:#FDECEC;color:#C0392B}
+.cobro-real-badge{
+  display:inline-block;font-size:10px;font-weight:500;
+  padding:1px 6px;border-radius:8px;background:#E8F5EE;color:#0F6E56;
+  margin-top:2px
+}
+html[data-theme=dark] .cobro-real-badge{background:#0E2A1F;color:#6DC4A5}
+
+/* ══ RESUMEN POR CLIENTE EN COBRANZA ═════════════════ */
+.cli-resumen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1rem}
+.cli-resumen-card{background:var(--color-background-primary,#fff);border:0.5px solid var(--color-border-secondary,#E7E9ED);border-radius:12px;padding:14px 16px;transition:box-shadow .15s}
+.cli-resumen-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.cli-resumen-nombre{font-size:13px;font-weight:600;color:var(--color-text-primary,#1C1C1A);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cli-resumen-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.cli-resumen-label{color:var(--color-text-secondary,#6B6A67)}
+.cli-resumen-val{font-weight:500}
+html[data-theme=dark] .cli-resumen-card{background:#1E2127;border-color:rgba(255,255,255,.08)}
+
 /* ══ RESUMEN EJECUTIVO (estética IBM Plex / dashboard) ══ */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 #panel-resumen{--res-brand:#185FA5;--res-pos:#1C875A;--res-neg:#C0453B;--res-warn:#B5810E}
@@ -1457,6 +1488,18 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
       <span class="bv-icon">⚠️</span>
       <span class="bv-text"><span class="bv-count" id="bv-count"></span> — <span id="bv-total"></span> en riesgo<br><span id="bv-detalle" style="font-size:11px;opacity:.8"></span></span>
       <span class="bv-link" onclick="filtrarPorVencer()">Ver facturas →</span>
+    </div>
+
+    <!-- Resumen por cliente (cobranza) -->
+    <div id="cli-resumen-wrap" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-label" style="margin-bottom:0">Resumen por cliente</div>
+        <button class="btn" style="font-size:11px;padding:4px 10px" onclick="toggleCliResumen()">Ocultar</button>
+      </div>
+      <div class="cli-resumen-grid" id="cli-resumen-grid"></div>
+    </div>
+    <div id="cli-resumen-toggle" style="margin-bottom:10px">
+      <button class="btn" style="font-size:11px;padding:5px 12px" onclick="toggleCliResumen()">👥 Ver resumen por cliente</button>
     </div>
 
     <div class="form-card">
@@ -2800,28 +2843,40 @@ function sendPostJsonp(payload) {
     const cbName = '_vazse_cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
     const encoded = encodeURIComponent(JSON.stringify(payload));
     const url = getScriptUrlBase() + '?action=write&data=' + encoded + '&cb=' + cbName;
-    window[cbName] = function(resp) {
+    let terminado = false;
+    const finalizar = function(resp) {
+      if (terminado) return;
+      terminado = true;
       delete window[cbName];
+      // Solo limpiar el 'cb' global si nos pertenece a nosotros
+      if (window.cb === handler) { try { delete window.cb; } catch(e){ window.cb = undefined; } }
       if (script.parentNode) script.parentNode.removeChild(script);
       clearTimeout(timer);
       console.log('[VAZSE] JSONP OK:', payload.action);
       resolve(resp);
     };
+    const handler = function(resp) { finalizar(resp); };
+    window[cbName] = handler;
+    // El Apps Script v30 envuelve la respuesta con cb(...) fijo, ignorando &cb.
+    // Registramos 'cb' como alias para capturarla igual.
+    window.cb = handler;
     const script = document.createElement('script');
     script.src = url;
     script.onerror = function() {
       delete window[cbName];
+      if (window.cb === handler) { try { delete window.cb; } catch(e){ window.cb = undefined; } }
       clearTimeout(timer);
       console.warn('[VAZSE] JSONP error, trying no-cors fetch');
       // Fallback to no-cors fetch
       fetch(url, {mode:'no-cors'}).catch(()=>{});
-      resolve();
+      if (!terminado) { terminado = true; resolve(); }
     };
     const timer = setTimeout(function() {
       delete window[cbName];
+      if (window.cb === handler) { try { delete window.cb; } catch(e){ window.cb = undefined; } }
       if (script.parentNode) script.parentNode.removeChild(script);
       console.warn('[VAZSE] JSONP timeout for:', payload.action);
-      resolve();
+      if (!terminado) { terminado = true; resolve(); }
     }, 8000);
     document.head.appendChild(script);
   });
@@ -4702,6 +4757,58 @@ function diasBadge(dias, estado) {
   if (dias === null || estado === 'pagado') return '';
   const cls = dias < 15 ? 'dias-ok' : dias < 30 ? 'dias-warn' : 'dias-venc';
   return `<span class="dias-badge ${cls}">${dias}d</span>`;
+}
+
+// ── RESUMEN POR CLIENTE (Cobranza) ────────────────────
+function toggleCliResumen() {
+  const wrap = document.getElementById('cli-resumen-wrap');
+  const toggle = document.getElementById('cli-resumen-toggle');
+  if (wrap.style.display === 'none') {
+    renderCliResumen();
+    wrap.style.display = '';
+    toggle.style.display = 'none';
+  } else {
+    wrap.style.display = 'none';
+    toggle.style.display = '';
+  }
+}
+
+function renderCliResumen() {
+  const hoy = new Date().toISOString().split('T')[0];
+  const porCliente = {};
+  cobranzas.forEach(r => {
+    const cli = r.cliente || '(sin cliente)';
+    if (!porCliente[cli]) porCliente[cli] = { total:0, pendiente:0, vencido:0, pagado:0, facturas:0 };
+    const m = parseFloat(r.monto) || 0;
+    const venc = fmtFecha(r.fechaVencimiento);
+    const isVenc = venc && venc < hoy && r.estado !== 'pagado';
+    const estado = isVenc && r.estado === 'pendiente' ? 'vencido' : (r.estado || 'pendiente');
+    porCliente[cli].total += m;
+    porCliente[cli].facturas++;
+    if (estado === 'pagado') porCliente[cli].pagado += m;
+    else if (estado === 'vencido') porCliente[cli].vencido += m;
+    else porCliente[cli].pendiente += m;
+  });
+
+  const sorted = Object.entries(porCliente)
+    .sort((a,b) => (b[1].pendiente + b[1].vencido) - (a[1].pendiente + a[1].vencido));
+
+  const grid = document.getElementById('cli-resumen-grid');
+  grid.innerHTML = sorted.map(([cli, d]) => {
+    const pctCobrado = d.total > 0 ? Math.round((d.pagado / d.total) * 100) : 0;
+    const barColor = d.vencido > 0 ? '#E24B4A' : d.pendiente > 0 ? '#EF9F27' : '#1D9E75';
+    return `<div class="cli-resumen-card" onclick="document.getElementById('c-buscar').value='${cli.replace(/'/g,"\\'")}';filtrarCobranza();toggleCliResumen();" style="cursor:pointer" title="Filtrar por ${cli}">
+      <div class="cli-resumen-nombre">${cli}</div>
+      <div style="height:3px;border-radius:2px;background:#eee;margin-bottom:8px">
+        <div style="height:100%;border-radius:2px;width:${pctCobrado}%;background:${barColor};transition:width .3s"></div>
+      </div>
+      <div class="cli-resumen-row"><span class="cli-resumen-label">Total facturado</span><span class="cli-resumen-val">${fmt(d.total)}</span></div>
+      ${d.vencido > 0 ? '<div class="cli-resumen-row"><span class="cli-resumen-label">🔴 Vencido</span><span class="cli-resumen-val" style="color:#C0392B">' + fmt(d.vencido) + '</span></div>' : ''}
+      ${d.pendiente > 0 ? '<div class="cli-resumen-row"><span class="cli-resumen-label">🟡 Pendiente</span><span class="cli-resumen-val" style="color:#854F0B">' + fmt(d.pendiente) + '</span></div>' : ''}
+      <div class="cli-resumen-row"><span class="cli-resumen-label">✅ Cobrado</span><span class="cli-resumen-val" style="color:#0F6E56">${fmt(d.pagado)} (${pctCobrado}%)</span></div>
+      <div class="cli-resumen-row" style="margin-top:4px;border-top:0.5px solid rgba(0,0,0,.06);padding-top:4px"><span class="cli-resumen-label">${d.facturas} factura${d.facturas!==1?'s':''}</span></div>
+    </div>`;
+  }).join('');
 }
 
 // ── BÚSQUEDA GLOBAL actualizada ────────────────────────
