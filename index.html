@@ -3072,6 +3072,81 @@ function cargarCache() {
   } catch(e) { return null; }
 }
 
+// ── NORMALIZACIÓN Apps Script v30 (arrays crudos → objetos) ──
+function normalizarDatosV30(data) {
+  if (!data || typeof data !== 'object') return data;
+  const esArray = v => Array.isArray(v) && v.length > 0 && Array.isArray(v[0]);
+  const parseJSON = (v, def) => {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string' && v.trim()) {
+      try { return JSON.parse(v); } catch(e) { return def; }
+    }
+    return def;
+  };
+
+  // registros / BITÁCORA: 18 columnas
+  if (esArray(data.registros)) {
+    data.registros = data.registros.map(a => ({
+      fecha: a[0], tipo: a[1], cliente: a[2], unidad: a[3],
+      origen: a[4], destino: a[5], costo: a[6], cobrado: a[7],
+      utilidad: a[8], referencia: a[9], notas: a[10], contenedor: a[11],
+      patio: a[12], maniobras: a[13], maniobrasCobrado: a[14],
+      maniobrasDesc: a[15], urlEir: a[16], estadoFlete: a[17]
+    }));
+  }
+
+  // cobranzas / COBRANZA: 12 columnas
+  if (esArray(data.cobranzas)) {
+    data.cobranzas = data.cobranzas.map(a => {
+      let estado = (a[5]||'').toString().toLowerCase().trim();
+      if (estado === 'vencida') estado = 'vencido';   // Sheet usa femenino
+      if (estado === 'cobrada') estado = 'pagado';    // sinónimo
+      return {
+        folio: a[0], cliente: a[1], monto: a[2], fechaEmision: a[3],
+        fechaVencimiento: a[4], estado: estado, referencia: a[6],
+        urlFactura: a[7], urlEvidencia: a[8], notas: a[9],
+        fechaCobro: a[10], seguimiento: parseJSON(a[11], [])
+      };
+    });
+  }
+
+  // pagos / PROVEEDORES (movimientos): 9 columnas
+  if (esArray(data.pagos)) {
+    data.pagos = data.pagos.map(a => ({
+      folio: a[0], proveedor: a[1], monto: a[2], fecha: a[3],
+      fechaPago: a[4], estado: a[5], referencia: a[6],
+      concepto: a[7], notas: a[8]
+    }));
+  }
+
+  // clientes: 7 columnas (domicilios viene como string JSON)
+  if (esArray(data.clientes)) {
+    data.clientes = data.clientes.map(a => ({
+      nombre: a[0], rfc: a[1], contacto: a[2], tel: a[3],
+      email: a[4], notas: a[5], domicilios: parseJSON(a[6], [])
+    }));
+  }
+
+  // proveedores → el HTML espera 'proveedoresCat': 10 columnas (cuentas string JSON)
+  if (esArray(data.proveedores)) {
+    data.proveedoresCat = data.proveedores.map(a => ({
+      nombre: a[0], rfc: a[1], tipo: a[2], contacto: a[3],
+      tel1: a[4], tel2: a[5], email1: a[6], email2: a[7],
+      cuentas: parseJSON(a[8], []), notas: a[9]
+    }));
+  }
+
+  // servicios → el HTML espera 'serviciosCat': 5 columnas
+  if (esArray(data.servicios)) {
+    data.serviciosCat = data.servicios.map(a => ({
+      nombre: a[0], clave: String(a[1]||''), unidad: a[2],
+      desc: a[3], retencion: a[4]
+    }));
+  }
+
+  return data;
+}
+
 async function cargar() {
   setStatus('v', 'loading', 'Sincronizando...');
   setStatus('c', 'loading', 'Sincronizando...');
@@ -3110,7 +3185,18 @@ async function cargar() {
   try {
     const mesParam = (cargandoTodo || !mesCargado) ? '' : ('&mes=' + mesCargado);
     const res = await fetch(getScriptUrlBase() + '?v=1' + mesParam);
-    const data = await res.json();
+    let data;
+    const txt = await res.text();
+    const trimmed = txt.trim();
+    // El Apps Script (v30+) responde en JSONP: cb({...}). Desenvolver si aplica.
+    const jsonpMatch = trimmed.match(/^[a-zA-Z_$][\w$]*\s*\(([\s\S]*)\)\s*;?\s*$/);
+    if (jsonpMatch) {
+      data = JSON.parse(jsonpMatch[1]);
+    } else {
+      data = JSON.parse(trimmed);
+    }
+    // El v30 devuelve filas como arrays crudos; normalizar a objetos.
+    data = normalizarDatosV30(data);
 
     viajes = (data.registros || []).map((r, i) => ({
       ...r, id: i,
