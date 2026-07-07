@@ -556,6 +556,55 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .report-tab:hover{background:#EBF3FC;color:#185FA5;border-color:rgba(24,95,165,.3)}
 .report-tab.active{background:#185FA5;color:#fff;border-color:#185FA5}
 
+/* ══ RESUMEN EJECUTIVO (estética IBM Plex / dashboard) ══ */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+#panel-resumen{--res-brand:#185FA5;--res-pos:#1C875A;--res-neg:#C0453B;--res-warn:#B5810E}
+html[data-theme=dark] #panel-resumen{--res-pos:#45B889;--res-neg:#E8857B;--res-warn:#D9A93A}
+.res-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.4rem;flex-wrap:wrap;gap:12px}
+.res-title{font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--color-text-primary,#161A1F)}
+.res-sub{font-size:12.5px;color:var(--color-text-secondary,#767E8A);margin-top:2px}
+.res-refresh{padding:7px 14px;font-size:12.5px;font-weight:500;border:0.5px solid rgba(0,0,0,.16);
+  border-radius:9px;background:var(--color-background-primary,#fff);cursor:pointer;
+  color:var(--color-text-secondary,#3A4049);transition:all .13s}
+.res-refresh:hover{background:#EBF3FC;color:#185FA5;border-color:rgba(24,95,165,.3)}
+html[data-theme=dark] .res-refresh{background:#24272E;border-color:rgba(255,255,255,.12);color:#C2C6CD}
+html[data-theme=dark] .res-refresh:hover{background:#233447;color:#7FB2EA}
+.mono{font-family:'IBM Plex Mono',ui-monospace,'SF Mono',monospace;font-variant-numeric:tabular-nums}
+
+.res-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+.res-kpi-grid-4{grid-template-columns:repeat(4,1fr);margin-bottom:1.5rem}
+@media(max-width:900px){.res-kpi-grid,.res-kpi-grid-4{grid-template-columns:repeat(2,1fr)}}
+.res-kpi{background:var(--color-background-primary,#fff);border:0.5px solid var(--color-border-secondary,#E7E9ED);
+  border-radius:14px;padding:16px 18px;transition:box-shadow .15s,transform .15s}
+.res-kpi:hover{box-shadow:0 4px 16px rgba(0,0,0,.06);transform:translateY(-1px)}
+.res-kpi-hero{background:linear-gradient(135deg,#185FA5,#0F4A87);border:none}
+.res-kpi-hero .res-kpi-label{color:rgba(255,255,255,.75)}
+.res-kpi-hero .res-kpi-val{color:#fff!important}
+.res-kpi-label{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--color-text-tertiary,#8A909A);margin-bottom:8px}
+.res-kpi-val{font-size:21px;font-weight:600;letter-spacing:-.02em;color:var(--color-text-primary,#161A1F);line-height:1.1}
+.res-kpi-val.pos{color:var(--res-pos)}
+.res-kpi-val.neg{color:var(--res-neg)}
+.res-kpi-val.warn{color:var(--res-warn)}
+
+.res-chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-bottom:14px}
+.res-card{background:var(--color-background-primary,#fff);border:0.5px solid var(--color-border-secondary,#E7E9ED);
+  border-radius:16px;padding:18px}
+.res-card-flush{padding:0;overflow:hidden}
+.res-card-title{font-size:13px;font-weight:600;color:var(--color-text-primary,#161A1F);
+  margin-bottom:14px;letter-spacing:-.01em}
+.res-table{width:100%;border-collapse:collapse}
+.res-table th{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--color-text-tertiary,#8A909A);text-align:left;padding:10px 18px;
+  border-bottom:0.5px solid var(--color-border-secondary,#ECEDF0)}
+.res-table td{font-size:13px;padding:11px 18px;border-bottom:0.5px solid var(--color-border-secondary,#F0F1F4);
+  color:var(--color-text-primary,#3A4049)}
+.res-table tr:last-child td{border-bottom:none}
+.res-table tr:hover td{background:var(--color-background-secondary,#F7F8FA)}
+.res-table td.pos,.res-table .util-pos{color:var(--res-pos);font-weight:500}
+.res-table td.neg,.res-table .util-neg{color:var(--res-neg);font-weight:500}
+.res-empty{text-align:center;color:var(--color-text-tertiary,#8A909A);padding:24px!important;font-size:12.5px}
+
 /* ══ CAT MODAL / OVERLAYS ════════════════════════════ */
 .cat-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.45);
@@ -1121,60 +1170,84 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
        PESTAÑA 0 — RESUMEN EJECUTIVO
   ═══════════════════════════════════════════════ -->
   <div id="panel-resumen" class="tab-panel">
-    <div class="topbar">
-      <div class="brand" style="gap:8px">
-        <span style="font-size:18px">📈</span>
-        <div>
-          <div class="brand-title" style="font-size:16px">Resumen Ejecutivo</div>
-          <div class="brand-sub" id="resumen-periodo">Todos los registros</div>
-        </div>
+    <div class="res-header">
+      <div>
+        <div class="res-title">Resumen Ejecutivo</div>
+        <div class="res-sub" id="resumen-periodo">Todos los registros</div>
       </div>
-      <div class="btns">
-        <button class="btn" onclick="renderResumen()">↻ Actualizar</button>
+      <button class="res-refresh" onclick="renderResumen()">↻ Actualizar</button>
+    </div>
+
+    <!-- KPIs de operación -->
+    <div class="res-kpi-grid">
+      <div class="res-kpi">
+        <div class="res-kpi-label">Total Cobrado</div>
+        <div class="res-kpi-val mono pos" id="res-cobrado">$0.00</div>
+      </div>
+      <div class="res-kpi">
+        <div class="res-kpi-label">Total Costo</div>
+        <div class="res-kpi-val mono neg" id="res-costo">$0.00</div>
+      </div>
+      <div class="res-kpi res-kpi-hero">
+        <div class="res-kpi-label">Utilidad Neta</div>
+        <div class="res-kpi-val mono" id="res-utilidad">$0.00</div>
+      </div>
+      <div class="res-kpi">
+        <div class="res-kpi-label">Margen</div>
+        <div class="res-kpi-val mono" id="res-margen">0%</div>
+      </div>
+      <div class="res-kpi">
+        <div class="res-kpi-label">Viajes</div>
+        <div class="res-kpi-val mono" id="res-viajes">0</div>
       </div>
     </div>
 
-    <!-- KPIs principales -->
-    <div class="metrics" style="margin-bottom:1rem">
-      <div class="metric"><div class="metric-label">Total Cobrado</div><div class="metric-val pos" id="res-cobrado">$0.00</div></div>
-      <div class="metric"><div class="metric-label">Total Costo</div><div class="metric-val neg" id="res-costo">$0.00</div></div>
-      <div class="metric"><div class="metric-label">Utilidad Neta</div><div class="metric-val" id="res-utilidad">$0.00</div></div>
-      <div class="metric"><div class="metric-label">Margen</div><div class="metric-val" id="res-margen">0%</div></div>
-      <div class="metric"><div class="metric-label">Viajes</div><div class="metric-val" id="res-viajes">0</div></div>
+    <!-- KPIs de cobranza -->
+    <div class="res-kpi-grid res-kpi-grid-4">
+      <div class="res-kpi">
+        <div class="res-kpi-label">Facturado</div>
+        <div class="res-kpi-val mono" id="res-facturado" style="color:var(--brand)">$0.00</div>
+      </div>
+      <div class="res-kpi">
+        <div class="res-kpi-label">Cobrado</div>
+        <div class="res-kpi-val mono pos" id="res-cob-cobrado">$0.00</div>
+      </div>
+      <div class="res-kpi">
+        <div class="res-kpi-label">Pendiente</div>
+        <div class="res-kpi-val mono warn" id="res-cob-pendiente">$0.00</div>
+      </div>
+      <div class="res-kpi">
+        <div class="res-kpi-label">Vencido</div>
+        <div class="res-kpi-val mono neg" id="res-cob-vencido">$0.00</div>
+      </div>
     </div>
 
-    <!-- Cobranza resumen -->
-    <div class="metrics" style="margin-bottom:1.25rem">
-      <div class="metric"><div class="metric-label">Facturado</div><div class="metric-val info" id="res-facturado">$0.00</div></div>
-      <div class="metric"><div class="metric-label">Cobrado (facturas)</div><div class="metric-val pos" id="res-cob-cobrado">$0.00</div></div>
-      <div class="metric"><div class="metric-label">Pendiente</div><div class="metric-val warn" id="res-cob-pendiente">$0.00</div></div>
-      <div class="metric"><div class="metric-label">Vencido</div><div class="metric-val neg" id="res-cob-vencido">$0.00</div></div>
-    </div>
-
-    <div class="report-cols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;margin-bottom:1.25rem">
-      <div class="chart-card">
-        <div class="section-label">Utilidad por mes</div>
+    <!-- Gráficas -->
+    <div class="res-chart-grid">
+      <div class="res-card">
+        <div class="res-card-title">Utilidad por mes</div>
         <div style="position:relative;width:100%;height:240px"><canvas id="res-chart-mensual"></canvas></div>
       </div>
-      <div class="chart-card">
-        <div class="section-label">Cobranza por estado</div>
+      <div class="res-card">
+        <div class="res-card-title">Cobranza por estado</div>
         <div style="position:relative;width:100%;height:240px"><canvas id="res-chart-cobranza"></canvas></div>
       </div>
     </div>
 
-    <div class="report-cols" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem">
-      <div class="table-wrap">
-        <div class="section-label" style="padding:12px 14px 0">Top 5 clientes por utilidad</div>
-        <table>
-          <thead><tr><th>Cliente</th><th>Viajes</th><th>Utilidad</th></tr></thead>
-          <tbody id="res-top-clientes"><tr><td colspan="3"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
+    <!-- Tablas -->
+    <div class="res-chart-grid">
+      <div class="res-card res-card-flush">
+        <div class="res-card-title" style="padding:16px 18px 0">Top 5 clientes por utilidad</div>
+        <table class="res-table">
+          <thead><tr><th>Cliente</th><th style="text-align:center">Viajes</th><th style="text-align:right">Utilidad</th></tr></thead>
+          <tbody id="res-top-clientes"><tr><td colspan="3" class="res-empty">Sin datos</td></tr></tbody>
         </table>
       </div>
-      <div class="table-wrap">
-        <div class="section-label" style="padding:12px 14px 0">Facturas por vencer / vencidas</div>
-        <table>
-          <thead><tr><th>Folio</th><th>Cliente</th><th>Vence</th><th>Monto</th></tr></thead>
-          <tbody id="res-facturas-riesgo"><tr><td colspan="4"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
+      <div class="res-card res-card-flush">
+        <div class="res-card-title" style="padding:16px 18px 0">Facturas por vencer / vencidas</div>
+        <table class="res-table">
+          <thead><tr><th>Folio</th><th>Cliente</th><th>Vence</th><th style="text-align:right">Monto</th></tr></thead>
+          <tbody id="res-facturas-riesgo"><tr><td colspan="4" class="res-empty">Sin datos</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -2615,22 +2688,21 @@ function aplicarConfig() {
  * 13. ARRANQUE              — init
  * ══════════════════════════════════════════════════════
  */
-const SCRIPT_URL_BASE = CFG.scriptUrl;
+// FIX: leer CFG.scriptUrl dinámicamente (el config carga async, después de este punto)
+function getScriptUrlBase() { return CFG.scriptUrl || ''; }
 
 // ── CONFIGURACIÓN SIMPLE (un repo = una empresa) ───────
 function getConfig()       { return null; }
 function saveConfig(cfg)   {}
 function getSheetId()      { return ''; }
 function getEmpresaNombre(){ return 'RESOLUCIÓN ESTRATÉGICA VAZSE'; }
-function getScriptUrl()    { return SCRIPT_URL_BASE; }
-const SCRIPT_URL = SCRIPT_URL_BASE;
-
+function getScriptUrl()    { return getScriptUrlBase(); }
 // ── POST helper — usa form oculto para evitar CORS/redirect issues ─
 function postToScript(payload) {
   return new Promise((resolve) => {
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = SCRIPT_URL;
+    form.action = getScriptUrlBase();
     form.target = '_blank_post_' + Date.now();
     form.style.display = 'none';
     const inp = document.createElement('input');
@@ -2706,7 +2778,7 @@ async function sincronizarCola() {
   for (const item of cola) {
     try {
       const encoded = encodeURIComponent(JSON.stringify(item));
-      const url = SCRIPT_URL_BASE + '?action=write&data=' + encoded;
+      const url = getScriptUrlBase() + '?action=write&data=' + encoded;
       await fetch(url, { method: 'GET', mode: 'no-cors' });
       await new Promise(r => setTimeout(r, 400));
       exito++;
@@ -2727,7 +2799,7 @@ function sendPostJsonp(payload) {
   return new Promise((resolve) => {
     const cbName = '_vazse_cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
     const encoded = encodeURIComponent(JSON.stringify(payload));
-    const url = SCRIPT_URL + '?action=write&data=' + encoded + '&cb=' + cbName;
+    const url = getScriptUrlBase() + '?action=write&data=' + encoded + '&cb=' + cbName;
     window[cbName] = function(resp) {
       delete window[cbName];
       if (script.parentNode) script.parentNode.removeChild(script);
@@ -3037,7 +3109,7 @@ async function cargar() {
 
   try {
     const mesParam = (cargandoTodo || !mesCargado) ? '' : ('&mes=' + mesCargado);
-    const res = await fetch(SCRIPT_URL_BASE + '?v=1' + mesParam);
+    const res = await fetch(getScriptUrlBase() + '?v=1' + mesParam);
     const data = await res.json();
 
     viajes = (data.registros || []).map((r, i) => ({
@@ -3264,10 +3336,10 @@ function renderResumen() {
   tbCli.innerHTML = top5.length
     ? top5.map(([cli,d])=>`<tr>
         <td class="trunc">${cli}</td>
-        <td>${d.viajes}</td>
-        <td class="${d.util>=0?'util-pos':'util-neg'}" style="white-space:nowrap">${fmt(d.util)}</td>
+        <td style="text-align:center">${d.viajes}</td>
+        <td class="mono ${d.util>=0?'util-pos':'util-neg'}" style="white-space:nowrap;text-align:right">${fmt(d.util)}</td>
       </tr>`).join('')
-    : '<tr><td colspan="3"><div class="empty-state"><p>Sin datos</p></div></td></tr>';
+    : '<tr><td colspan="3" class="res-empty">Sin datos</td></tr>';
 
   // ── Facturas por vencer / vencidas ──
   const lim = new Date(); lim.setDate(lim.getDate()+7);
@@ -3286,13 +3358,13 @@ function renderResumen() {
         const venc = fmtFecha(r.fechaVencimiento);
         const isVenc = venc < hoy;
         return `<tr>
-          <td style="font-size:12px;font-weight:500">${r.folio||'—'}</td>
+          <td class="mono" style="font-size:12px;font-weight:500">${r.folio||'—'}</td>
           <td class="trunc">${r.cliente||'—'}</td>
-          <td style="white-space:nowrap;color:${isVenc?'#993C1D':'#854F0B'};font-size:12px">${venc||'—'}</td>
-          <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
+          <td class="mono" style="white-space:nowrap;color:${isVenc?'var(--res-neg)':'var(--res-warn)'};font-size:12px;font-weight:500">${venc||'—'}${isVenc?' ⚠':''}</td>
+          <td class="mono" style="white-space:nowrap;font-weight:600;text-align:right">${fmt(r.monto)}</td>
         </tr>`;
       }).join('')
-    : '<tr><td colspan="4"><div class="empty-state"><p>Sin facturas en riesgo</p></div></td></tr>';
+    : '<tr><td colspan="4" class="res-empty">Sin facturas en riesgo</td></tr>';
 }
 
 function renderViajes() {
