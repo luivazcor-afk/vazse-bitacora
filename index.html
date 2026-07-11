@@ -2491,18 +2491,12 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
     <input type="hidden" id="ev-id">
     <div class="edit-grid">
       <div class="fg"><label>Fecha</label><input type="date" id="ev-fecha"></div>
-      <div class="fg"><label>Tipo</label>
-        <select id="ev-tipo" onchange="toggleFleteSectionEdit()">
-          <option value="carga">Carga</option><option value="descarga">Descarga</option>
-          <option value="traslado">Traslado</option>
-          <option value="lavado_sencillo">Lavado sencillo</option>
-          <option value="lavado_especial">Lavado especial</option>
-          <option value="maniobras">Maniobras</option>
-          <option value="flete_full">Flete Full</option>
-          <option value="flete_sencillo">Flete Sencillo</option>
-          <option value="seguro">Seguro</option>
-          <option value="otro">Otro</option>
-        </select>
+      <div class="fg autocomplete-wrap"><label>Tipo / Servicio</label>
+        <input type="text" id="ev-tipo" placeholder="Buscar servicio..." autocomplete="off"
+          oninput="mostrarAC('ev-tipo','servicios');toggleFleteSectionEdit()"
+          onblur="cerrarAC('ev-tipo')" onkeydown="navAC(event,'ev-tipo')"
+          onchange="toggleFleteSectionEdit()">
+        <div class="autocomplete-list" id="ac-ev-tipo" style="display:none"></div>
       </div>
       <div class="fg autocomplete-wrap"><label>Cliente</label>
       <input type="text" id="ev-cliente" autocomplete="off"
@@ -3597,10 +3591,17 @@ function actualizarGraficaV() {
 
 const TIPOS_FLETE = ['flete_full','flete_sencillo','traslado'];
 
+// Detección unificada de flete: acepta valores fijos y servicios del catálogo
+// (p.ej. "FLETE FULL", "FLETE SENCILLO IMPO", "TRASLADO LOCAL")
+function esTipoFlete(tipo) {
+  const t = (tipo || '').toString().toLowerCase();
+  return TIPOS_FLETE.includes(t) || t.includes('flete') || t.includes('traslado') || t.includes('full');
+}
+
 function toggleFleteSection() {
   const tipo = document.getElementById('v-tipo').value;
   const sec  = document.getElementById('flete-section');
-  if (TIPOS_FLETE.includes(tipo)) sec.classList.add('show');
+  if (esTipoFlete(tipo)) sec.classList.add('show');
   else sec.classList.remove('show');
 }
 
@@ -3610,7 +3611,7 @@ async function agregarViaje() {
   }
   const fecha = document.getElementById('v-fecha').value;
   const tipo = document.getElementById('v-tipo').value;
-  const esFlete = TIPOS_FLETE.includes(tipo);
+  const esFlete = esTipoFlete(tipo);
   const registro = {
     fecha, tipo,
     cliente:    document.getElementById('v-cliente').value.trim(),
@@ -4148,7 +4149,7 @@ let evEirFile = null, evEirUrlNuevo = '', evEirActual = '';
 function toggleFleteSectionEdit() {
   const tipo = document.getElementById('ev-tipo').value;
   const sec  = document.getElementById('ev-flete-section');
-  sec.style.display = TIPOS_FLETE.includes(tipo) ? 'block' : 'none';
+  sec.style.display = esTipoFlete(tipo) ? 'block' : 'none';
 }
 
 function selEirEdit(input) {
@@ -4211,7 +4212,7 @@ async function guardarEditViaje() {
   const btn = document.getElementById('ev-save');
   btn.disabled = true; btn.textContent = 'Guardando...';
   const tipo = document.getElementById('ev-tipo').value;
-  const esFlete = TIPOS_FLETE.includes(tipo);
+  const esFlete = esTipoFlete(tipo);
   try {
     // Upload new EIR if selected
     if (esFlete && evEirFile && !evEirUrlNuevo) {
@@ -4669,7 +4670,7 @@ function buscarContenedor() {
 
   // Filter fletes
   const fletes = viajes.filter(r => {
-    if (!TIPOS_FLETE.includes(r.tipo)) return false;
+    if (!esTipoFlete(r.tipo)) return false;
     if (estFil && r.estadoFlete !== estFil) return false;
     if (q) {
       const txt = [r.contenedor,r.patio,r.cliente,r.referencia,r.unidad].join(' ').toLowerCase();
@@ -5761,7 +5762,7 @@ function mostrarAC(inputId, tipo) {
   _acIdx = -1;
   list.innerHTML = matches.slice(0,10).map((e,i) =>
     `<div class="autocomplete-item" data-val="${e.nombre}"
-      onmousedown="seleccionarAC('${inputId}','${e.nombre.replace(/'/g,"\'")}')">
+      onmousedown="seleccionarAC('${inputId}','${e.nombre.replace(/'/g,"\\'")}')">
       ${e.nombre}
       ${e.rfc ? '<span>' + e.rfc + '</span>' : ''}
     </div>`
@@ -5772,7 +5773,10 @@ function mostrarAC(inputId, tipo) {
 function seleccionarAC(inputId, valor) {
   const input = document.getElementById(inputId);
   const list  = document.getElementById('ac-' + inputId);
-  if (input) input.value = valor;
+  if (input) {
+    input.value = valor;
+    input.dispatchEvent(new Event('change')); // dispara toggleFleteSection al elegir del catálogo
+  }
   if (list)  list.style.display = 'none';
   _acIdx = -1;
 }
@@ -5848,6 +5852,7 @@ function cargarCatalogos(data) {
   renderCatClientes();
   renderCatProveedores();
   renderCatServicios();
+  poblarFiltroTipos();
   // Re-activate visible cat panel
   const activeCatPanel = document.querySelector('.cat-panel.active');
   if (activeCatPanel) activeCatPanel.style.display = 'block';
@@ -5856,6 +5861,24 @@ function cargarCatalogos(data) {
 
 // ── CATÁLOGO SERVICIOS ───────────────────────────────
 let catServicios = JSON.parse(localStorage.getItem('vazse_cat_servicios') || '[]');
+
+// Agrega los servicios del catálogo como opciones del filtro Tipo (pestaña Viajes)
+function poblarFiltroTipos() {
+  const sel = document.getElementById('v-fil-tipo');
+  if (!sel) return;
+  const actual = sel.value;
+  const fijos = ['','carga','descarga','traslado','lavado_sencillo','lavado_especial',
+    'maniobras','flete_full','flete_sencillo','seguro','otro'];
+  Array.from(sel.options).forEach(o => { if (!fijos.includes(o.value)) o.remove(); });
+  catServicios.forEach(s => {
+    if (!s.nombre || fijos.includes(s.nombre)) return;
+    const o = document.createElement('option');
+    o.value = s.nombre; o.textContent = s.nombre;
+    sel.appendChild(o);
+  });
+  sel.value = actual;
+  if (sel.selectedIndex === -1) sel.value = '';
+}
 
 function saveCatServicios() { localStorage.setItem('vazse_cat_servicios', JSON.stringify(catServicios)); }
 
@@ -5914,11 +5937,9 @@ function renderCatServicios() {
 
 // ── TIPO VIAJE con autocomplete de servicios ──────────
 function toggleFleteSectionAC() {
-  const tipo = (document.getElementById('v-tipo').value || '').toLowerCase();
+  const tipo = document.getElementById('v-tipo').value || '';
   const sec  = document.getElementById('flete-section');
-  const FLETES = ['flete full','flete sencillo','flete terrestre','traslado',
-    'flete_full','flete_sencillo','flete_terrestre','flete full','full'];
-  if (FLETES.some(f => tipo.includes(f))) sec.classList.add('show');
+  if (esTipoFlete(tipo)) sec.classList.add('show');
   else sec.classList.remove('show');
 }
 
