@@ -215,6 +215,11 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .btn-sm.dup:hover{background:var(--color-brand-light);border-color:var(--color-brand)}
 .btn-sm.view{color:#0F6E56;border-color:rgba(15,110,86,.2)}
 .btn-sm.view:hover{background:#E1F5EE;border-color:#0F6E56}
+.btn-sm.carta{background:#E6F1FB;color:#0C447C;border-color:var(--color-brand-border)}
+.btn-sm.carta:hover{background:#D2E6F8;border-color:var(--color-brand)}
+.mes-nav-pill{background:#f1efeb}
+.mes-nav-btn{color:#1a1a18}
+.mes-nav-label{color:#1a1a18}
 
 /* ══ PAGINATION ═══════════════════════════════════════ */
 .pagination{
@@ -1029,6 +1034,9 @@ html[data-theme=dark] .btn-sm.dup{color:#85B7EB;border-color:rgba(133,183,235,.2
 html[data-theme=dark] .btn-sm.dup:hover{background:#1A2A3A}
 html[data-theme=dark] .btn-sm.view{color:#6DC4A5;border-color:rgba(109,196,165,.25)}
 html[data-theme=dark] .btn-sm.view:hover{background:#1A2E28}
+html[data-theme=dark] .btn-sm.carta{background:#1A2A3A;color:#85B7EB;border-color:rgba(133,183,235,.3)}
+html[data-theme=dark] .btn-sm.carta:hover{background:#233447;border-color:#85B7EB}
+html[data-theme=dark] .mes-nav-pill{background:#24272E !important}
 html[data-theme=dark] .search-wrap input{background:#2A2E36!important;border-color:rgba(255,255,255,.12)!important;color:#E8E9EC!important}
 html[data-theme=dark] .filtros select,
 html[data-theme=dark] .filtros input{background:#2A2E36!important;border-color:rgba(255,255,255,.12)!important;color:#E8E9EC!important}
@@ -1319,10 +1327,10 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       </div>
       <div class="btns" style="align-items:center">
         <button class="btn" onclick="cerrarSesion()" title="Cerrar sesión" style="font-size:11px;padding:5px 10px">🔒 Salir</button>
-        <div style="display:flex;align-items:center;gap:2px;background:#f1efeb;border-radius:8px;padding:3px 6px">
-          <button onclick="navMes(-1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">‹</button>
-          <span id="mes-cargado-label" style="font-size:12px;font-weight:500;min-width:84px;text-align:center">Este mes</span>
-          <button onclick="navMes(1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;color:#1a1a18">›</button>
+        <div class="mes-nav-pill" style="display:flex;align-items:center;gap:2px;border-radius:8px;padding:3px 6px">
+          <button class="mes-nav-btn" onclick="navMes(-1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px">‹</button>
+          <span id="mes-cargado-label" class="mes-nav-label" style="font-size:12px;font-weight:500;min-width:84px;text-align:center">Este mes</span>
+          <button class="mes-nav-btn" onclick="navMes(1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px">›</button>
         </div>
         <button class="btn" onclick="cargarTodo()" style="font-size:11px" title="Ver todos los registros">📂 Todo</button>
         <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
@@ -3551,7 +3559,7 @@ function renderViajes() {
         </td>
         <td class="trunc muted" style="font-size:12px">${r.contenedor?'<span style="color:var(--color-brand);font-weight:500">'+r.contenedor+'</span> ':''}${r.patio?'📍'+r.patio+' ':''}${r.notas||''}</td>
         <td style="white-space:nowrap;display:flex;gap:4px">
-          <button class="btn-sm" onclick="abrirCarta(${r.id})" title="Carta de instrucciones" style="background:#E6F1FB;color:#0C447C;border-color:var(--color-brand-border)">📄</button>
+          <button class="btn-sm carta" onclick="abrirCarta(${r.id})" title="Carta de instrucciones">📄</button>
           <button class="btn-sm dup" onclick="duplicarViaje(${r.id})" title="Duplicar">⧉</button>
           <button class="btn-sm view" onclick="abrirEditViaje(${r.id})" title="Editar">✏️</button>
           <button class="btn-sm del" onclick="eliminarViaje(${r.id},'${fmtFecha(r.fecha)}','${r.tipo}',${r.costo})" title="Eliminar">✕</button>
