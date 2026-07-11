@@ -1102,6 +1102,23 @@ html[data-theme=dark] .ef-entregado{background:#0E2A1F;color:#6DC4A5;border-colo
 html[data-theme=dark] .chart-card div[style*="border-top"]{border-color:rgba(255,255,255,.06)!important}
 html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
 
+/* ══ FIX DARK MODE: overrides faltantes para reportes ══ */
+html[data-theme=dark] tbody td{color:#E8E9EC}
+html[data-theme=dark] thead th{color:#9AA0A9;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .modal-title{color:#E8E9EC}
+html[data-theme=dark] .modal-content{background:#1E2127;border-color:rgba(255,255,255,.08);color:#E8E9EC}
+html[data-theme=dark] .autocomplete-item{color:#E8E9EC}
+html[data-theme=dark] .autocomplete-item:hover{background:#2A2E36}
+html[data-theme=dark] .bal-total{color:#E8E9EC}
+html[data-theme=dark] .login-title{color:#E8E9EC}
+html[data-theme=dark] .edit-label{color:#9AA0A9}
+html[data-theme=dark] .edit-val{color:#E8E9EC}
+html[data-theme=dark] .report-panel h3{color:#E8E9EC}
+html[data-theme=dark] .report-panel td{color:#C2C6CD}
+html[data-theme=dark] .report-panel th{color:#9AA0A9;border-color:rgba(255,255,255,.08)}
+html[data-theme=dark] .report-panel .metric-val{color:#E8E9EC}
+html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
+
 </style>
 <!-- OAuth2 implicit flow — no external library needed -->
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
@@ -1766,7 +1783,7 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
     <div id="rep-comparativo" class="report-panel">
       <div class="comp-card">
         <div style="font-size:13px;font-weight:500;margin-bottom:4px">Mes actual vs mes anterior</div>
-        <div style="font-size:11px;color:#888780" id="comp-periodo-label"></div>
+        <div style="font-size:11px;color:var(--color-text-secondary,#888780)" id="comp-periodo-label"></div>
         <div class="comp-grid" id="comp-grid"></div>
       </div>
       <div class="chart-card">
@@ -2134,7 +2151,7 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
 
         <!-- TELÉFONOS -->
         <div style="margin-top:12px">
-          <div class="section-label" style="margin-bottom:6px">Teléfonos <span style="font-size:10px;color:#888780">(máx. 2)</span></div>
+          <div class="section-label" style="margin-bottom:6px">Teléfonos <span style="font-size:10px;color:var(--color-text-secondary,#888780)">(máx. 2)</span></div>
           <div class="form-grid" style="margin-bottom:6px">
             <div class="fg"><input type="text" id="cat-prov-tel1" placeholder="314 000 0000"></div>
             <div class="fg"><input type="text" id="cat-prov-tel2" placeholder="314 000 0001 (opcional)"></div>
@@ -2143,7 +2160,7 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
 
         <!-- CORREOS -->
         <div style="margin-top:10px">
-          <div class="section-label" style="margin-bottom:6px">Correos <span style="font-size:10px;color:#888780">(máx. 2)</span></div>
+          <div class="section-label" style="margin-bottom:6px">Correos <span style="font-size:10px;color:var(--color-text-secondary,#888780)">(máx. 2)</span></div>
           <div class="form-grid" style="margin-bottom:6px">
             <div class="fg"><input type="email" id="cat-prov-email1" placeholder="correo1@proveedor.com"></div>
             <div class="fg"><input type="email" id="cat-prov-email2" placeholder="correo2@proveedor.com (opcional)"></div>
@@ -2524,7 +2541,7 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
           <div class="fg" style="grid-column:1/-1">
             <label>EIR adjunto</label>
             <div id="ev-eir-current" style="display:none;margin-bottom:6px">
-              <span style="font-size:11px;color:#888780">Actual: </span>
+              <span style="font-size:11px;color:var(--color-text-secondary,#888780)">Actual: </span>
               <button class="btn-sm view" onclick="verDoc(evEirActual,'EIR')">📋 Ver EIR actual</button>
               <button class="btn-sm del" onclick="quitarEirEdit()" style="margin-left:4px">✕ Quitar</button>
             </div>
@@ -2586,7 +2603,7 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
       <div class="fg">
         <label>PDF Factura</label>
         <div id="ec-pdf-current" style="display:none;margin-bottom:6px">
-          <span style="font-size:11px;color:#888780">Actual: </span>
+          <span style="font-size:11px;color:var(--color-text-secondary,#888780)">Actual: </span>
           <button class="btn-sm view" id="ec-pdf-view-btn" onclick="verDocEdit('pdf')">📄 Ver actual</button>
           <button class="btn-sm del" onclick="quitarArchivoEdit('pdf')" style="margin-left:4px">✕ Quitar</button>
         </div>
@@ -2602,7 +2619,7 @@ html[data-theme=dark] .row-highlight{animation:rowHighlightDark 1.6s ease-out}
       <div class="fg">
         <label>Evidencia de pago</label>
         <div id="ec-evi-current" style="display:none;margin-bottom:6px">
-          <span style="font-size:11px;color:#888780">Actual: </span>
+          <span style="font-size:11px;color:var(--color-text-secondary,#888780)">Actual: </span>
           <button class="btn-sm view" id="ec-evi-view-btn" onclick="verDocEdit('evi')">🧾 Ver actual</button>
           <button class="btn-sm del" onclick="quitarArchivoEdit('evi')" style="margin-left:4px">✕ Quitar</button>
         </div>
@@ -3526,14 +3543,14 @@ function renderViajes() {
       const margenPct = totalCobrado > 0 ? (util / totalCobrado) * 100 : 0;
       const ruta = [r.origen, r.destino].filter(Boolean).join(' → ') || '—';
       return `<tr>
-        <td style="white-space:nowrap;color:#888780;font-size:12px">${fmtFecha(r.fecha)}</td>
+        <td style="white-space:nowrap;color:var(--color-text-secondary,#888780);font-size:12px">${fmtFecha(r.fecha)}</td>
         <td style="font-size:12px;white-space:nowrap;color:var(--color-brand);font-weight:500">${r.referencia||'<span class="muted">—</span>'}</td>
         <td>${badgeViaje(r.tipo)}</td>
         <td class="trunc">${r.cliente||'<span class="muted">—</span>'}</td>
         <td style="font-size:12px;white-space:nowrap">${r.unidad||'<span class="muted">—</span>'}</td>
-        <td class="trunc" style="max-width:140px;color:#888780;font-size:12px">${ruta}</td>
-        <td style="white-space:nowrap">${fmt((r.costo||0)+(r.maniobras||0))}${r.maniobras>0?'<span style="font-size:10px;color:#888780;display:block">Flete: '+fmt(r.costo)+' + Man: '+fmt(r.maniobras)+'</span>':''}</td>
-        <td style="white-space:nowrap">${fmt((r.cobrado||0)+(r.maniobrasCobrado||0))}${r.maniobrasCobrado>0?'<span style="font-size:10px;color:#888780;display:block">Flete: '+fmt(r.cobrado)+' + Man: '+fmt(r.maniobrasCobrado)+'</span>':''}</td>
+        <td class="trunc" style="max-width:140px;color:var(--color-text-secondary,#888780);font-size:12px">${ruta}</td>
+        <td style="white-space:nowrap">${fmt((r.costo||0)+(r.maniobras||0))}${r.maniobras>0?'<span style="font-size:10px;color:var(--color-text-secondary,#888780);display:block">Flete: '+fmt(r.costo)+' + Man: '+fmt(r.maniobras)+'</span>':''}</td>
+        <td style="white-space:nowrap">${fmt((r.cobrado||0)+(r.maniobrasCobrado||0))}${r.maniobrasCobrado>0?'<span style="font-size:10px;color:var(--color-text-secondary,#888780);display:block">Flete: '+fmt(r.cobrado)+' + Man: '+fmt(r.maniobrasCobrado)+'</span>':''}</td>
         <td style="white-space:nowrap" class="${util>=0?'util-pos':'util-neg'}">${fmt(util)}</td>
         <td style="white-space:nowrap">
           ${r.cobrado>0?`<span style="font-size:11px;font-weight:500;color:${margenPct>=50?'#0F6E56':margenPct>=20?'#854F0B':'#993C1D'}">${margenPct.toFixed(1)}%</span><span class="margin-bar" style="background:${margenPct>=50?'#1D9E75':margenPct>=20?'#EF9F27':'#E24B4A'};width:${Math.min(margenPct,100)*0.4}px"></span>`:'<span class="muted">—</span>'}
@@ -3789,7 +3806,7 @@ function archivoSeleccionado(tipo, input) {
   const el = document.getElementById(attachIds[tipo]);
   const sizeMB = (file.size / 1024 / 1024).toFixed(1);
   el.style.display = 'block';
-  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:#888780;font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarArchivo('${tipo}')">✕</button></div>`;
+  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:var(--color-text-secondary,#888780);font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarArchivo('${tipo}')">✕</button></div>`;
   if (tipo === 'pdf') archivoPdf = file;
   else if (tipo === 'evidencia') archivoEvi = file;
   else if (tipo === 'eir') archivoEir = file;
@@ -4034,7 +4051,7 @@ function renderCobranza(){
         </td>
         <td class="trunc">${r.cliente||'—'}</td>
         <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
-        <td style="font-size:12px;white-space:nowrap;color:#888780">${fmtFecha(r.fechaEmision)||'—'}</td>
+        <td style="font-size:12px;white-space:nowrap;color:var(--color-text-secondary,#888780)">${fmtFecha(r.fechaEmision)||'—'}</td>
         <td>${diasBadge(diasCredito(r.fechaEmision), r.estado)}</td>
         <td style="font-size:12px;white-space:nowrap;color:${isVencido?'#993C1D':'#888780'}">${venc||'—'}</td>
         <td>
@@ -4142,7 +4159,7 @@ function selEirEdit(input) {
   const sizeMB = (file.size/1024/1024).toFixed(1);
   const el = document.getElementById('ev-eir-attached');
   el.style.display = 'block';
-  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:#888780;font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarEirEdit()">✕</button></div>`;
+  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:var(--color-text-secondary,#888780);font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarEirEdit()">✕</button></div>`;
 }
 
 function quitarEirEdit() {
@@ -4294,7 +4311,7 @@ function archivoSeleccionadoEdit(tipo, input) {
   const el = document.getElementById(attachId);
   const sizeMB = (file.size / 1024 / 1024).toFixed(1);
   el.style.display = 'block';
-  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:#888780;font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarArchivoEdit('${tipo}')">✕</button></div>`;
+  el.innerHTML = `<div class="file-attached">📎 ${file.name} <span style="color:var(--color-text-secondary,#888780);font-size:10px">(${sizeMB} MB)</span> <button onclick="quitarArchivoEdit('${tipo}')">✕</button></div>`;
   if (tipo === 'pdf') ecPdfFile = file; else ecEviFile = file;
 }
 
@@ -4690,7 +4707,7 @@ function buscarContenedor() {
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div>
           <div style="font-size:16px;font-weight:500;color:var(--color-brand)">${r.contenedor||'Sin N° contenedor'}</div>
-          <div style="font-size:12px;color:#888780;margin-top:2px">${r.cliente||'—'} · ${fmtFecha(r.fecha)} · ${r.unidad||'—'}</div>
+          <div style="font-size:12px;color:var(--color-text-secondary,#888780);margin-top:2px">${r.cliente||'—'} · ${fmtFecha(r.fecha)} · ${r.unidad||'—'}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           ${efBadge(r.estadoFlete||'libre', r.id)}
@@ -4735,9 +4752,9 @@ function buscarContenedor() {
       </div>
 
       ${cobs.length ? `<div style="display:flex;gap:8px;padding-top:8px;border-top:0.5px solid rgba(0,0,0,.06);font-size:12px">
-        <span style="color:#888780">Total cobranza:</span>
+        <span style="color:var(--color-text-secondary,#888780)">Total cobranza:</span>
         <strong>${fmt(totalCob)}</strong>
-        <span style="color:#888780;margin-left:8px">Cobrado:</span>
+        <span style="color:var(--color-text-secondary,#888780);margin-left:8px">Cobrado:</span>
         <strong style="color:#0F6E56">${fmt(cobPagado)}</strong>
         <strong style="color:${totalCob-cobPagado>0?'#993C1D':'#0F6E56'};margin-left:8px">Pendiente: ${fmt(totalCob-cobPagado)}</strong>
       </div>` : ''}
@@ -4841,7 +4858,7 @@ function busquedaGlobal() {
 
   if (!matchV.length && !matchC.length && !matchCli.length && !matchProv.length && !matchSvc.length) {
     res.style.display = 'block';
-    res.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:#888780">Sin resultados</div>';
+    res.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:var(--color-text-secondary,#888780)">Sin resultados</div>';
     return;
   }
 
@@ -4851,7 +4868,7 @@ function busquedaGlobal() {
     html += matchV.map(r => `<div class="g-result-item" onclick="irAViaje(${r.id})">
       <span style="font-size:11px;font-weight:500;color:var(--color-brand);min-width:80px">${fmtFecha(r.fecha)}</span>
       <span style="font-size:12px">${r.cliente||'—'}${r.contenedor?' · '+r.contenedor:''}</span>
-      <span style="font-size:11px;color:#888780;margin-left:auto">${r.referencia||''}</span>
+      <span style="font-size:11px;color:var(--color-text-secondary,#888780);margin-left:auto">${r.referencia||''}</span>
     </div>`).join('');
   }
   if (matchC.length) {
@@ -4859,7 +4876,7 @@ function busquedaGlobal() {
     html += matchC.map(r => `<div class="g-result-item" onclick="irACobranza(${r.id})">
       <span style="font-size:11px;font-weight:500;color:var(--color-brand);min-width:80px">${r.folio||'—'}</span>
       <span style="font-size:12px">${r.cliente||'—'}</span>
-      <span style="font-size:11px;color:#888780;margin-left:auto">${fmt(r.monto)}</span>
+      <span style="font-size:11px;color:var(--color-text-secondary,#888780);margin-left:auto">${fmt(r.monto)}</span>
     </div>`).join('');
   }
   if (matchCli.length) {
@@ -4867,7 +4884,7 @@ function busquedaGlobal() {
     html += matchCli.map(r => `<div class="g-result-item" onclick="irACatalogo('clientes',${r.id})">
       <span style="font-size:13px">👥</span>
       <span style="font-size:12px;font-weight:500">${r.nombre}</span>
-      <span style="font-size:11px;color:#888780;margin-left:auto">${r.rfc||''}</span>
+      <span style="font-size:11px;color:var(--color-text-secondary,#888780);margin-left:auto">${r.rfc||''}</span>
     </div>`).join('');
   }
   if (matchProv.length) {
@@ -4875,7 +4892,7 @@ function busquedaGlobal() {
     html += matchProv.map(r => `<div class="g-result-item" onclick="irACatalogo('proveedores-cat',${r.id})">
       <span style="font-size:13px">🏢</span>
       <span style="font-size:12px;font-weight:500">${r.nombre}</span>
-      <span style="font-size:11px;color:#888780;margin-left:auto">${r.tipo||''}</span>
+      <span style="font-size:11px;color:var(--color-text-secondary,#888780);margin-left:auto">${r.tipo||''}</span>
     </div>`).join('');
   }
   if (matchSvc.length) {
@@ -4883,7 +4900,7 @@ function busquedaGlobal() {
     html += matchSvc.map(r => `<div class="g-result-item" onclick="irACatalogo('servicios',${r.id})">
       <span style="font-size:13px">🛠️</span>
       <span style="font-size:12px;font-weight:500">${r.nombre}</span>
-      <span style="font-size:11px;color:#888780;margin-left:auto">${r.clave||''}</span>
+      <span style="font-size:11px;color:var(--color-text-secondary,#888780);margin-left:auto">${r.clave||''}</span>
     </div>`).join('');
   }
   res.innerHTML = html;
@@ -4975,14 +4992,14 @@ function renderSeguimiento(items, cobId) {
   const el = document.getElementById('ec-seguimiento-list');
   if (!el) return;
   if (!_ecSeguimiento.length) {
-    el.innerHTML = '<div style="font-size:12px;color:#888780;padding:4px 0">Sin notas de seguimiento</div>';
+    el.innerHTML = '<div style="font-size:12px;color:var(--color-text-secondary,#888780);padding:4px 0">Sin notas de seguimiento</div>';
     return;
   }
   el.innerHTML = _ecSeguimiento.map((s,i) => `
     <div class="seguimiento-entry">
       <span class="seguimiento-ts">${s.fecha}</span>
       <span class="seguimiento-txt">${s.nota}</span>
-      <button onclick="eliminarSeguimiento(${i})" style="background:none;border:none;cursor:pointer;color:#888780;font-size:12px;padding:0 4px">✕</button>
+      <button onclick="eliminarSeguimiento(${i})" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary,#888780);font-size:12px;padding:0 4px">✕</button>
     </div>`).join('');
 }
 
@@ -5053,7 +5070,7 @@ function renderReporteMensual() {
   vTbody.innerHTML = vMes.length ? vMes.map(r => {
     const util = r.cobrado - r.costo;
     return `<tr>
-      <td style="font-size:11px;color:#888780">${fmtFecha(r.fecha)}</td>
+      <td style="font-size:11px;color:var(--color-text-secondary,#888780)">${fmtFecha(r.fecha)}</td>
       <td style="font-size:11px;color:var(--color-brand)">${r.referencia||'—'}</td>
       <td>${r.tipo||'—'}</td>
       <td>${r.cliente||'—'}</td>
@@ -5069,7 +5086,7 @@ function renderReporteMensual() {
     <td>${r.cliente||'—'}</td>
     <td class="num">${fmt(r.monto)}</td>
     <td><span class="badge b-${r.estado||'pendiente'}"><span class="badge-dot"></span>${r.estado||'pendiente'}</span></td>
-    <td style="font-size:11px;color:#888780">${fmtFecha(r.fechaVencimiento)||'—'}</td>
+    <td style="font-size:11px;color:var(--color-text-secondary,#888780)">${fmtFecha(r.fechaVencimiento)||'—'}</td>
   </tr>`).join('') : '<tr><td colspan="5"><div class="empty-state"><p>Sin cobranza este mes</p></div></td></tr>';
 }
 
@@ -5150,7 +5167,7 @@ function renderReporteTop5() {
       <div class="top5-rank ${rankCls[i]||''}">${i+1}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.key}</div>
-        <div style="font-size:11px;color:#888780">${r.count} viajes · Margen ${fmtPct(r.margen)}</div>
+        <div style="font-size:11px;color:var(--color-text-secondary,#888780)">${r.count} viajes · Margen ${fmtPct(r.margen)}</div>
         <div class="top5-bar"><div class="top5-bar-fill" style="width:${(r.cobrado/max*100).toFixed(1)}%"></div></div>
       </div>
       <div style="text-align:right;font-size:13px;font-weight:500">${fmt(r.cobrado)}</div>
@@ -5261,17 +5278,17 @@ function renderReporteRentabilidad() {
     const margenColor = r.margen >= 20 ? '#0F6E56' : r.margen >= 10 ? '#854F0B' : '#C0392B';
     const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1)+'.';
     return `<tr style="border-bottom:0.5px solid rgba(0,0,0,.055)">
-      <td style="padding:9px 12px;font-weight:500;color:#1C1C1A">
-        <span style="color:#B0AEA9;font-size:11px;margin-right:6px">${rank}</span>${r.cliente}
-        <div style="font-size:10px;color:#B0AEA9;margin-top:1px">${r.count} viaje${r.count!==1?'s':''}</div>
+      <td style="padding:9px 12px;font-weight:500;color:var(--color-text-primary,#1C1C1A)">
+        <span style="color:var(--color-text-tertiary,#B0AEA9);font-size:11px;margin-right:6px">${rank}</span>${r.cliente}
+        <div style="font-size:10px;color:var(--color-text-tertiary,#B0AEA9);margin-top:1px">${r.count} viaje${r.count!==1?'s':''}</div>
       </td>
-      <td style="padding:9px 12px;text-align:center;color:#6B6A67;font-size:12px">${r.count}</td>
+      <td style="padding:9px 12px;text-align:center;color:var(--color-text-secondary,#6B6A67);font-size:12px">${r.count}</td>
       <td style="padding:9px 12px;text-align:right;color:#0F6E56;font-weight:500">${fmt(r.cobrado)}</td>
       <td style="padding:9px 12px;text-align:right;color:#C0392B;font-weight:500">${fmt(r.costo)}</td>
       <td style="padding:9px 12px;text-align:right;font-weight:600;color:${r.util>=0?'#0F6E56':'#C0392B'}">${fmt(r.util)}</td>
       <td style="padding:9px 12px;text-align:right;font-weight:600;color:${margenColor}">${r.margen.toFixed(1)}%</td>
       <td style="padding:9px 12px;min-width:100px">
-        <div style="background:rgba(0,0,0,.06);border-radius:4px;height:8px;overflow:hidden">
+        <div style="background:var(--color-background-tertiary,rgba(0,0,0,.06));border-radius:4px;height:8px;overflow:hidden">
           <div style="background:${r.util>=0?'#1D9E75':'#E24B4A'};height:100%;width:${Math.min(100,Math.max(0,pct)).toFixed(1)}%;border-radius:4px;transition:width .4s"></div>
         </div>
       </td>
@@ -5405,8 +5422,8 @@ function renderPagos() {
       <td style="font-size:12px;font-weight:500;white-space:nowrap">${r.folio||'—'}</td>
       <td style="font-weight:500">${r.proveedor||'—'}</td>
       <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
-      <td style="font-size:12px;color:#888780;white-space:nowrap">${fmtFecha(r.fecha)||'—'}</td>
-      <td style="font-size:12px;color:#888780;white-space:nowrap">${r.fechaPago?fmtFecha(r.fechaPago):'—'}</td>
+      <td style="font-size:12px;color:var(--color-text-secondary,#888780);white-space:nowrap">${fmtFecha(r.fecha)||'—'}</td>
+      <td style="font-size:12px;color:var(--color-text-secondary,#888780);white-space:nowrap">${r.fechaPago?fmtFecha(r.fechaPago):'—'}</td>
       <td>
         <select class="estado-select" onchange="cambiarEstadoPago('${r.folio}',this.value)">
           <option value="pendiente" ${r.estado==='pendiente'?'selected':''}>⏳ Pendiente</option>
@@ -5685,7 +5702,7 @@ function renderCatClientes() {
       ? '<span class="seg-badge" title="'+doms.map(d=>d.nombre||d.dir).join(', ')+'">📍 '+doms.length+'</span>'
       : '—';
     return `<tr>
-      <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:#888780">${e.rfc||''}</span></td>
+      <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:var(--color-text-secondary,#888780)">${e.rfc||''}</span></td>
       <td style="font-size:12px">${e.contacto||'—'}</td>
       <td style="font-size:12px">${e.tel||'—'}</td>
       <td style="font-size:12px;color:var(--color-brand)">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
@@ -5710,7 +5727,7 @@ function renderCatProveedores() {
     const emails = [e.email1,e.email2].filter(Boolean).map(em=>'<a href="mailto:'+em+'">'+em+'</a>').join('<br>') || (e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—');
     const cuentas = (e.cuentas||[]).map(cu=>'<div style="font-size:11px"><strong>'+cu.banco+'</strong> '+cu.cuenta+(cu.clabe?' · CLABE: '+cu.clabe:'')+'</div>').join('') || '—';
     return `<tr>
-      <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:#888780">${e.rfc||''}</span></td>
+      <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:var(--color-text-secondary,#888780)">${e.rfc||''}</span></td>
       <td><span class="badge b-otro" style="font-size:10px">${e.tipo||'otro'}</span></td>
       <td style="font-size:12px">${e.contacto||'—'}</td>
       <td style="font-size:12px">${tels}</td>
@@ -5882,7 +5899,7 @@ function renderCatServicios() {
   }
   tbody.innerHTML = catServicios.map(e => `<tr>
     <td style="font-weight:500">${e.nombre}</td>
-    <td style="font-size:12px;color:#888780">${e.clave||'—'}</td>
+    <td style="font-size:12px;color:var(--color-text-secondary,#888780)">${e.clave||'—'}</td>
     <td style="font-size:12px">${e.unidad||'—'}</td>
     <td class="trunc muted" style="font-size:12px">${e.desc||'—'}</td>
     <td>${(e.retencion && e.retencion==='si')
@@ -6711,7 +6728,7 @@ function renderBalanceProveedores() {
   tbody.innerHTML = provs.map(function(name) {
     const d = map[name];
     return '<tr>' +
-      '<td class="bal-nombre">' + name + ' <span style="font-size:10px;color:#888780">(' + d.count + ')</span></td>' +
+      '<td class="bal-nombre">' + name + ' <span style="font-size:10px;color:var(--color-text-secondary,#888780)">(' + d.count + ')</span></td>' +
       '<td class="bal-total">' + fmt(d.total) + '</td>' +
       '<td class="' + (d.pagado > 0 ? 'bal-pagado' : 'bal-zero') + '">' + fmt(d.pagado) + '</td>' +
       '<td class="' + (d.pendiente > 0 ? 'bal-pendiente' : 'bal-zero') + '">' + fmt(d.pendiente) + '</td>' +
