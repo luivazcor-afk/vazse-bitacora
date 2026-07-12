@@ -1852,6 +1852,26 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         </table></div></div>
     </div>
 
+    <!-- COBRANZA POR CLIENTE -->
+    <div id="rep-cob-clientes" class="report-panel">
+      <div class="chart-card" style="margin-bottom:1rem">
+        <div class="chart-header"><span class="chart-title">Cobranza por cliente (Top 10)</span></div>
+        <div style="position:relative;width:100%;height:220px"><canvas id="chart-cob-clientes"></canvas></div>
+      </div>
+      <div class="table-outer">
+        <div class="table-wrap">
+          <table class="sum-table">
+            <thead><tr>
+              <th>Cliente</th><th class="num">Facturas</th>
+              <th class="num">Total</th><th class="num">Pagado</th>
+              <th class="num">Pendiente</th><th class="num">% Cobrado</th>
+            </tr></thead>
+            <tbody id="rep-cob-clientes-tbody"><tr><td colspan="6"><div class="empty-state"><p>Sin datos</p></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 
@@ -4519,9 +4539,11 @@ function irAVencidos() {
 let graficaClientes = null, graficaUnidades = null, graficaTipos = null;
 
 function cambiarReporte(id, btn) {
+  const panel = document.getElementById('rep-' + id);
+  if (!panel) { console.warn('[VAZSE] Panel de reporte no existe: rep-' + id); toast('Este reporte no está disponible','err'); return; }
   document.querySelectorAll('.report-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.report-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('rep-' + id).classList.add('active');
+  panel.classList.add('active');
   btn.classList.add('active');
   if(id==='mensual') renderReporteMensual();
   if(id==='flujo') { setFlujoMesActual(); }
