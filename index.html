@@ -159,10 +159,10 @@ body{
   box-shadow:0 1px 3px rgba(0,0,0,.04)
 }
 .table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:800px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:640px;background:#fff}
 thead th{
-  background:#F7F5F1;font-size:10.5px;font-weight:600;color:#8A8880;
-  text-transform:uppercase;letter-spacing:.055em;padding:9px 12px;
+  background:#F7F5F1;font-size:10px;font-weight:600;color:#8A8880;
+  text-transform:uppercase;letter-spacing:.04em;padding:8px 7px;
   text-align:left;border-bottom:0.5px solid rgba(0,0,0,.08);
   white-space:nowrap
 }
@@ -173,7 +173,7 @@ thead th button{
 tbody tr{border-bottom:0.5px solid rgba(0,0,0,.055);transition:background .1s}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:#FAFAF8}
-tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
+tbody td{padding:8px 7px;color:#1C1C1A;vertical-align:middle}
 .td-ref a{
   color:var(--color-brand);font-weight:500;font-size:12px;text-decoration:none;
   padding:2px 6px;background:var(--color-brand-light);border-radius:5px
@@ -348,6 +348,7 @@ tbody td{padding:9px 12px;color:#1C1C1A;vertical-align:middle}
 .comp-item-diff.diff-up{color:#0F6E56}
 .comp-item-diff.diff-dn{color:#993C1D}
 .sum-table .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pp-select{padding:5px 8px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:11.5px;background:#fff;cursor:pointer}
 .flete-section-title{
   grid-column:1/-1;font-size:11px;font-weight:600;color:#6B6A67;
   text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;
@@ -1095,6 +1096,7 @@ html[data-theme=dark] .flujo-label,html[data-theme=dark] .comp-item-label{color:
 html[data-theme=dark] .flujo-sub{color:#7C828B}
 html[data-theme=dark] .flujo-val.pos,html[data-theme=dark] .comp-item-diff.diff-up{color:#45B889}
 html[data-theme=dark] .flujo-val.neg,html[data-theme=dark] .comp-item-diff.diff-dn{color:#E8857B}
+html[data-theme=dark] .pp-select{background:#24272E;border-color:rgba(255,255,255,.12);color:#E8E9EC}
 html[data-theme=dark] .table-outer{border-color:rgba(255,255,255,.07)}
 html[data-theme=dark] .balance-table th{background:#1A1816;color:#868C95;border-color:rgba(255,255,255,.07)}
 html[data-theme=dark] .balance-table td{border-color:rgba(255,255,255,.05)}
@@ -1485,6 +1487,12 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       <input type="date" id="v-fil-desde" onchange="filtrarViajes()" title="Desde">
       <input type="date" id="v-fil-hasta" onchange="filtrarViajes()" title="Hasta">
       <button class="btn-clear" onclick="limpiarFiltrosV()">✕ Limpiar</button>
+      <select onchange="cambiarPorPagina(this.value)" class="pp-select" title="Registros por página">
+        <option value="10">10 / pág</option>
+        <option value="15">15 / pág</option>
+        <option value="25">25 / pág</option>
+        <option value="50">50 / pág</option>
+      </select>
       <span class="results-info" id="v-info"></span>
     </div>
     <div class="table-outer">
@@ -1625,6 +1633,12 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       <input type="date" id="c-fil-desde" onchange="filtrarCobranza()" title="Desde">
       <input type="date" id="c-fil-hasta" onchange="filtrarCobranza()" title="Hasta">
       <button class="btn-clear" onclick="limpiarFiltrosC()">✕ Limpiar</button>
+      <select onchange="cambiarPorPagina(this.value)" class="pp-select" title="Registros por página">
+        <option value="10">10 / pág</option>
+        <option value="15">15 / pág</option>
+        <option value="25">25 / pág</option>
+        <option value="50">50 / pág</option>
+      </select>
       <span class="results-info" id="c-info"></span>
     </div>
     <div class="table-outer">
@@ -2080,6 +2094,12 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       <input type="date" id="p-fil-desde" onchange="filtrarPagos()" title="Desde">
       <input type="date" id="p-fil-hasta" onchange="filtrarPagos()" title="Hasta">
       <button class="btn-clear" onclick="limpiarFiltrosP()">✕ Limpiar</button>
+      <select onchange="cambiarPorPagina(this.value)" class="pp-select" title="Registros por página">
+        <option value="10">10 / pág</option>
+        <option value="15">15 / pág</option>
+        <option value="25">25 / pág</option>
+        <option value="50">50 / pág</option>
+      </select>
       <span class="results-info" id="p-info"></span>
     </div>
 
@@ -3046,7 +3066,13 @@ window.addEventListener('load', () => {
   // Restore form if we redirected for Drive auth
   setTimeout(restaurarFormularioSiHayBackup, 300);
 });
-const POR_PAGINA = 15;
+let POR_PAGINA = parseInt(localStorage.getItem('vazse_por_pagina')) || 15;
+function cambiarPorPagina(n) {
+  POR_PAGINA = parseInt(n) || 15;
+  localStorage.setItem('vazse_por_pagina', POR_PAGINA);
+  vPag = 1; cPag = 1; pPag = 1;
+  filtrarViajes(); filtrarCobranza(); filtrarPagos();
+}
 
 // ── STATE ─────────────────────────────────────────────
 let viajes = [], vFiltrados = [], vPag = 1, vSortCol = 'fecha', vSortDir = -1;
@@ -3069,6 +3095,9 @@ function generarFolioAuto() {
   return 'VJ-' + yyyymmdd + '-' + rand;
 }
 // Auto-fill referencia on date change
+
+// Sincronizar selectores de registros por página con el valor guardado
+document.querySelectorAll('.pp-select').forEach(s => { s.value = String(POR_PAGINA); if (s.selectedIndex === -1) s.value = '15'; });
 document.getElementById('v-fecha').addEventListener('change', function() {
   const ref = document.getElementById('v-referencia');
   if (!ref.value) ref.value = generarFolioAuto();
