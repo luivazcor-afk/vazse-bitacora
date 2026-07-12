@@ -1468,7 +1468,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 
     <div class="section-label">Registros</div>
     <div class="toolbar">
-      <input type="text" id="v-buscar" placeholder="Buscar cliente, unidad, ruta..." oninput="filtrarViajes()">
+      <input type="text" id="v-buscar" placeholder="Buscar referencia, cliente, contenedor..." oninput="filtrarViajes()">
       <select id="v-fil-tipo" onchange="filtrarViajes()">
         <option value="">Todos los tipos</option>
         <option value="carga">Carga</option>
@@ -3376,7 +3376,7 @@ function filtrarViajes() {
   const desde = document.getElementById('v-fil-desde').value;
   const hasta = document.getElementById('v-fil-hasta').value;
   vFiltrados = viajes.filter(r => {
-    const txt = [r.cliente,r.unidad,r.origen,r.destino,r.notas].join(' ').toLowerCase();
+    const txt = [r.cliente,r.unidad,r.origen,r.destino,r.notas,r.referencia,r.contenedor,r.tipo].join(' ').toLowerCase();
     if (q && !txt.includes(q)) return false;
     if (tipo && r.tipo !== tipo) return false;
     if (desde && fmtFecha(r.fecha) < desde) return false;
@@ -3650,6 +3650,11 @@ function toggleFleteSection() {
 async function agregarViaje() {
   if (!validarCampos(['v-fecha','v-tipo','v-cliente'])) {
     toast('Completa los campos marcados en rojo','err'); return;
+  }
+  // Guard: referencias duplicadas rompen editar/eliminar (el backend busca por referencia)
+  const _refNueva = document.getElementById('v-referencia').value.trim();
+  if (_refNueva && viajes.some(v => (v.referencia||'').toString().trim() === _refNueva)) {
+    if (!confirm('⚠️ Ya existe un viaje con la referencia "' + _refNueva + '".\n\nLas referencias duplicadas provocan que al editar o eliminar se modifique el viaje equivocado. Se recomienda usar una referencia única (p.ej. agregar -B al final).\n\n¿Registrar de todos modos?')) return;
   }
   const fecha = document.getElementById('v-fecha').value;
   const tipo = document.getElementById('v-tipo').value;
@@ -4251,6 +4256,12 @@ async function guardarEditViaje() {
   const id = parseInt(document.getElementById('ev-id').value);
   const r = viajes.find(v => v.id === id);
   if (!r) return;
+  // Guard: si la referencia está duplicada, el backend puede actualizar la fila equivocada
+  const _refKey = (r.referencia||'').toString().trim();
+  const _dups = viajes.filter(v => (v.referencia||'').toString().trim() === _refKey).length;
+  if (_refKey && _dups > 1) {
+    if (!confirm('⚠️ Hay ' + _dups + ' viajes con la referencia "' + _refKey + '".\n\nEl guardado podría modificar el viaje equivocado. Corrige primero las referencias duplicadas (directamente en el Google Sheet, columna Referencia) y sincroniza.\n\n¿Continuar bajo tu propio riesgo?')) return;
+  }
   const btn = document.getElementById('ev-save');
   btn.disabled = true; btn.textContent = 'Guardando...';
   const tipo = document.getElementById('ev-tipo').value;
