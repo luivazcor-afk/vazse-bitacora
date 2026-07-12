@@ -1341,7 +1341,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 
     <div class="metrics">
       <div class="metric"><div class="metric-label">Total cobrado</div><div class="metric-val pos" id="v-cobrado">$0.00</div></div>
-      <div class="metric"><div class="metric-label">Total costo</div><div class="metric-val neg" id="v-costo">$0.00</div></div>
+      <div class="metric"><div class="metric-label">Total costo</div><div class="metric-val neg" id="v-costo-total">$0.00</div></div>
       <div class="metric"><div class="metric-label">Utilidad neta</div><div class="metric-val" id="v-utilidad">$0.00</div></div>
       <div class="metric"><div class="metric-label">Viajes</div><div class="metric-val" id="v-viajes">0</div></div>
       <div class="metric"><div class="metric-label">Margen %</div><div class="metric-val" id="v-margen">0%</div></div>
@@ -3376,7 +3376,7 @@ function actualizarMetricasV() {
   const tk = vFiltrados.reduce((s,r)=>s+(r.costo||0)+(r.maniobras||0),0);
   const tu = tc-tk;
   document.getElementById('v-cobrado').textContent = fmt(tc);
-  document.getElementById('v-costo').textContent = fmt(tk);
+  document.getElementById('v-costo-total').textContent = fmt(tk);
   const mu = document.getElementById('v-utilidad');
   mu.textContent = fmt(tu); mu.className = 'metric-val '+(tu>=0?'pos':'neg');
   document.getElementById('v-viajes').textContent = vFiltrados.length;
