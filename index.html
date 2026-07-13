@@ -1348,6 +1348,9 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
     <button class="tab" onclick="cambiarTab('proveedores',this)">
       <span class="tab-icon">🏢</span> Proveedores
     </button>
+    <button class="tab" onclick="cambiarTab('cotiza',this)">
+      <span class="tab-icon">💲</span> Cotizaciones
+    </button>
     <button class="tab" onclick="cambiarTab('catalogos',this)">
       <span class="tab-icon">📑</span> Catálogos
     </button>
@@ -2225,6 +2228,87 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
     <!-- ════════════════════════════════════════════
        PESTAÑA — CATÁLOGOS
   ═══════════════════════════════════════════════ -->
+  <!-- ════════════════════════════════════════════
+       PESTAÑA — COTIZACIONES (flota propia)
+       ════════════════════════════════════════════ -->
+  <div id="panel-cotiza" class="tab-panel">
+    <div class="section-label">Cotizador — Flota propia</div>
+    <div class="table-outer" style="padding:1rem;margin-bottom:1rem;overflow:visible">
+      <div class="form-grid">
+        <div class="fg autocomplete-wrap"><label>Cliente</label>
+          <input type="text" id="cot-cliente" autocomplete="off" placeholder="Buscar cliente..."
+            oninput="mostrarAC('cot-cliente','clientes')" onblur="cerrarAC('cot-cliente')" onkeydown="navAC(event,'cot-cliente')">
+          <div class="autocomplete-list" id="ac-cot-cliente" style="display:none"></div>
+        </div>
+        <div class="fg"><label>Unidad</label>
+          <select id="cot-unidad" onchange="recalcCotiza()">
+            <option value="c1t">Camioneta 1 ton</option>
+            <option value="c35t">Camioneta 3.5 ton</option>
+            <option value="tracto">Tractocamión</option>
+          </select>
+        </div>
+        <div class="fg"><label>Origen</label><input type="text" id="cot-origen" placeholder="Ciudad / lugar"></div>
+        <div class="fg"><label>Destino</label><input type="text" id="cot-destino" placeholder="Ciudad / lugar"></div>
+        <div class="fg"><label>Distancia (km, solo ida)</label><input type="number" id="cot-km" min="0" placeholder="0" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Tipo de viaje</label>
+          <select id="cot-redondo" onchange="recalcCotiza()">
+            <option value="1">Sencillo (solo ida)</option>
+            <option value="2">Redondo (ida y vuelta)</option>
+          </select>
+        </div>
+        <div class="fg"><label>Casetas ($ total del recorrido)</label><input type="number" id="cot-casetas" min="0" placeholder="0.00" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Maniobras ($)</label><input type="number" id="cot-maniobras" min="0" placeholder="0.00" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Otros costos ($)</label><input type="number" id="cot-otros" min="0" placeholder="0.00" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Margen (%)</label><input type="number" id="cot-margen" min="0" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Precio final ($ — editable)</label><input type="number" id="cot-precio" min="0" oninput="marcarPrecioManual(this)"></div>
+        <div class="fg full"><label>Notas / condiciones</label><input type="text" id="cot-notas" placeholder="Tipo de carga, condiciones especiales..."></div>
+      </div>
+      <div id="cot-desglose" class="flujo-grid" style="margin-top:14px"></div>
+      <div id="cot-detalle" class="muted" style="font-size:11.5px;margin:2px 0 10px"></div>
+      <button class="btn-add" onclick="guardarCotizacion()">💾 Guardar cotización</button>
+    </div>
+
+    <div class="section-label" style="display:flex;align-items:center;gap:10px">Tarifario de costos
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="toggleTarifario()">⚙️ Editar tarifario</button>
+    </div>
+    <div class="table-outer" id="cot-tarifario-card" style="padding:1rem;margin-bottom:1rem;display:none">
+      <div class="form-grid">
+        <div class="fg"><label>Diésel ($/litro)</label><input type="number" id="tar-diesel" step="0.01" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Margen default (%)</label><input type="number" id="tar-margen" step="1"></div>
+        <div class="fg"><label>Vigencia cotización (días)</label><input type="number" id="tar-vigencia" step="1"></div>
+        <div class="fg"><label>IVA (%)</label><input type="number" id="tar-iva" step="1"></div>
+      </div>
+      <div id="tar-unidades" style="margin-top:10px"></div>
+      <button class="btn btn-primary" onclick="guardarTarifario()" style="margin-top:8px">Guardar tarifario</button>
+      <span class="muted" style="font-size:11px;margin-left:10px">Costos por km de referencia (IMT/industria 2026) — ajústalos a tu operación real.</span>
+    </div>
+
+    <div class="section-label">Cotizaciones registradas</div>
+    <div class="toolbar">
+      <input type="text" id="cot-buscar" placeholder="Buscar folio, cliente, ruta..." oninput="renderCotizaciones()">
+      <select id="cot-fil-estado" onchange="renderCotizaciones()">
+        <option value="">Todos los estados</option>
+        <option value="borrador">Borrador</option>
+        <option value="enviada">Enviada</option>
+        <option value="aceptada">Aceptada</option>
+        <option value="rechazada">Rechazada</option>
+      </select>
+      <span class="results-info" id="cot-info"></span>
+    </div>
+    <div class="table-outer">
+      <div class="table-wrap">
+        <table class="sum-table">
+          <thead><tr>
+            <th>Folio</th><th>Fecha</th><th>Cliente</th><th>Unidad</th><th>Ruta</th>
+            <th class="num">Km</th><th class="num">Costo</th><th class="num">Precio</th><th class="num">Utilidad</th>
+            <th>Estado</th><th class="no-sort"></th>
+          </tr></thead>
+          <tbody id="cot-tbody"><tr><td colspan="11"><div class="empty-state"><p>Sin cotizaciones — usa el cotizador de arriba</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div id="panel-catalogos" class="tab-panel">
     <div class="topbar" style="margin-bottom:1rem">
       <div class="brand">
@@ -3200,7 +3284,7 @@ document.getElementById('v-fecha').addEventListener('change', function() {
 document.getElementById('v-referencia').value = generarFolioAuto();
 
 // ── TABS ──────────────────────────────────────────────
-const _TODOS_PANELES = ['resumen','viajes','cobranza','reportes','contenedores','historial','proveedores','catalogos'];
+const _TODOS_PANELES = ['resumen','viajes','cobranza','reportes','contenedores','historial','proveedores','cotiza','catalogos'];
 
 function cambiarTab(id, btn) {
   // Ocultar todos los paneles explícitamente por ID
@@ -3225,6 +3309,7 @@ function cambiarTab(id, btn) {
   if (id === 'contenedores') setTimeout(buscarContenedor, 80);
   if (id === 'historial') setTimeout(renderHistorial, 80);
   if (id === 'proveedores') setTimeout(filtrarPagos, 80);
+  if (id === 'cotiza') setTimeout(function(){ initCotizaUI(); renderCotizaciones(); recalcCotiza(); }, 80);
   if (id === 'catalogos') {
     setTimeout(function() {
       renderCatClientes(); renderCatProveedores(); renderCatServicios();
@@ -6160,6 +6245,312 @@ function calcDesglose(montoConIva) {
   };
 }
 
+
+// ══════════════════════════════════════════════════════
+// COTIZACIONES — FLOTA PROPIA (1t / 3.5t / tracto)
+// ══════════════════════════════════════════════════════
+// Costos $/km de referencia (IMT + benchmarks industria, jul 2026). Editables en el tarifario.
+const COT_TAR_DEFAULT = {
+  diesel: 27.10, margen: 25, vigencia: 15, iva: 16,
+  unidades: {
+    c1t:    { nombre: 'Camioneta 1 ton',   rend: 10,  operador: 3.0, mant: 1.5, fijos: 2.5 },
+    c35t:   { nombre: 'Camioneta 3.5 ton', rend: 7,   operador: 3.5, mant: 2.5, fijos: 3.5 },
+    tracto: { nombre: 'Tractocamión',      rend: 2.3, operador: 14,  mant: 10,  fijos: 11  }
+  }
+};
+let tarifario = (function() {
+  try { const t = JSON.parse(localStorage.getItem('vazse_tarifario')); if (t && t.unidades) return t; } catch(e) {}
+  return JSON.parse(JSON.stringify(COT_TAR_DEFAULT));
+})();
+let cotizaciones = JSON.parse(localStorage.getItem('vazse_cotizaciones') || '[]');
+let _cotPrecioManual = false;
+let _cotUIInit = false;
+
+function saveCotizaciones() { localStorage.setItem('vazse_cotizaciones', JSON.stringify(cotizaciones)); }
+function saveTarifario()    { localStorage.setItem('vazse_tarifario', JSON.stringify(tarifario)); }
+
+function initCotizaUI() {
+  if (_cotUIInit) return;
+  _cotUIInit = true;
+  document.getElementById('cot-margen').value = tarifario.margen;
+  fillTarifarioInputs();
+}
+
+function toggleTarifario() {
+  const card = document.getElementById('cot-tarifario-card');
+  const show = card.style.display === 'none';
+  card.style.display = show ? 'block' : 'none';
+  if (show) fillTarifarioInputs();
+}
+
+function fillTarifarioInputs() {
+  document.getElementById('tar-diesel').value   = tarifario.diesel;
+  document.getElementById('tar-margen').value   = tarifario.margen;
+  document.getElementById('tar-vigencia').value = tarifario.vigencia;
+  document.getElementById('tar-iva').value      = tarifario.iva;
+  const wrap = document.getElementById('tar-unidades');
+  wrap.innerHTML = Object.entries(tarifario.unidades).map(([k, u]) => `
+    <div class="dynamic-group">
+      <div class="dynamic-group-title">${u.nombre}</div>
+      <div class="form-grid">
+        <div class="fg"><label>Rendimiento (km/l)</label><input type="number" id="tar-${k}-rend" step="0.1" value="${u.rend}" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Operador ($/km)</label><input type="number" id="tar-${k}-operador" step="0.1" value="${u.operador}" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Mantenimiento ($/km)</label><input type="number" id="tar-${k}-mant" step="0.1" value="${u.mant}" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Fijos: seguro, depreciación, admin ($/km)</label><input type="number" id="tar-${k}-fijos" step="0.1" value="${u.fijos}" oninput="recalcCotiza()"></div>
+      </div>
+    </div>`).join('');
+}
+
+function leerTarifarioInputs() {
+  const t = JSON.parse(JSON.stringify(tarifario));
+  const g = id => parseFloat(document.getElementById(id)?.value) || 0;
+  if (document.getElementById('tar-diesel')) {
+    t.diesel   = g('tar-diesel')   || t.diesel;
+    t.margen   = g('tar-margen');
+    t.vigencia = g('tar-vigencia') || t.vigencia;
+    t.iva      = g('tar-iva');
+    Object.keys(t.unidades).forEach(k => {
+      const el = document.getElementById('tar-' + k + '-rend');
+      if (!el) return;
+      t.unidades[k].rend     = g('tar-' + k + '-rend') || t.unidades[k].rend;
+      t.unidades[k].operador = g('tar-' + k + '-operador');
+      t.unidades[k].mant     = g('tar-' + k + '-mant');
+      t.unidades[k].fijos    = g('tar-' + k + '-fijos');
+    });
+  }
+  return t;
+}
+
+function guardarTarifario() {
+  tarifario = leerTarifarioInputs();
+  saveTarifario();
+  recalcCotiza();
+  toast('Tarifario guardado ✓', 'ok');
+}
+
+function cotCalc() {
+  const t = document.getElementById('cot-tarifario-card').style.display !== 'none' ? leerTarifarioInputs() : tarifario;
+  const key = document.getElementById('cot-unidad').value;
+  const u = t.unidades[key];
+  const g = id => parseFloat(document.getElementById(id).value) || 0;
+  const km = g('cot-km') * (parseInt(document.getElementById('cot-redondo').value) || 1);
+  const combustible = u.rend > 0 ? (km / u.rend) * t.diesel : 0;
+  const operador = km * u.operador;
+  const mant     = km * u.mant;
+  const fijos    = km * u.fijos;
+  const casetas = g('cot-casetas'), maniobras = g('cot-maniobras'), otros = g('cot-otros');
+  const costo = combustible + operador + mant + fijos + casetas + maniobras + otros;
+  const margen = g('cot-margen');
+  const sugerido = costo * (1 + margen / 100);
+  const precio = _cotPrecioManual ? g('cot-precio') : sugerido;
+  return { key, u, km, combustible, operador, mant, fijos, casetas, maniobras, otros,
+           costo, margen, sugerido, precio, utilidad: precio - costo,
+           margenEf: precio > 0 ? ((precio - costo) / precio * 100) : 0, iva: t.iva, vigencia: t.vigencia };
+}
+
+function recalcCotiza() {
+  const d = document.getElementById('cot-desglose');
+  if (!d) return;
+  const c = cotCalc();
+  if (!_cotPrecioManual) document.getElementById('cot-precio').value = c.precio ? c.precio.toFixed(2) : '';
+  d.innerHTML = `
+    <div class="flujo-card flujo-salida">
+      <div class="flujo-label">🛞 Costo del viaje</div>
+      <div class="flujo-val neg">${fmt(c.costo)}</div>
+      <div class="flujo-sub">${c.km ? fmt(c.costo / c.km) + ' /km · ' + c.km + ' km' : '—'}</div>
+    </div>
+    <div class="flujo-card flujo-fact">
+      <div class="flujo-label">💡 Precio sugerido</div>
+      <div class="flujo-val" style="color:#854F0B">${fmt(c.sugerido)}</div>
+      <div class="flujo-sub">costo + ${c.margen}% margen</div>
+    </div>
+    <div class="flujo-card flujo-entrada">
+      <div class="flujo-label">💰 Precio final</div>
+      <div class="flujo-val pos">${fmt(c.precio)}</div>
+      <div class="flujo-sub">+ IVA ${c.iva}% = ${fmt(c.precio * (1 + c.iva / 100))}</div>
+    </div>
+    <div class="flujo-card flujo-neto">
+      <div class="flujo-label">📊 Utilidad</div>
+      <div class="flujo-val" style="color:${c.utilidad >= 0 ? '#0F6E56' : '#993C1D'}">${fmt(c.utilidad)}</div>
+      <div class="flujo-sub">Margen efectivo ${c.margenEf.toFixed(1)}%</div>
+    </div>`;
+  document.getElementById('cot-detalle').textContent =
+    'Desglose: combustible ' + fmt(c.combustible) + ' · operador ' + fmt(c.operador) +
+    ' · mantenimiento ' + fmt(c.mant) + ' · fijos ' + fmt(c.fijos) +
+    ' · casetas ' + fmt(c.casetas) + ' · maniobras ' + fmt(c.maniobras) + ' · otros ' + fmt(c.otros);
+}
+
+function marcarPrecioManual(input) {
+  _cotPrecioManual = input.value.trim() !== '';
+  recalcCotiza();
+}
+
+function generarFolioCot() {
+  const d = new Date();
+  return 'COT-' + d.toISOString().split('T')[0].replace(/-/g, '') + '-' + String(Math.floor(Math.random() * 900) + 100);
+}
+
+async function guardarCotizacion() {
+  const cliente = document.getElementById('cot-cliente').value.trim();
+  const c = cotCalc();
+  if (!cliente) { toast('Captura el cliente', 'err'); return; }
+  if (!c.km)    { toast('Captura la distancia en km', 'err'); return; }
+  const cot = {
+    id: Date.now(), folio: generarFolioCot(), fecha: new Date().toISOString().split('T')[0],
+    cliente, unidad: c.key, unidadNombre: c.u.nombre,
+    origen: document.getElementById('cot-origen').value.trim(),
+    destino: document.getElementById('cot-destino').value.trim(),
+    km: c.km, redondo: document.getElementById('cot-redondo').value === '2' ? 'redondo' : 'sencillo',
+    casetas: c.casetas, maniobras: c.maniobras, otros: c.otros,
+    costo: +c.costo.toFixed(2), precio: +c.precio.toFixed(2), margen: +c.margenEf.toFixed(1),
+    iva: c.iva, vigencia: c.vigencia, estado: 'borrador',
+    notas: document.getElementById('cot-notas').value.trim()
+  };
+  cotizaciones.unshift(cot);
+  saveCotizaciones();
+  sendPost({ action: 'cotizacion_append', cotizacion: cot });
+  registrarHistorial('agregar', 'Cotización', cot.folio + ' · ' + cliente + ' · ' + fmt(cot.precio));
+  ['cot-cliente','cot-origen','cot-destino','cot-km','cot-casetas','cot-maniobras','cot-otros','cot-notas','cot-precio']
+    .forEach(id => document.getElementById(id).value = '');
+  _cotPrecioManual = false;
+  recalcCotiza(); renderCotizaciones();
+  toast('Cotización ' + cot.folio + ' guardada ✓', 'ok');
+}
+
+const COT_ESTADOS = ['borrador', 'enviada', 'aceptada', 'rechazada'];
+const COT_BADGE = { borrador: 'b-otro', enviada: 'b-pendiente', aceptada: 'b-pagado', rechazada: 'b-vencido' };
+
+async function avanzarEstadoCot(id) {
+  const c = cotizaciones.find(x => x.id === id);
+  if (!c) return;
+  c.estado = COT_ESTADOS[(COT_ESTADOS.indexOf(c.estado) + 1) % COT_ESTADOS.length];
+  saveCotizaciones();
+  sendPost({ action: 'cotizacion_update_estado', folio: c.folio, estado: c.estado });
+  renderCotizaciones();
+  if (c.estado === 'aceptada') toast('Aceptada 🎉 — usa ➜ para convertirla en viaje', 'ok');
+}
+
+async function eliminarCotizacion(id) {
+  const c = cotizaciones.find(x => x.id === id);
+  if (!c || !confirm('¿Eliminar la cotización ' + c.folio + '?')) return;
+  cotizaciones = cotizaciones.filter(x => x.id !== id);
+  saveCotizaciones();
+  sendPost({ action: 'cotizacion_delete', folio: c.folio });
+  renderCotizaciones();
+  toast('Eliminada', 'ok');
+}
+
+function cotizaAViaje(id) {
+  const c = cotizaciones.find(x => x.id === id);
+  if (!c) return;
+  const set = (fid, v) => { const el = document.getElementById(fid); if (el) el.value = v; };
+  set('v-fecha', new Date().toISOString().split('T')[0]);
+  set('v-tipo', 'FLETE ' + c.unidadNombre.toUpperCase());
+  set('v-cliente', c.cliente);
+  set('v-unidad', 'FLOTA PROPIA — ' + c.unidadNombre.toUpperCase());
+  set('v-origen', c.origen); set('v-destino', c.destino);
+  set('v-costo', c.costo); set('v-cobradof', c.precio);
+  set('v-referencia', generarFolioAuto());
+  set('v-notas', 'Cotización ' + c.folio + (c.notas ? ' · ' + c.notas : ''));
+  toggleFleteSectionAC();
+  const btn = document.querySelector('.tabs > .tab[onclick*="viajes"]');
+  cambiarTab('viajes', btn);
+  setTimeout(() => document.getElementById('v-btn-add').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+  toast('Formulario prellenado — revisa y agrega el viaje', 'inf');
+}
+
+function renderCotizaciones() {
+  const tbody = document.getElementById('cot-tbody');
+  if (!tbody) return;
+  const q = (document.getElementById('cot-buscar').value || '').toLowerCase();
+  const fe = document.getElementById('cot-fil-estado').value;
+  const rows = cotizaciones.filter(c => {
+    const txt = [c.folio, c.cliente, c.origen, c.destino, c.unidadNombre, c.notas].join(' ').toLowerCase();
+    if (q && !txt.includes(q)) return false;
+    if (fe && c.estado !== fe) return false;
+    return true;
+  });
+  document.getElementById('cot-info').textContent = rows.length + ' cotización' + (rows.length !== 1 ? 'es' : '');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><p>Sin cotizaciones que coincidan</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(c => `<tr>
+    <td style="font-weight:500;color:var(--color-brand);white-space:nowrap">${c.folio}</td>
+    <td style="white-space:nowrap;font-size:12px">${c.fecha}</td>
+    <td class="trunc">${c.cliente}</td>
+    <td style="font-size:12px;white-space:nowrap">${c.unidadNombre}${c.redondo === 'redondo' ? ' ⇄' : ''}</td>
+    <td class="trunc" style="font-size:12px;color:var(--color-text-secondary,#888780)">${[c.origen, c.destino].filter(Boolean).join(' → ') || '—'}</td>
+    <td class="num">${c.km}</td>
+    <td class="num">${fmt(c.costo)}</td>
+    <td class="num" style="font-weight:600">${fmt(c.precio)}</td>
+    <td class="num ${c.precio - c.costo >= 0 ? 'util-pos' : 'util-neg'}">${fmt(c.precio - c.costo)}</td>
+    <td><span class="badge ${COT_BADGE[c.estado] || 'b-otro'}" style="cursor:pointer" title="Clic para cambiar estado"
+      onclick="avanzarEstadoCot(${c.id})"><span class="badge-dot"></span>${c.estado}</span></td>
+    <td style="white-space:nowrap;display:flex;gap:4px">
+      <button class="btn-sm carta" onclick="imprimirCotizacion(${c.id})" title="Imprimir / PDF">🖨️</button>
+      <button class="btn-sm view" onclick="cotizaAViaje(${c.id})" title="Convertir a viaje">➜</button>
+      <button class="btn-sm del" onclick="eliminarCotizacion(${c.id})" title="Eliminar">✕</button>
+    </td>
+  </tr>`).join('');
+}
+
+function imprimirCotizacion(id) {
+  const c = cotizaciones.find(x => x.id === id);
+  if (!c) return;
+  const vence = new Date(c.fecha + 'T12:00:00');
+  vence.setDate(vence.getDate() + (c.vigencia || 15));
+  const ivaMonto = c.precio * ((c.iva || 16) / 100);
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${c.folio}</title>
+  <style>
+    body{font-family:'Segoe UI',system-ui,sans-serif;color:#1C1C1A;margin:2.2rem;font-size:13px}
+    .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #185FA5;padding-bottom:12px;margin-bottom:18px}
+    .head img{height:52px}
+    h1{font-size:17px;margin:0;color:#185FA5}
+    .sub{font-size:11px;color:#666}
+    .meta{text-align:right;font-size:12px}
+    .meta b{color:#185FA5}
+    table{width:100%;border-collapse:collapse;margin:14px 0}
+    th{background:#EBF3FC;color:#0C447C;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:left}
+    td{padding:8px 10px;border-bottom:1px solid #eee}
+    .num{text-align:right;white-space:nowrap}
+    .tot td{font-weight:700;border-top:2px solid #185FA5;font-size:14px}
+    .cond{font-size:10.5px;color:#777;margin-top:16px;line-height:1.5}
+    .firma{margin-top:44px;text-align:center;font-size:12px}
+    .firma .linea{border-top:1px solid #999;width:260px;margin:0 auto 4px}
+  </style></head><body>
+  <div class="head">
+    <div style="display:flex;gap:12px;align-items:center">
+      <img src="${CFG.logoUrl}" onerror="this.style.display='none'">
+      <div><h1>${CFG.empresaRazonSocial || CFG.empresaNombre}</h1><div class="sub">${CFG.empresaSubtitulo || ''}</div></div>
+    </div>
+    <div class="meta">
+      <div><b>COTIZACIÓN ${c.folio}</b></div>
+      <div>Fecha: ${c.fecha}</div>
+      <div>Vigencia: hasta ${vence.toISOString().split('T')[0]}</div>
+    </div>
+  </div>
+  <p><b>Cliente:</b> ${c.cliente}</p>
+  <table>
+    <thead><tr><th>Concepto</th><th class="num">Importe (MXN)</th></tr></thead>
+    <tbody>
+      <tr><td>Servicio de transporte en ${c.unidadNombre} — ${[c.origen, c.destino].filter(Boolean).join(' → ')} (${c.km} km, viaje ${c.redondo})${c.notas ? '<br><span style="color:#777;font-size:11px">' + c.notas + '</span>' : ''}</td>
+      <td class="num">${fmt(c.precio)}</td></tr>
+      <tr><td class="num" style="text-align:right">IVA ${c.iva || 16}%</td><td class="num">${fmt(ivaMonto)}</td></tr>
+      <tr class="tot"><td class="num" style="text-align:right">TOTAL</td><td class="num">${fmt(c.precio + ivaMonto)}</td></tr>
+    </tbody>
+  </table>
+  <div class="cond">
+    Precios en pesos mexicanos. Cotización sujeta a disponibilidad de unidad. No incluye estadías, sobrepeso ni servicios no especificados.
+    Vigencia de ${c.vigencia || 15} días naturales a partir de la fecha de emisión.
+  </div>
+  <div class="firma"><div class="linea"></div>${CFG.empresaRazonSocial || ''}</div>
+  <script>window.onload = function(){ window.print(); }<\/script>
+  </body></html>`;
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+}
 
 // ── NAVEGACIÓN DE MES ────────────────────────────────
 function actualizarLabelMes() {
