@@ -2241,22 +2241,22 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
           <div class="autocomplete-list" id="ac-cot-cliente" style="display:none"></div>
         </div>
         <div class="fg"><label>Unidad</label>
-          <select id="cot-unidad" onchange="recalcCotiza()">
+          <select id="cot-unidad" onchange="autofillRutaCot();recalcCotiza()">
             <option value="c1t">Camioneta 1 ton</option>
             <option value="c35t">Camioneta 3.5 ton</option>
             <option value="tracto">Tractocamión</option>
           </select>
         </div>
-        <div class="fg"><label>Origen</label><input type="text" id="cot-origen" placeholder="Ciudad / lugar"></div>
-        <div class="fg"><label>Destino</label><input type="text" id="cot-destino" placeholder="Ciudad / lugar"></div>
+        <div class="fg"><label>Origen</label><input type="text" id="cot-origen" placeholder="Ciudad / lugar" onblur="autofillRutaCot()"></div>
+        <div class="fg"><label>Destino</label><input type="text" id="cot-destino" placeholder="Ciudad / lugar" onblur="autofillRutaCot()"></div>
         <div class="fg"><label>Distancia (km, solo ida)</label><input type="number" id="cot-km" min="0" placeholder="0" oninput="recalcCotiza()"></div>
         <div class="fg"><label>Tipo de viaje</label>
-          <select id="cot-redondo" onchange="recalcCotiza()">
+          <select id="cot-redondo" onchange="autofillRutaCot();recalcCotiza()">
             <option value="1">Sencillo (solo ida)</option>
             <option value="2">Redondo (ida y vuelta)</option>
           </select>
         </div>
-        <div class="fg"><label>Casetas ($ total del recorrido)</label><input type="number" id="cot-casetas" min="0" placeholder="0.00" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Casetas ($ total) — <a href="https://app.sct.gob.mx/sibuac_internet/ControllerUI?action=cmdEscogeRuta" target="_blank" rel="noopener" style="color:var(--color-brand);text-decoration:none" title="Consultar peajes oficiales SICT">consultar SIBUAC ↗</a></label><input type="number" id="cot-casetas" min="0" placeholder="0.00" oninput="recalcCotiza()"></div>
         <div class="fg"><label>Maniobras ($)</label><input type="number" id="cot-maniobras" min="0" placeholder="0.00" oninput="recalcCotiza()"></div>
         <div class="fg"><label>Otros costos ($)</label><input type="number" id="cot-otros" min="0" placeholder="0.00" oninput="recalcCotiza()"></div>
         <div class="fg"><label>Margen (%)</label><input type="number" id="cot-margen" min="0" oninput="recalcCotiza()"></div>
@@ -3157,7 +3157,12 @@ function sendPostJsonp(payload) {
 async function sendPost(payload) {
   if (estaOnline()) {
     try {
-      await sendPostJsonp(payload);
+      const resp = await sendPostJsonp(payload);
+      if (resp && resp.ok === false && resp.error) {
+        console.warn('[VAZSE] Backend rechazó', payload.action, resp.error);
+        toast('⚠️ ' + resp.error, 'err');
+      }
+      return resp;
     } catch(e) {
       console.warn('[VAZSE] sendPost failed, queuing:', e);
       const cola = getCola();
@@ -3481,6 +3486,16 @@ function normalizarDatosV30(data) {
     }));
   }
 
+  // cotizaciones: 18 columnas (v10)
+  if (esArray(data.cotizaciones)) {
+    data.cotizaciones = data.cotizaciones.map(a => ({
+      folio: a[0], fecha: a[1], cliente: a[2], unidad: a[3], unidadNombre: a[4],
+      origen: a[5], destino: a[6], km: a[7], redondo: a[8], casetas: a[9],
+      maniobras: a[10], otros: a[11], costo: a[12], precio: a[13], margen: a[14],
+      estado: a[15], vigencia: a[16], notas: a[17]
+    }));
+  }
+
   return data;
 }
 
@@ -3554,6 +3569,7 @@ async function cargar() {
     // Save to cache
     guardarCache(data);
     cargarCatalogos(data);
+    if (typeof sincronizarCotizaciones === 'function') sincronizarCotizaciones(data.cotizaciones);
 
     filtrarViajes(); actualizarGraficaV();
     filtrarCobranza();
@@ -6266,6 +6282,27 @@ let cotizaciones = JSON.parse(localStorage.getItem('vazse_cotizaciones') || '[]'
 let _cotPrecioManual = false;
 let _cotUIInit = false;
 
+// Sincroniza con la hoja Cotizaciones del Sheet (Apps Script v10+)
+function sincronizarCotizaciones(remotas) {
+  if (!Array.isArray(remotas)) return; // script viejo: seguir con localStorage
+  const foliosRemotos = new Set(remotas.map(c => c.folio));
+  const soloLocales = cotizaciones.filter(c => c.folio && !foliosRemotos.has(c.folio));
+  // resubir al Sheet las creadas antes de actualizar el script
+  soloLocales.forEach(c => sendPost({ action: 'cotizacion_append', cotizacion: c }));
+  cotizaciones = remotas.map((c, i) => ({
+    ...c, id: Date.now() + i,
+    fecha: fmtFecha(c.fecha),
+    km: parseFloat(c.km) || 0, casetas: parseFloat(c.casetas) || 0,
+    maniobras: parseFloat(c.maniobras) || 0, otros: parseFloat(c.otros) || 0,
+    costo: parseFloat(c.costo) || 0, precio: parseFloat(c.precio) || 0,
+    margen: parseFloat(c.margen) || 0, vigencia: parseFloat(c.vigencia) || 15,
+    iva: (tarifario && tarifario.iva) || 16,
+    estado: c.estado || 'borrador'
+  })).concat(soloLocales);
+  saveCotizaciones();
+  renderCotizaciones();
+}
+
 function saveCotizaciones() { localStorage.setItem('vazse_cotizaciones', JSON.stringify(cotizaciones)); }
 function saveTarifario()    { localStorage.setItem('vazse_tarifario', JSON.stringify(tarifario)); }
 
@@ -6385,6 +6422,38 @@ function marcarPrecioManual(input) {
   recalcCotiza();
 }
 
+// ── Memoria de rutas: aprende km y casetas por (origen, destino, unidad) ──
+let rutasCasetas = JSON.parse(localStorage.getItem('vazse_rutas_casetas') || '{}');
+
+function rutaKey() {
+  const o = document.getElementById('cot-origen').value.trim().toUpperCase();
+  const d = document.getElementById('cot-destino').value.trim().toUpperCase();
+  const u = document.getElementById('cot-unidad').value;
+  return (o && d) ? o + '|' + d + '|' + u : '';
+}
+
+function autofillRutaCot() {
+  const key = rutaKey();
+  if (!key) return;
+  const r = rutasCasetas[key];
+  if (!r) return;
+  const factor = parseInt(document.getElementById('cot-redondo').value) || 1;
+  const kmEl = document.getElementById('cot-km');
+  const casEl = document.getElementById('cot-casetas');
+  let filled = false;
+  if (!parseFloat(kmEl.value) && r.km) { kmEl.value = r.km; filled = true; }
+  if (!parseFloat(casEl.value) && r.casetas) { casEl.value = (r.casetas * factor).toFixed(2); filled = true; }
+  if (filled) { recalcCotiza(); toast('Ruta conocida — km y casetas precargados 🛣️', 'inf'); }
+}
+
+function memorizarRutaCot(cot) {
+  const key = (cot.origen || '').toUpperCase() + '|' + (cot.destino || '').toUpperCase() + '|' + cot.unidad;
+  if (!cot.origen || !cot.destino) return;
+  const factor = cot.redondo === 'redondo' ? 2 : 1;
+  rutasCasetas[key] = { km: cot.km / factor, casetas: +(cot.casetas / factor).toFixed(2) };
+  localStorage.setItem('vazse_rutas_casetas', JSON.stringify(rutasCasetas));
+}
+
 function generarFolioCot() {
   const d = new Date();
   return 'COT-' + d.toISOString().split('T')[0].replace(/-/g, '') + '-' + String(Math.floor(Math.random() * 900) + 100);
@@ -6409,6 +6478,7 @@ async function guardarCotizacion() {
   cotizaciones.unshift(cot);
   saveCotizaciones();
   sendPost({ action: 'cotizacion_append', cotizacion: cot });
+  memorizarRutaCot(cot);
   registrarHistorial('agregar', 'Cotización', cot.folio + ' · ' + cliente + ' · ' + fmt(cot.precio));
   ['cot-cliente','cot-origen','cot-destino','cot-km','cot-casetas','cot-maniobras','cot-otros','cot-notas','cot-precio']
     .forEach(id => document.getElementById(id).value = '');
