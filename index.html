@@ -6276,8 +6276,22 @@ const COT_TAR_DEFAULT = {
   }
 };
 let tarifario = (function() {
-  try { const t = JSON.parse(localStorage.getItem('vazse_tarifario')); if (t && t.unidades) return t; } catch(e) {}
-  return JSON.parse(JSON.stringify(COT_TAR_DEFAULT));
+  const base = JSON.parse(JSON.stringify(COT_TAR_DEFAULT));
+  try {
+    const t = JSON.parse(localStorage.getItem('vazse_tarifario'));
+    if (t && t.unidades) {
+      // fusionar: lo guardado manda, pero campos nuevos heredan su default
+      Object.keys(base).forEach(k => { if (t[k] === undefined) t[k] = base[k]; });
+      Object.keys(base.unidades).forEach(k => {
+        if (!t.unidades[k]) { t.unidades[k] = base.unidades[k]; return; }
+        Object.keys(base.unidades[k]).forEach(f => {
+          if (t.unidades[k][f] === undefined) t.unidades[k][f] = base.unidades[k][f];
+        });
+      });
+      return t;
+    }
+  } catch(e) {}
+  return base;
 })();
 let cotizaciones = JSON.parse(localStorage.getItem('vazse_cotizaciones') || '[]');
 let _cotPrecioManual = false;
