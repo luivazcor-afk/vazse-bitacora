@@ -1459,6 +1459,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         </div>
       </div>
       <div class="btns" style="align-items:center">
+        <button class="btn" onclick="abrirMisDatos()" title="Mis datos y aduanas" style="font-size:11px;padding:5px 10px">⚙️</button>
         <button class="btn" onclick="cerrarSesion()" title="Cerrar sesión" style="font-size:11px;padding:5px 10px">🔒 Salir</button>
         <div class="mes-nav-pill" style="display:flex;align-items:center;gap:2px;border-radius:8px;padding:3px 6px">
           <button class="mes-nav-btn" onclick="navMes(-1)" style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;padding:0 4px">‹</button>
@@ -2616,7 +2617,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
           <div class="carta-field"><label>Patente</label>
             <input type="text" id="ci-patente" placeholder="1734"></div>
           <div class="carta-field"><label>Aduana</label>
-            <input type="text" id="ci-aduana" placeholder="160 – Manzanillo"></div>
+            <input type="text" id="ci-aduana" placeholder="160 – Manzanillo" list="dl-aduanas"><datalist id="dl-aduanas"></datalist></div>
           <div class="carta-field"><label>Régimen</label>
             <input type="text" id="ci-regimen" placeholder="IMD – Importación Definitiva"></div>
           <div class="carta-field"><label>Fecha de pago</label>
@@ -2910,6 +2911,30 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 </div>
 
 <!-- TOASTS -->
+<!-- ══ MODAL MIS DATOS Y ADUANAS ══ -->
+<div class="edit-overlay" id="md-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <span class="edit-modal-title">⚙️ Mis datos y aduanas</span>
+      <button class="edit-close" onclick="document.getElementById('md-overlay').classList.remove('show')">✕</button>
+    </div>
+    <div class="edit-grid">
+      <div class="fg"><label>Patente aduanal</label><input type="text" id="md-patente" placeholder="1734"></div>
+      <div class="fg"><label>Régimen aduanal frecuente</label><input type="text" id="md-regimen" placeholder="IMD – Importación Definitiva"></div>
+      <div class="fg"><label>Régimen fiscal (cliente default)</label><input type="text" id="md-regimen-fiscal" placeholder="601 – General de Ley"></div>
+      <div class="fg"><label>Uso CFDI default</label><input type="text" id="md-cfdi" placeholder="G03 – Gastos en general"></div>
+      <div class="fg"><label>Método de pago default</label><input type="text" id="md-metodo-pago" placeholder="PPD – Pago en parcialidades"></div>
+      <div class="fg"><label>Forma de pago default</label><input type="text" id="md-forma-pago" placeholder="99 – Por definir"></div>
+      <div class="fg full"><label>Aduanas frecuentes (una por línea — la primera es la default)</label>
+        <textarea id="md-aduanas" style="min-height:90px" placeholder="160 – Manzanillo&#10;165 – Lázaro Cárdenas&#10;470 – AICM"></textarea></div>
+    </div>
+    <div class="edit-footer">
+      <button class="btn" onclick="document.getElementById('md-overlay').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMisDatos()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <script>
@@ -7564,6 +7589,50 @@ function verificarAuth() {
 }
 
 // ── CARTA DE INSTRUCCIONES ───────────────────────────
+// ══ MIS DATOS Y ADUANAS (engrane del header) ══
+let misDatos = JSON.parse(localStorage.getItem('vazse_mis_datos') || '{}');
+
+function abrirMisDatos() {
+  const s = (id, v) => document.getElementById(id).value = v || '';
+  s('md-patente', misDatos.patente); s('md-regimen', misDatos.regimen);
+  s('md-regimen-fiscal', misDatos.regimenFiscal); s('md-cfdi', misDatos.cfdi);
+  s('md-metodo-pago', misDatos.metodoPago); s('md-forma-pago', misDatos.formaPago);
+  s('md-aduanas', (misDatos.aduanas || []).join('\n'));
+  document.getElementById('md-overlay').classList.add('show');
+}
+
+function guardarMisDatos() {
+  const g = id => document.getElementById(id).value.trim();
+  misDatos = {
+    patente: g('md-patente'), regimen: g('md-regimen'),
+    regimenFiscal: g('md-regimen-fiscal'), cfdi: g('md-cfdi'),
+    metodoPago: g('md-metodo-pago'), formaPago: g('md-forma-pago'),
+    aduanas: g('md-aduanas').split('\n').map(a => a.trim()).filter(Boolean)
+  };
+  localStorage.setItem('vazse_mis_datos', JSON.stringify(misDatos));
+  poblarAduanas();
+  document.getElementById('md-overlay').classList.remove('show');
+  toast('Datos guardados ✓ — se precargarán en cada carta', 'ok');
+}
+
+function poblarAduanas() {
+  const dl = document.getElementById('dl-aduanas');
+  if (dl) dl.innerHTML = (misDatos.aduanas || []).map(a => '<option value="' + a.replace(/"/g,'&quot;') + '">').join('');
+}
+poblarAduanas();
+
+// Precarga mis datos en la carta (solo campos vacíos, sin pisar lo del cliente)
+function precargarMisDatosCarta() {
+  const f = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
+  f('ci-patente', misDatos.patente);
+  f('ci-regimen', misDatos.regimen);
+  f('ci-aduana', (misDatos.aduanas || [])[0]);
+  f('ci-regimen-fiscal', misDatos.regimenFiscal);
+  f('ci-cfdi', misDatos.cfdi);
+  f('ci-metodo-pago', misDatos.metodoPago);
+  f('ci-forma-pago', misDatos.formaPago);
+}
+
 function abrirCarta(viajeId) {
   const v = viajes.find(x => x.id === viajeId);
   if (!v) return;
@@ -7606,6 +7675,7 @@ function abrirCarta(viajeId) {
   }
 
   // Show modal
+  precargarMisDatosCarta();
   document.getElementById('carta-overlay').classList.add('show');
 }
 
