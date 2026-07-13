@@ -2249,7 +2249,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         </div>
         <div class="fg"><label>Origen</label><input type="text" id="cot-origen" placeholder="Ciudad / lugar" onblur="autofillRutaCot()"></div>
         <div class="fg"><label>Destino</label><input type="text" id="cot-destino" placeholder="Ciudad / lugar" onblur="autofillRutaCot()"></div>
-        <div class="fg"><label>Distancia (km, solo ida)</label><input type="number" id="cot-km" min="0" placeholder="0" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Distancia (km, solo ida) — <a href="javascript:calcularRutaGoogle()" style="color:var(--color-brand);text-decoration:none" title="Calcula km y casetas con Google Routes API">🌐 calcular con Google</a></label><input type="number" id="cot-km" min="0" placeholder="0" oninput="recalcCotiza()"></div>
         <div class="fg"><label>Tipo de viaje</label>
           <select id="cot-redondo" onchange="autofillRutaCot();recalcCotiza()">
             <option value="1">Sencillo (solo ida)</option>
@@ -2277,6 +2277,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         <div class="fg"><label>Margen default (%)</label><input type="number" id="tar-margen" step="1"></div>
         <div class="fg"><label>Vigencia cotización (días)</label><input type="number" id="tar-vigencia" step="1"></div>
         <div class="fg"><label>IVA (%)</label><input type="number" id="tar-iva" step="1"></div>
+        <div class="fg full"><label>Google Maps API Key (opcional — para calcular km y casetas automático)</label><input type="text" id="tar-gmaps" placeholder="AIza..." autocomplete="off"></div>
       </div>
       <div id="tar-unidades" style="margin-top:10px"></div>
       <button class="btn btn-primary" onclick="guardarTarifario()" style="margin-top:8px">Guardar tarifario</button>
@@ -6267,11 +6268,11 @@ function calcDesglose(montoConIva) {
 // ══════════════════════════════════════════════════════
 // Costos $/km de referencia (IMT + benchmarks industria, jul 2026). Editables en el tarifario.
 const COT_TAR_DEFAULT = {
-  diesel: 27.10, margen: 25, vigencia: 15, iva: 16,
+  diesel: 27.10, margen: 25, vigencia: 15, iva: 16, gmapsKey: '',
   unidades: {
-    c1t:    { nombre: 'Camioneta 1 ton',   rend: 10,  operador: 3.0, mant: 1.5, fijos: 2.5 },
-    c35t:   { nombre: 'Camioneta 3.5 ton', rend: 7,   operador: 3.5, mant: 2.5, fijos: 3.5 },
-    tracto: { nombre: 'Tractocamión',      rend: 2.3, operador: 14,  mant: 10,  fijos: 11  }
+    c1t:    { nombre: 'Camioneta 1 ton',   rend: 10,  operador: 3.0, mant: 1.5, fijos: 2.5, fcas: 1   },
+    c35t:   { nombre: 'Camioneta 3.5 ton', rend: 7,   operador: 3.5, mant: 2.5, fijos: 3.5, fcas: 1.5 },
+    tracto: { nombre: 'Tractocamión',      rend: 2.3, operador: 14,  mant: 10,  fijos: 11,  fcas: 3   }
   }
 };
 let tarifario = (function() {
@@ -6325,6 +6326,7 @@ function fillTarifarioInputs() {
   document.getElementById('tar-margen').value   = tarifario.margen;
   document.getElementById('tar-vigencia').value = tarifario.vigencia;
   document.getElementById('tar-iva').value      = tarifario.iva;
+  document.getElementById('tar-gmaps').value    = tarifario.gmapsKey || '';
   const wrap = document.getElementById('tar-unidades');
   wrap.innerHTML = Object.entries(tarifario.unidades).map(([k, u]) => `
     <div class="dynamic-group">
@@ -6334,6 +6336,7 @@ function fillTarifarioInputs() {
         <div class="fg"><label>Operador ($/km)</label><input type="number" id="tar-${k}-operador" step="0.1" value="${u.operador}" oninput="recalcCotiza()"></div>
         <div class="fg"><label>Mantenimiento ($/km)</label><input type="number" id="tar-${k}-mant" step="0.1" value="${u.mant}" oninput="recalcCotiza()"></div>
         <div class="fg"><label>Fijos: seguro, depreciación, admin ($/km)</label><input type="number" id="tar-${k}-fijos" step="0.1" value="${u.fijos}" oninput="recalcCotiza()"></div>
+        <div class="fg"><label>Factor casetas vs auto (×)</label><input type="number" id="tar-${k}-fcas" step="0.1" value="${u.fcas || 1}"></div>
       </div>
     </div>`).join('');
 }
@@ -6346,6 +6349,7 @@ function leerTarifarioInputs() {
     t.margen   = g('tar-margen');
     t.vigencia = g('tar-vigencia') || t.vigencia;
     t.iva      = g('tar-iva');
+    t.gmapsKey = (document.getElementById('tar-gmaps').value || '').trim();
     Object.keys(t.unidades).forEach(k => {
       const el = document.getElementById('tar-' + k + '-rend');
       if (!el) return;
@@ -6353,6 +6357,7 @@ function leerTarifarioInputs() {
       t.unidades[k].operador = g('tar-' + k + '-operador');
       t.unidades[k].mant     = g('tar-' + k + '-mant');
       t.unidades[k].fijos    = g('tar-' + k + '-fijos');
+      t.unidades[k].fcas     = g('tar-' + k + '-fcas') || 1;
     });
   }
   return t;
@@ -6444,6 +6449,59 @@ function autofillRutaCot() {
   if (!parseFloat(kmEl.value) && r.km) { kmEl.value = r.km; filled = true; }
   if (!parseFloat(casEl.value) && r.casetas) { casEl.value = (r.casetas * factor).toFixed(2); filled = true; }
   if (filled) { recalcCotiza(); toast('Ruta conocida — km y casetas precargados 🛣️', 'inf'); }
+}
+
+// Calcula km y casetas con Google Routes API (tarifa de auto × factor por unidad)
+async function calcularRutaGoogle() {
+  const origen  = document.getElementById('cot-origen').value.trim();
+  const destino = document.getElementById('cot-destino').value.trim();
+  if (!origen || !destino) { toast('Captura origen y destino primero', 'err'); return; }
+  const key = (tarifario.gmapsKey || '').trim();
+  if (!key) {
+    toast('Configura tu Google Maps API Key en ⚙️ Editar tarifario', 'err');
+    if (confirm('Necesitas una API Key de Google Maps (Routes API).\\n\\n1. console.cloud.google.com → crear proyecto\\n2. Habilitar "Routes API"\\n3. Credenciales → crear API Key\\n4. Pégala en ⚙️ Editar tarifario\\n\\n¿Abrir la consola de Google Cloud?'))
+      window.open('https://console.cloud.google.com/apis/library/routes.googleapis.com', '_blank');
+    return;
+  }
+  toast('Consultando ruta en Google...', 'inf');
+  try {
+    const res = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': key,
+        'X-Goog-FieldMask': 'routes.distanceMeters,routes.duration,routes.travelAdvisory.tollInfo'
+      },
+      body: JSON.stringify({
+        origin:      { address: origen + ', México' },
+        destination: { address: destino + ', México' },
+        travelMode: 'DRIVE',
+        extraComputations: ['TOLLS'],
+        routeModifiers: { vehicleInfo: { emissionType: 'DIESEL' } },
+        regionCode: 'MX', languageCode: 'es-MX'
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'Error de la API');
+    const ruta = data.routes && data.routes[0];
+    if (!ruta) throw new Error('Sin ruta encontrada — revisa origen/destino');
+    const kmIda = Math.round((ruta.distanceMeters || 0) / 1000);
+    let casetasAuto = 0;
+    const ti = ruta.travelAdvisory && ruta.travelAdvisory.tollInfo;
+    if (ti && ti.estimatedPrice) ti.estimatedPrice.forEach(p => {
+      casetasAuto += (parseInt(p.units) || 0) + (p.nanos ? p.nanos / 1e9 : 0);
+    });
+    const uKey = document.getElementById('cot-unidad').value;
+    const fcas = (tarifario.unidades[uKey] && tarifario.unidades[uKey].fcas) || 1;
+    const factor = parseInt(document.getElementById('cot-redondo').value) || 1;
+    document.getElementById('cot-km').value = kmIda;
+    document.getElementById('cot-casetas').value = (casetasAuto * fcas * factor).toFixed(2);
+    recalcCotiza();
+    toast('Ruta: ' + kmIda + ' km · casetas auto ' + fmt(casetasAuto) + ' × ' + fcas + (factor === 2 ? ' × redondo' : '') + ' ✓', 'ok');
+  } catch (e) {
+    console.error('[VAZSE] Routes API:', e);
+    toast('⚠️ ' + (e.message || 'No se pudo calcular la ruta'), 'err');
+  }
 }
 
 function memorizarRutaCot(cot) {
