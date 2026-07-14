@@ -776,12 +776,12 @@ html[data-theme=dark] .res-refresh:hover{background:#233447;color:#7FB2EA}
 .modal-overlay.show{display:flex}
 
 /* Evidencia / Cobranza / Edit modals */
-#ev-overlay,#ec-overlay,#md-overlay{
+#ev-overlay,#ec-overlay,#md-overlay,#imp-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.45);
   z-index:200;display:none;align-items:center;
   justify-content:center;padding:1rem
 }
-#ev-overlay.show,#ec-overlay.show,#md-overlay.show{display:flex}
+#ev-overlay.show,#ec-overlay.show,#md-overlay.show,#imp-overlay.show{display:flex}
 
 /* Edit modal content */
 .edit-modal{
@@ -1469,6 +1469,9 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         <button class="btn" onclick="cargarTodo()" style="font-size:11px" title="Ver todos los registros">📂 Todo</button>
         <button class="btn btn-primary" onclick="cargar()">↻ Sincronizar</button>
         <button class="btn" id="btn-export-v" onclick="exportarViajes()" disabled>↓ Excel</button>
+        <button class="btn" onclick="descargarLayoutViajes()" title="Descargar plantilla Excel para captura masiva" style="font-size:11px">⬇ Layout</button>
+        <button class="btn" onclick="document.getElementById('imp-file').click()" title="Importar viajes desde Excel" style="font-size:11px">⬆ Importar</button>
+        <input type="file" id="imp-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarViajesArchivo(this)">
         <button class="btn" id="btn-pdf-v" onclick="exportarPDFViajes()" disabled>🖨️ PDF</button>
       </div>
     </div>
@@ -2913,6 +2916,33 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 </div>
 
 <!-- TOASTS -->
+<!-- ══ MODAL IMPORTAR VIAJES ══ -->
+<div class="edit-overlay" id="imp-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="edit-modal" style="max-width:1000px">
+    <div class="edit-modal-header">
+      <span class="edit-modal-title">⬆ Importar viajes desde Excel</span>
+      <button class="edit-close" onclick="document.getElementById('imp-overlay').classList.remove('show')">✕</button>
+    </div>
+    <div style="padding:1rem 1.25rem">
+      <div id="imp-resumen" style="font-size:13px;margin-bottom:10px"></div>
+      <label style="font-size:12.5px;display:flex;align-items:center;gap:6px;margin-bottom:10px">
+        <input type="checkbox" id="imp-auto" checked>
+        Generar cobranza y pago a proveedor automáticos por cada viaje (igual que el registro manual)
+      </label>
+      <div class="table-outer"><div class="table-wrap" style="max-height:45vh;overflow-y:auto">
+        <table class="sum-table"><thead><tr>
+          <th></th><th>Fecha</th><th>Tipo</th><th>Cliente</th><th>Proveedor</th>
+          <th>Ruta</th><th class="num">Costo</th><th class="num">Cobrado</th><th>Referencia</th><th>Aviso</th>
+        </tr></thead><tbody id="imp-tbody"></tbody></table>
+      </div></div>
+    </div>
+    <div class="edit-footer">
+      <button class="btn" onclick="document.getElementById('imp-overlay').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" id="imp-btn" onclick="ejecutarImportViajes()">Registrar viajes</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL MIS DATOS Y ADUANAS (hoja Config del Sheet) ══ -->
 <div class="edit-overlay" id="md-overlay" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="edit-modal">
@@ -4106,6 +4136,162 @@ function duplicarViaje(id) {
   document.querySelector('.tabs > .tab[onclick*="viajes"]').classList.add('active');
   setTimeout(()=>document.getElementById('v-btn-add').scrollIntoView({behavior:'smooth',block:'center'}),100);
   toast('Registro duplicado — revisa y guarda', 'inf');
+}
+
+// ══ IMPORTACIÓN MASIVA DE VIAJES (layout Excel) ══
+const IMP_COLS = ['Fecha','Tipo/Servicio','Cliente','Proveedor','Origen','Destino',
+  'Costo','Cobrado','Referencia','Notas','Contenedor','Patio',
+  'CostoManiobras','CobradoManiobras','DescManiobras'];
+let _impRows = [];
+
+function descargarLayoutViajes() {
+  const ejemplo = ['2026-07-15','FLETE SENCILLO','JUCA JOINT','TRANSPORTES EJEMPLO','MANZANILLO','EDO. MEX',
+    55000, 65500, '', 'Referencia vacía = folio automático', 'MSCU1234567', 'SSA', 0, 0, ''];
+  const ws = XLSX.utils.aoa_to_sheet([IMP_COLS, ejemplo]);
+  ws['!cols'] = IMP_COLS.map(c => ({ wch: Math.max(c.length + 2, 14) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Viajes');
+  XLSX.writeFile(wb, 'layout_viajes_vazse.xlsx');
+  toast('Layout descargado — llena una fila por viaje y usa ⬆ Importar', 'ok');
+}
+
+function _impNorm(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+}
+const IMP_MAP = {
+  fecha:'fecha', tiposervicio:'tipo', tipo:'tipo', servicio:'tipo',
+  cliente:'cliente', proveedor:'unidad', proveedorprincipal:'unidad', unidad:'unidad',
+  origen:'origen', destino:'destino', costo:'costo', cobrado:'cobrado', preciocobrado:'cobrado',
+  referencia:'referencia', notas:'notas', contenedor:'contenedor', patio:'patio',
+  costomaniobras:'maniobras', maniobras:'maniobras',
+  cobradomaniobras:'maniobrasCobrado', descmaniobras:'maniobrasDesc', descripcionmaniobras:'maniobrasDesc'
+};
+
+function _impFecha(v) {
+  if (!v && v !== 0) return '';
+  if (v instanceof Date && !isNaN(v)) return fmtFecha(v);
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+  const m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);   // DD/MM/YYYY
+  if (m) return m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+  if (/^\d+(\.\d+)?$/.test(s)) {                                    // serial de Excel
+    const d = new Date(Math.round((parseFloat(s) - 25569) * 86400000));
+    if (!isNaN(d)) return d.toISOString().substring(0, 10);
+  }
+  return '';
+}
+
+function importarViajesArchivo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let filas;
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      filas = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    } catch (err) { toast('No pude leer el archivo: ' + err, 'err'); return; }
+    if (!filas || filas.length < 2) { toast('El archivo no tiene filas de datos', 'err'); return; }
+    // mapear encabezados → campos
+    const headers = filas[0].map(h => IMP_MAP[_impNorm(h)] || null);
+    if (!headers.includes('fecha') || !headers.includes('cliente')) {
+      toast('Encabezados no reconocidos — usa el layout de ⬇ Layout', 'err'); return;
+    }
+    const refsExistentes = new Set(viajes.map(v => String(v.referencia || '').trim()).filter(Boolean));
+    const refsArchivo = new Set();
+    _impRows = [];
+    for (let i = 1; i < filas.length; i++) {
+      const fila = filas[i];
+      if (!fila || fila.every(c => String(c).trim() === '')) continue;
+      const r = { costo: 0, cobrado: 0, maniobras: 0, maniobrasCobrado: 0, urlEir: '' };
+      headers.forEach((campo, j) => { if (campo) r[campo] = fila[j]; });
+      r.fecha = _impFecha(r.fecha);
+      ['cliente','unidad','origen','destino','referencia','notas','contenedor','patio','maniobrasDesc','tipo']
+        .forEach(k => r[k] = String(r[k] || '').trim());
+      r.tipo = r.tipo.toUpperCase() || 'OTRO';
+      r.costo = parseFloat(r.costo) || 0;
+      r.cobrado = parseFloat(r.cobrado) || 0;
+      r.maniobras = parseFloat(r.maniobras) || 0;
+      r.maniobrasCobrado = parseFloat(r.maniobrasCobrado) || 0;
+      r.estadoFlete = esTipoFlete(r.tipo) ? 'libre' : '';
+      // validar
+      let error = '', aviso = '';
+      if (!r.fecha) error = 'Fecha inválida';
+      else if (!r.cliente) error = 'Falta cliente';
+      if (!error) {
+        if (!r.referencia) { r.referencia = generarFolioAuto().replace('VJ-', 'VJ-') + '-' + i; aviso = 'folio auto'; }
+        const ref = r.referencia.trim();
+        if (refsExistentes.has(ref) || refsArchivo.has(ref)) error = 'Referencia duplicada: ' + ref;
+        else refsArchivo.add(ref);
+        if (!error && r.costo > 0 && !r.unidad) aviso = (aviso ? aviso + ' · ' : '') + 'costo sin proveedor: no generará saldo';
+      }
+      _impRows.push({ r, error, aviso });
+    }
+    if (!_impRows.length) { toast('No encontré filas con datos', 'err'); return; }
+    renderImportPreview();
+    document.getElementById('imp-overlay').classList.add('show');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderImportPreview() {
+  const ok = _impRows.filter(x => !x.error).length;
+  const bad = _impRows.length - ok;
+  document.getElementById('imp-resumen').innerHTML =
+    `<b>${ok}</b> viaje(s) listos para registrar` + (bad ? ` · <span style="color:#E24B4A"><b>${bad}</b> con error (se omitirán)</span>` : '');
+  document.getElementById('imp-tbody').innerHTML = _impRows.map(x => `<tr style="${x.error ? 'opacity:.55' : ''}">
+    <td>${x.error ? '❌' : '✅'}</td>
+    <td style="white-space:nowrap;font-size:12px">${x.r.fecha || '—'}</td>
+    <td style="font-size:12px">${x.r.tipo}</td>
+    <td class="trunc">${x.r.cliente || '—'}</td>
+    <td class="trunc" style="font-size:12px">${x.r.unidad || '—'}</td>
+    <td class="trunc" style="font-size:12px">${[x.r.origen, x.r.destino].filter(Boolean).join(' → ') || '—'}</td>
+    <td class="num">${fmt(x.r.costo)}</td>
+    <td class="num">${fmt(x.r.cobrado)}</td>
+    <td style="font-size:11.5px;white-space:nowrap">${x.r.referencia}</td>
+    <td style="font-size:11px;color:${x.error ? '#E24B4A' : '#EF9F27'}">${x.error || x.aviso || ''}</td>
+  </tr>`).join('');
+  document.getElementById('imp-btn').disabled = ok === 0;
+  document.getElementById('imp-btn').textContent = 'Registrar ' + ok + ' viaje(s)';
+}
+
+async function ejecutarImportViajes() {
+  const validos = _impRows.filter(x => !x.error).map(x => x.r);
+  if (!validos.length) return;
+  const auto = document.getElementById('imp-auto').checked;
+  const btn = document.getElementById('imp-btn');
+  btn.disabled = true;
+  let n = 0;
+  for (const r of validos) {
+    btn.textContent = `Importando ${++n}/${validos.length}...`;
+    await sendPost({ action: 'append', registro: r });
+    viajes.unshift({ ...r, id: Date.now() + n });
+    if (auto) {
+      const _ts = Date.now() + n;
+      const _ruta = [r.origen, r.destino].filter(Boolean).join(' - ');
+      const _cob = { folio: 'VJ-' + r.fecha.replace(/-/g, '') + '-' + String(_ts).slice(-3),
+        cliente: r.cliente, monto: r.cobrado, fechaEmision: r.fecha, fechaVencimiento: '',
+        estado: 'pendiente', referencia: r.referencia, urlFactura: '', urlEvidencia: '',
+        notas: 'Auto: ' + r.tipo.toLowerCase().replace('_', ' ') + (_ruta ? ' · ' + _ruta : '') };
+      await sendPost({ action: 'cobranza_append', cobranza: _cob });
+      cobranzas.unshift({ ..._cob, id: _ts + 1 });
+      if (r.costo > 0 && r.unidad) {
+        const _pago = { folio: 'PAG-' + r.fecha.replace(/-/g, '') + '-' + String(_ts).slice(-3),
+          proveedor: r.unidad, monto: r.costo, fecha: r.fecha, fechaPago: '', estado: 'pendiente',
+          referencia: r.referencia, concepto: r.tipo.toLowerCase().replace('_', ' ') + (_ruta ? ' · ' + _ruta : ''),
+          notas: 'Auto import: ' + r.cliente };
+        await sendPost({ action: 'pago_append', pago: _pago });
+        pagos.unshift({ ..._pago, id: _ts + 2 });
+      }
+    }
+  }
+  registrarHistorial('agregar', 'Import', validos.length + ' viajes importados desde Excel');
+  document.getElementById('imp-overlay').classList.remove('show');
+  btn.disabled = false;
+  filtrarViajes(); actualizarGraficaV(); filtrarCobranza(); filtrarPagos();
+  toast('✅ ' + validos.length + ' viajes importados' + (auto ? ' con cobranza/pagos' : ''), 'ok');
 }
 
 function exportarViajes() {
