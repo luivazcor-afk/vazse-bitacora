@@ -1982,6 +1982,8 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
           </table>
         </div>
       </div>
+      <div class="muted" style="font-size:11.5px;margin-top:6px">💡 Haz clic en un cliente para ver su estado de cuenta detallado</div>
+      <div id="rep-cob-detalle" style="margin-top:1rem"></div>
     </div>
 
   </div>
@@ -5639,6 +5641,122 @@ function exportarRentabilidad() {
 }
 
 
+let _repCobRows = [];
+
+function _cobEstadoReal(r, hoyStr) {
+  const venc = fmtFecha(r.fechaVencimiento);
+  if (r.estado === 'pagado') return 'pagado';
+  if (venc && venc !== '—' && venc < hoyStr) return 'vencido';
+  return r.estado || 'pendiente';
+}
+
+function verDetalleCobCliente(i) {
+  const cliente = _repCobRows[i];
+  if (!cliente) return;
+  const hoyStr = new Date().toISOString().split('T')[0];
+  const facts = cobranzas.filter(r => (r.cliente || '(sin cliente)') === cliente);
+  const orden = { vencido: 0, parcial: 1, pendiente: 2, pagado: 3 };
+  facts.sort((a, b) => {
+    const ea = _cobEstadoReal(a, hoyStr), eb = _cobEstadoReal(b, hoyStr);
+    if (orden[ea] !== orden[eb]) return orden[ea] - orden[eb];
+    return fmtFecha(a.fechaVencimiento) < fmtFecha(b.fechaVencimiento) ? -1 : 1;
+  });
+  let totalAdeudo = 0, totalPagado = 0;
+  const filas = facts.map(r => {
+    const est = _cobEstadoReal(r, hoyStr);
+    const venc = fmtFecha(r.fechaVencimiento);
+    let dias = '—';
+    if (venc && venc !== '—' && est !== 'pagado') {
+      const d = Math.round((new Date(hoyStr) - new Date(venc)) / 86400000);
+      dias = d > 0 ? `<span style="color:#E24B4A;font-weight:600">${d} días vencida</span>`
+           : d === 0 ? '<span style="color:#EF9F27;font-weight:600">vence hoy</span>'
+           : `vence en ${-d} días`;
+    }
+    if (est === 'pagado') totalPagado += r.monto || 0; else totalAdeudo += r.monto || 0;
+    return `<tr>
+      <td style="font-weight:500;white-space:nowrap">${r.folio || '—'}</td>
+      <td style="white-space:nowrap;font-size:12px">${fmtFecha(r.fechaEmision)}</td>
+      <td style="white-space:nowrap;font-size:12px">${venc || '—'}</td>
+      <td style="font-size:12px;white-space:nowrap">${dias}</td>
+      <td class="trunc" style="font-size:12px">${r.referencia || ''} ${r.notas ? '· ' + r.notas : ''}</td>
+      <td class="num" style="font-weight:600">${fmt(r.monto)}</td>
+      <td>${badgeEstado(est)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('rep-cob-detalle').innerHTML = `
+    <div class="section-label" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      Estado de cuenta — ${cliente}
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="imprimirEdoCuenta(${i})">🖨️ Imprimir / enviar</button>
+    </div>
+    <div class="flujo-grid" style="margin-bottom:10px">
+      <div class="flujo-card flujo-salida"><div class="flujo-label">🔴 Adeudo total</div><div class="flujo-val neg">${fmt(totalAdeudo)}</div><div class="flujo-sub">${facts.filter(r => _cobEstadoReal(r, hoyStr) !== 'pagado').length} movimiento(s)</div></div>
+      <div class="flujo-card flujo-entrada"><div class="flujo-label">✅ Pagado</div><div class="flujo-val pos">${fmt(totalPagado)}</div><div class="flujo-sub">${facts.filter(r => _cobEstadoReal(r, hoyStr) === 'pagado').length} movimiento(s)</div></div>
+    </div>
+    <div class="table-outer"><div class="table-wrap">
+      <table class="sum-table">
+        <thead><tr><th>Folio</th><th>Emisión</th><th>Vencimiento</th><th>Días</th><th>Referencia / Notas</th><th class="num">Monto</th><th>Estado</th></tr></thead>
+        <tbody>${filas || '<tr><td colspan="7"><div class="empty-state"><p>Sin movimientos</p></div></td></tr>'}</tbody>
+      </table>
+    </div></div>`;
+  document.getElementById('rep-cob-detalle').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function imprimirEdoCuenta(i) {
+  const cliente = _repCobRows[i];
+  if (!cliente) return;
+  const hoyStr = new Date().toISOString().split('T')[0];
+  const adeudos = cobranzas
+    .filter(r => (r.cliente || '(sin cliente)') === cliente && _cobEstadoReal(r, hoyStr) !== 'pagado')
+    .sort((a, b) => fmtFecha(a.fechaVencimiento) < fmtFecha(b.fechaVencimiento) ? -1 : 1);
+  const total = adeudos.reduce((s, r) => s + (r.monto || 0), 0);
+  const filas = adeudos.map(r => {
+    const venc = fmtFecha(r.fechaVencimiento);
+    const d = (venc && venc !== '—') ? Math.round((new Date(hoyStr) - new Date(venc)) / 86400000) : null;
+    return `<tr>
+      <td>${r.folio || '—'}</td><td>${fmtFecha(r.fechaEmision)}</td><td>${venc || '—'}</td>
+      <td style="color:${d > 0 ? '#C0392B' : '#555'}">${d === null ? '—' : d > 0 ? d + ' días vencida' : d === 0 ? 'vence hoy' : 'por vencer'}</td>
+      <td>${r.referencia || ''}</td><td class="num">${fmt(r.monto)}</td>
+    </tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Estado de cuenta — ${cliente}</title>
+  <style>
+    body{font-family:'Segoe UI',system-ui,sans-serif;color:#1C1C1A;margin:2.2rem;font-size:13px}
+    .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #185FA5;padding-bottom:12px;margin-bottom:18px}
+    .head img{height:52px}
+    h1{font-size:17px;margin:0;color:#185FA5}
+    .sub{font-size:11px;color:#666}
+    table{width:100%;border-collapse:collapse;margin:14px 0}
+    th{background:#EBF3FC;color:#0C447C;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:left}
+    td{padding:8px 10px;border-bottom:1px solid #eee}
+    .num{text-align:right;white-space:nowrap}
+    .tot td{font-weight:700;border-top:2px solid #185FA5;font-size:14px}
+    .cond{font-size:10.5px;color:#777;margin-top:16px}
+  </style></head><body>
+  <div class="head">
+    <div style="display:flex;gap:12px;align-items:center">
+      <img src="${CFG.logoUrl}" onerror="this.style.display='none'">
+      <div><h1>${CFG.empresaRazonSocial || CFG.empresaNombre}</h1><div class="sub">${CFG.empresaSubtitulo || ''}</div></div>
+    </div>
+    <div style="text-align:right;font-size:12px">
+      <div style="font-weight:700;color:#185FA5">ESTADO DE CUENTA</div>
+      <div>Fecha de corte: ${hoyStr}</div>
+    </div>
+  </div>
+  <p><b>Cliente:</b> ${cliente}</p>
+  <table>
+    <thead><tr><th>Folio</th><th>Emisión</th><th>Vencimiento</th><th>Situación</th><th>Referencia</th><th class="num">Monto (MXN)</th></tr></thead>
+    <tbody>${filas}
+      <tr class="tot"><td colspan="5" class="num" style="text-align:right">TOTAL ADEUDO</td><td class="num">${fmt(total)}</td></tr>
+    </tbody>
+  </table>
+  <div class="cond">Documento informativo con corte al ${hoyStr}. Favor de enviar comprobantes de pago a ${(CFG.emailFactura || '').split(';')[0]}.</div>
+  <script>window.onload = function(){ window.print(); }<\/script>
+  </body></html>`;
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+}
+
 function renderReporteCobClientes() {
   const map = {};
   cobranzas.forEach(r => {
@@ -5651,11 +5769,13 @@ function renderReporteCobClientes() {
   });
   const rows = Object.entries(map).sort((a,b)=>b[1].total-a[1].total).slice(0,10);
 
+  const _det = document.getElementById('rep-cob-detalle'); if (_det) _det.innerHTML = '';
+  _repCobRows = rows.map(([k]) => k);
   document.getElementById('rep-cob-clientes-tbody').innerHTML = rows.length ?
-    rows.map(([k,v]) => {
+    rows.map(([k,v], _i) => {
       const pct = v.total>0?(v.pagado/v.total*100).toFixed(1):0;
-      return `<tr>
-        <td style="font-weight:500">${k}</td>
+      return `<tr style="cursor:pointer" onclick="verDetalleCobCliente(${_i})" title="Clic para ver estado de cuenta">
+        <td style="font-weight:500;color:var(--color-brand)">${k} <span style="font-size:10px;opacity:.6">▸</span></td>
         <td class="num neu">${v.count}</td>
         <td class="num">${fmt(v.total)}</td>
         <td class="num pos">${fmt(v.pagado)}</td>
