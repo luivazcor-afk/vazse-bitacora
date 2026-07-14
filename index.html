@@ -4145,14 +4145,28 @@ const IMP_COLS = ['Fecha','Tipo/Servicio','Cliente','Proveedor','Origen','Destin
 let _impRows = [];
 
 function descargarLayoutViajes() {
-  const ejemplo = ['2026-07-15','FLETE SENCILLO','JUCA JOINT','TRANSPORTES EJEMPLO','MANZANILLO','EDO. MEX',
-    55000, 65500, '', 'Referencia vacía = folio automático', 'MSCU1234567', 'SSA', 0, 0, ''];
-  const ws = XLSX.utils.aoa_to_sheet([IMP_COLS, ejemplo]);
-  ws['!cols'] = IMP_COLS.map(c => ({ wch: Math.max(c.length + 2, 14) }));
   const wb = XLSX.utils.book_new();
+  // Hoja 1: solo encabezados — aquí se captura (es la única que lee el importador)
+  const ws = XLSX.utils.aoa_to_sheet([IMP_COLS]);
+  ws['!cols'] = IMP_COLS.map(c => ({ wch: Math.max(c.length + 2, 14) }));
   XLSX.utils.book_append_sheet(wb, ws, 'Viajes');
+  // Hoja 2: ejemplo e instrucciones (no se importa)
+  const ejemplo = ['2026-07-15','FLETE SENCILLO','CLIENTE EJEMPLO SA','TRANSPORTES EJEMPLO','MANZANILLO','EDO. MEX',
+    55000, 65500, '', 'Fila de muestra — NO capturar aquí', 'MSCU1234567', 'SSA', 0, 0, ''];
+  const wsEj = XLSX.utils.aoa_to_sheet([
+    ['INSTRUCCIONES'],
+    ['· Captura tus viajes en la hoja "Viajes" (una fila por viaje). Esta hoja es solo de referencia.'],
+    ['· Obligatorios: Fecha (YYYY-MM-DD o DD/MM/YYYY) y Cliente. Referencia vacía = folio automático.'],
+    ['· Tipo/Servicio: usa los nombres de tu catálogo (si contiene FLETE o TRASLADO activa datos de flete).'],
+    ['· Costo/Cobrado/Maniobras: solo números, sin $ ni comas.'],
+    ['· Con costo y Proveedor capturados se genera el saldo contra el proveedor automáticamente.'],
+    [],
+    IMP_COLS, ejemplo
+  ]);
+  wsEj['!cols'] = IMP_COLS.map(c => ({ wch: Math.max(c.length + 2, 14) }));
+  XLSX.utils.book_append_sheet(wb, wsEj, 'Ejemplo');
   XLSX.writeFile(wb, 'layout_viajes_vazse.xlsx');
-  toast('Layout descargado — llena una fila por viaje y usa ⬆ Importar', 'ok');
+  toast('Layout descargado — captura en la hoja "Viajes" y usa ⬆ Importar', 'ok');
 }
 
 function _impNorm(s) {
