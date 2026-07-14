@@ -2913,7 +2913,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 </div>
 
 <!-- TOASTS -->
-<!-- ══ MODAL MIS DATOS Y ADUANAS ══ -->
+<!-- ══ MODAL MIS DATOS Y ADUANAS (hoja Config del Sheet) ══ -->
 <div class="edit-overlay" id="md-overlay" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="edit-modal">
     <div class="edit-modal-header">
@@ -2921,18 +2921,26 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       <button class="edit-close" onclick="document.getElementById('md-overlay').classList.remove('show')">✕</button>
     </div>
     <div class="edit-grid">
-      <div class="fg"><label>Patente aduanal</label><input type="text" id="md-patente" placeholder="1734"></div>
-      <div class="fg"><label>Régimen aduanal frecuente</label><input type="text" id="md-regimen" placeholder="IMD – Importación Definitiva"></div>
-      <div class="fg"><label>Régimen fiscal (cliente default)</label><input type="text" id="md-regimen-fiscal" placeholder="601 – General de Ley"></div>
-      <div class="fg"><label>Uso CFDI default</label><input type="text" id="md-cfdi" placeholder="G03 – Gastos en general"></div>
-      <div class="fg"><label>Método de pago default</label><input type="text" id="md-metodo-pago" placeholder="PPD – Pago en parcialidades"></div>
-      <div class="fg"><label>Forma de pago default</label><input type="text" id="md-forma-pago" placeholder="99 – Por definir"></div>
-      <div class="fg full"><label>Aduanas frecuentes (una por línea — la primera es la default)</label>
-        <textarea id="md-aduanas" style="min-height:90px" placeholder="160 – Manzanillo&#10;165 – Lázaro Cárdenas&#10;470 – AICM"></textarea></div>
+      <div class="fg full"><label>Razón social</label><input type="text" id="md-razon"></div>
+      <div class="fg"><label>RFC</label><input type="text" id="md-rfc"></div>
+      <div class="fg"><label>Régimen fiscal</label><input type="text" id="md-regimen" placeholder="601 – General de Ley Personas Morales"></div>
+      <div class="fg"><label>Uso CFDI</label><input type="text" id="md-cfdi" placeholder="G03 – Gastos en general"></div>
+      <div class="fg"><label>Método de pago</label><input type="text" id="md-metodo-pago" placeholder="PPD"></div>
+      <div class="fg full"><label>Dirección fiscal</label><input type="text" id="md-direccion"></div>
+      <div class="fg"><label>Teléfono</label><input type="text" id="md-tel"></div>
+      <div class="fg"><label>Régimen aduanal frecuente</label><input type="text" id="md-regimen-aduanal" placeholder="IMD – Importación Definitiva"></div>
+      <div class="fg"><label>Email cobranza</label><input type="email" id="md-email-cobranza"></div>
+      <div class="fg"><label>Email operaciones</label><input type="email" id="md-email-ops"></div>
+      <div class="fg"><label>Email facturas</label><input type="email" id="md-email-facturas"></div>
+      <div class="fg"><label>Email gerencia</label><input type="email" id="md-email-gerencia"></div>
+      <div class="fg full"><label>Patentes (una por línea: patente – nombre del agente)</label>
+        <textarea id="md-patentes" style="min-height:70px" placeholder="1734 – TONATIUH EDUARDO VICTORIA MARTINES&#10;3659 – MARCO ANTONIO RAMIREZ MOTA"></textarea></div>
+      <div class="fg full"><label>Aduanas (una por línea: clave – nombre; la primera es la default)</label>
+        <textarea id="md-aduanas" style="min-height:70px" placeholder="160 – MANZANILLO&#10;165 – LÁZARO CÁRDENAS"></textarea></div>
     </div>
     <div class="edit-footer">
       <button class="btn" onclick="document.getElementById('md-overlay').classList.remove('show')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarMisDatos()">Guardar</button>
+      <button class="btn btn-primary" onclick="guardarMisDatos()">Guardar en el Sheet</button>
     </div>
   </div>
 </div>
@@ -3598,6 +3606,7 @@ async function cargar() {
     guardarCache(data);
     cargarCatalogos(data);
     if (typeof sincronizarCotizaciones === 'function') sincronizarCotizaciones(data.cotizaciones);
+    if (typeof sincronizarConfig === 'function') sincronizarConfig(data.config);
 
     filtrarViajes(); actualizarGraficaV();
     filtrarCobranza();
@@ -7709,48 +7718,95 @@ function verificarAuth() {
 }
 
 // ── CARTA DE INSTRUCCIONES ───────────────────────────
-// ══ MIS DATOS Y ADUANAS (engrane del header) ══
+// ══ MIS DATOS Y ADUANAS — respaldados en la hoja Config del Sheet ══
 let misDatos = JSON.parse(localStorage.getItem('vazse_mis_datos') || '{}');
 
+function _parseLineas(txt) {
+  return txt.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const p = l.split(/\s*[–-]\s*/);
+    return { clave: (p[0] || '').trim(), nombre: p.slice(1).join(' – ').trim() };
+  });
+}
+function _lineas(arr, k1, k2) {
+  return (arr || []).map(x => (x[k1] || '') + (x[k2] ? ' – ' + x[k2] : '')).join('\n');
+}
+
 function abrirMisDatos() {
-  const s = (id, v) => document.getElementById(id).value = v || '';
-  s('md-patente', misDatos.patente); s('md-regimen', misDatos.regimen);
-  s('md-regimen-fiscal', misDatos.regimenFiscal); s('md-cfdi', misDatos.cfdi);
-  s('md-metodo-pago', misDatos.metodoPago); s('md-forma-pago', misDatos.formaPago);
-  s('md-aduanas', (misDatos.aduanas || []).join('\n'));
+  const s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  s('md-razon', misDatos.razon); s('md-rfc', misDatos.rfc);
+  s('md-regimen', misDatos.regimen); s('md-cfdi', misDatos.cfdi);
+  s('md-metodo-pago', misDatos.metodoPago); s('md-direccion', misDatos.direccion);
+  s('md-tel', misDatos.tel); s('md-regimen-aduanal', misDatos.regimenAduanal);
+  s('md-email-cobranza', misDatos.emailCobranza); s('md-email-ops', misDatos.emailOps);
+  s('md-email-facturas', misDatos.emailFacturas); s('md-email-gerencia', misDatos.emailGerencia);
+  s('md-patentes', _lineas(misDatos.patentes, 'patente', 'nombre'));
+  s('md-aduanas', _lineas(misDatos.aduanas, 'clave', 'nombre'));
   document.getElementById('md-overlay').classList.add('show');
 }
 
-function guardarMisDatos() {
-  const g = id => document.getElementById(id).value.trim();
+async function guardarMisDatos() {
+  const g = id => (document.getElementById(id).value || '').trim();
   misDatos = {
-    patente: g('md-patente'), regimen: g('md-regimen'),
-    regimenFiscal: g('md-regimen-fiscal'), cfdi: g('md-cfdi'),
-    metodoPago: g('md-metodo-pago'), formaPago: g('md-forma-pago'),
-    aduanas: g('md-aduanas').split('\n').map(a => a.trim()).filter(Boolean)
+    razon: g('md-razon'), rfc: g('md-rfc'), regimen: g('md-regimen'), cfdi: g('md-cfdi'),
+    metodoPago: g('md-metodo-pago'), direccion: g('md-direccion'), tel: g('md-tel'),
+    regimenAduanal: g('md-regimen-aduanal'),
+    emailCobranza: g('md-email-cobranza'), emailOps: g('md-email-ops'),
+    emailFacturas: g('md-email-facturas'), emailGerencia: g('md-email-gerencia'),
+    patentes: _parseLineas(g('md-patentes')).map(x => ({ patente: x.clave, nombre: x.nombre })),
+    aduanas: _parseLineas(g('md-aduanas'))
   };
   localStorage.setItem('vazse_mis_datos', JSON.stringify(misDatos));
   poblarAduanas();
   document.getElementById('md-overlay').classList.remove('show');
-  toast('Datos guardados ✓ — se precargarán en cada carta', 'ok');
+  // Persistir en la hoja Config (mismas claves que usaba la app original)
+  await sendPost({ action: 'config_save', config: {
+    'razon': misDatos.razon, 'rfc': misDatos.rfc, 'regimen': misDatos.regimen,
+    'cfdi': misDatos.cfdi, 'direccion': misDatos.direccion, 'metodo-pago': misDatos.metodoPago,
+    'tel': misDatos.tel, 'regimen-aduanal': misDatos.regimenAduanal,
+    'email-cobranza': misDatos.emailCobranza, 'email-ops': misDatos.emailOps,
+    'email-facturas': misDatos.emailFacturas, 'email-gerencia': misDatos.emailGerencia,
+    'patentes': JSON.stringify(misDatos.patentes), 'aduanas': JSON.stringify(misDatos.aduanas),
+    '_updated': new Date().toISOString()
+  }});
+  toast('Datos guardados en el Sheet ✓', 'ok');
+}
+
+// Carga la hoja Config (llega como pares clave/valor) → misDatos
+function sincronizarConfig(cfgRows) {
+  if (!Array.isArray(cfgRows) || !cfgRows.length) return;
+  const c = {};
+  cfgRows.forEach(r => { if (r && r[0]) c[String(r[0]).trim()] = r[1] !== undefined ? String(r[1]) : ''; });
+  const pj = v => { try { return JSON.parse(v) || []; } catch(e) { return []; } };
+  misDatos = {
+    razon: c['razon'] || '', rfc: c['rfc'] || '', regimen: c['regimen'] || '',
+    cfdi: c['cfdi'] || '', direccion: c['direccion'] || '', metodoPago: c['metodo-pago'] || '',
+    tel: c['tel'] || '', regimenAduanal: c['regimen-aduanal'] || '',
+    emailCobranza: c['email-cobranza'] || '', emailOps: c['email-ops'] || '',
+    emailFacturas: c['email-facturas'] || '', emailGerencia: c['email-gerencia'] || '',
+    patentes: pj(c['patentes']), aduanas: pj(c['aduanas'])
+  };
+  localStorage.setItem('vazse_mis_datos', JSON.stringify(misDatos));
+  poblarAduanas();
 }
 
 function poblarAduanas() {
   const dl = document.getElementById('dl-aduanas');
-  if (dl) dl.innerHTML = (misDatos.aduanas || []).map(a => '<option value="' + a.replace(/"/g,'&quot;') + '">').join('');
+  if (dl) dl.innerHTML = (misDatos.aduanas || [])
+    .map(a => '<option value="' + ((a.clave || '') + (a.nombre ? ' – ' + a.nombre : '')).replace(/"/g, '&quot;') + '">').join('');
 }
 poblarAduanas();
 
 // Precarga mis datos en la carta (solo campos vacíos, sin pisar lo del cliente)
 function precargarMisDatosCarta() {
   const f = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
-  f('ci-patente', misDatos.patente);
-  f('ci-regimen', misDatos.regimen);
-  f('ci-aduana', (misDatos.aduanas || [])[0]);
-  f('ci-regimen-fiscal', misDatos.regimenFiscal);
+  const p0 = (misDatos.patentes || [])[0];
+  const a0 = (misDatos.aduanas || [])[0];
+  f('ci-patente', p0 && p0.patente);
+  f('ci-aduana', a0 && ((a0.clave || '') + (a0.nombre ? ' – ' + a0.nombre : '')));
+  f('ci-regimen', misDatos.regimenAduanal);
+  f('ci-regimen-fiscal', misDatos.regimen);
   f('ci-cfdi', misDatos.cfdi);
   f('ci-metodo-pago', misDatos.metodoPago);
-  f('ci-forma-pago', misDatos.formaPago);
 }
 
 function abrirCarta(viajeId) {
