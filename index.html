@@ -3215,7 +3215,7 @@ function sendPostJsonp(payload) {
       if (script.parentNode) script.parentNode.removeChild(script);
       console.warn('[VAZSE] JSONP timeout for:', payload.action);
       if (!terminado) { terminado = true; resolve(); }
-    }, 8000);
+    }, 20000);
     document.head.appendChild(script);
   });
 }
