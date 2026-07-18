@@ -2664,10 +2664,13 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       <div class="carta-section">
         <div class="carta-section-title">4. Descripción de Mercancía</div>
         <div class="carta-grid">
-          <div class="carta-field carta-grid full"><label>Descripción</label>
-            <input type="text" id="ci-desc" placeholder="TAPONES DE CAUCHO"></div>
-          <div class="carta-field"><label>Fracción arancelaria</label>
-            <input type="text" id="ci-fraccion" placeholder="4016.99.99"></div>
+          <div class="carta-field carta-grid full autocomplete-wrap" style="position:relative"><label>Descripción</label>
+            <input type="text" id="ci-desc" placeholder="TAPONES DE CAUCHO" autocomplete="off"
+              oninput="mostrarAC('ci-desc','mercancias')" onblur="cerrarAC('ci-desc')"
+              onkeydown="navAC(event,'ci-desc')" onchange="autofillMercancia()">
+            <div class="autocomplete-list" id="ac-ci-desc" style="display:none"></div></div>
+          <div class="carta-field"><label>Clave SAT</label>
+            <input type="text" id="ci-fraccion" placeholder="78101800" list="dl-claves-sat"><datalist id="dl-claves-sat"></datalist></div>
           <div class="carta-field"><label>País de origen</label>
             <input type="text" id="ci-origen-mercia" placeholder="China"></div>
           <div class="carta-field"><label>Factura / Invoice</label>
@@ -2708,7 +2711,12 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 
       <!-- 6. FACTURACIÓN -->
       <div class="carta-section">
-        <div class="carta-section-title">6. Instrucciones de Facturación</div>
+        <div class="carta-section-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">6. Instrucciones de Facturación
+          <span style="font-weight:400;font-size:11px;margin-left:auto;display:flex;gap:6px;align-items:center">Facturar a:
+            <button type="button" class="btn" style="font-size:11px;padding:3px 10px" onclick="cartaFactMisDatos()" title="El transportista tercero me factura a mí">🏢 Mis datos (VAZSE)</button>
+            <button type="button" class="btn" style="font-size:11px;padding:3px 10px" onclick="cartaFactCliente()" title="Datos del cliente del viaje">👤 Cliente</button>
+          </span>
+        </div>
         <div class="carta-grid">
           <div class="carta-field full carta-grid"><label>Facturar a (razón social)</label>
             <input type="text" id="ci-fact-razon"></div>
@@ -6405,7 +6413,7 @@ function mostrarAC(inputId, tipo) {
   const list  = document.getElementById('ac-' + inputId);
   if (!input || !list) return;
   const q = input.value.trim().toLowerCase();
-  const items = tipo === 'clientes' ? catClientes : tipo === 'proveedores' ? catProveedores : catServicios;
+  const items = tipo === 'clientes' ? catClientes : tipo === 'proveedores' ? catProveedores : tipo === 'mercancias' ? memMercancias : catServicios;
   const matches = q
     ? items.filter(e => e.nombre.toLowerCase().includes(q))
     : items;
@@ -7989,6 +7997,14 @@ function sincronizarConfig(cfgRows) {
   poblarAduanas();
 }
 
+function poblarClavesSAT() {
+  const dl = document.getElementById('dl-claves-sat');
+  if (!dl) return;
+  const vistas = new Set();
+  dl.innerHTML = (catServicios || []).filter(s => s.clave && !vistas.has(s.clave) && vistas.add(s.clave))
+    .map(s => '<option value="' + String(s.clave).replace(/"/g, '&quot;') + '">' ).join('');
+}
+
 function poblarAduanas() {
   const dl = document.getElementById('dl-aduanas');
   if (dl) dl.innerHTML = (misDatos.aduanas || [])
@@ -7996,8 +8012,36 @@ function poblarAduanas() {
 }
 poblarAduanas();
 
+// Toggle de facturación en la carta: tercero me factura a MÍ vs datos del CLIENTE
+function cartaFactMisDatos() {
+  const s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  s('ci-fact-razon', misDatos.razon || CFG.empresaRazonSocial);
+  s('ci-rfc', misDatos.rfc);
+  s('ci-regimen-fiscal', misDatos.regimen);
+  s('ci-cfdi', misDatos.cfdi);
+  s('ci-metodo-pago', misDatos.metodoPago);
+  s('ci-email-fact', misDatos.emailFacturas || (CFG.emailFactura || '').split(';')[0]);
+  const pf = document.getElementById('ci-paga-flete'); if (pf) pf.value = 'Origen';
+  toast('Facturación → mis datos (el tercero te factura a ti)', 'inf');
+}
+
+function cartaFactCliente() {
+  const v = viajes.find(x => x.id === _cartaViajeId);
+  const cli = v ? catClientes.find(x => x.nombre.toUpperCase() === (v.cliente || '').toUpperCase()) : null;
+  const s = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  s('ci-fact-razon', cli ? cli.nombre : (v ? v.cliente : ''));
+  s('ci-rfc', cli ? cli.rfc : '');
+  s('ci-email-fact', cli ? cli.email : '');
+  s('ci-regimen-fiscal', '');
+  s('ci-cfdi', misDatos.cfdi);
+  s('ci-metodo-pago', misDatos.metodoPago);
+  const pf = document.getElementById('ci-paga-flete'); if (pf) pf.value = 'Destino';
+  toast('Facturación → datos del cliente', 'inf');
+}
+
 // Precarga mis datos en la carta (solo campos vacíos, sin pisar lo del cliente)
 function precargarMisDatosCarta() {
+  poblarClavesSAT();
   const f = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
   const p0 = (misDatos.patentes || [])[0];
   const a0 = (misDatos.aduanas || [])[0];
@@ -8009,9 +8053,38 @@ function precargarMisDatosCarta() {
   f('ci-metodo-pago', misDatos.metodoPago);
 }
 
+// ══ MEMORIA DE MERCANCÍAS (descripción → clave SAT, país, proveedor) ══
+let memMercancias = JSON.parse(localStorage.getItem('vazse_mercancias') || '[]');
+
+function autofillMercancia() {
+  const desc = document.getElementById('ci-desc').value.trim().toUpperCase();
+  if (!desc) return;
+  const m = memMercancias.find(x => x.nombre.toUpperCase() === desc);
+  if (!m) return;
+  const s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+  s('ci-fraccion', m.clave);
+  s('ci-origen-mercia', m.pais);
+  s('ci-proveedor-mercia', m.proveedor);
+  toast('Mercancía conocida — datos precargados 📦', 'inf');
+}
+
+function memorizarMercancia() {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const nombre = g('ci-desc');
+  if (!nombre) return;
+  const entry = { nombre: nombre.toUpperCase(), clave: g('ci-fraccion'), pais: g('ci-origen-mercia'), proveedor: g('ci-proveedor-mercia') };
+  const idx = memMercancias.findIndex(x => x.nombre.toUpperCase() === entry.nombre);
+  if (idx === -1) memMercancias.unshift(entry); else memMercancias[idx] = entry;
+  memMercancias = memMercancias.slice(0, 200);
+  localStorage.setItem('vazse_mercancias', JSON.stringify(memMercancias));
+}
+
+let _cartaViajeId = null;
+
 function abrirCarta(viajeId) {
   const v = viajes.find(x => x.id === viajeId);
   if (!v) return;
+  _cartaViajeId = viajeId;
 
   // Pre-fill from viaje
   document.getElementById('ci-ref').value        = v.referencia || '';
@@ -8062,6 +8135,7 @@ function cerrarCarta() {
 function g(id) { return document.getElementById(id)?.value || ''; }
 
 async function descargarCarta() {
+  try { memorizarMercancia(); } catch(e) {}
   const ref = g('ci-ref') || 'SIN-REF';
 
   // docx loaded via <head> script
@@ -8187,7 +8261,7 @@ async function descargarCarta() {
     sectionTitle('4','DESCRIPCIÓN DE MERCANCÍA'),
     makeTable([
       dataRow('Descripción:', g('ci-desc'), null, null),
-      dataRow('Fracción arancelaria:', g('ci-fraccion'), 'País de origen:', g('ci-origen-mercia')),
+      dataRow('Clave SAT:', g('ci-fraccion'), 'País de origen:', g('ci-origen-mercia')),
       dataRow('Factura / Invoice:', g('ci-factura'), 'Proveedor:', g('ci-proveedor-mercia')),
     ]),
 
