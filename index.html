@@ -2749,6 +2749,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
     </div>
     <div class="carta-footer">
       <button class="btn" onclick="cerrarCarta()">Cancelar</button>
+      <button class="btn" onclick="imprimirCartaMembretada()">🖨️ Membretada / PDF</button>
       <button class="btn btn-primary" onclick="descargarCarta()">⬇ Descargar DOCX</button>
     </div>
   </div>
@@ -8133,6 +8134,107 @@ function cerrarCarta() {
 }
 
 function g(id) { return document.getElementById(id)?.value || ''; }
+
+// ══ CARTA DE INSTRUCCIONES EN HOJA MEMBRETADA (diseño minimalista blanco) ══
+function imprimirCartaMembretada() {
+  try { memorizarMercancia(); } catch(e) {}
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const hoy = new Date();
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const fechaTxt = 'Manzanillo, Colima, a ' + hoy.getDate() + ' de ' + MESES[hoy.getMonth()] + ' del ' + hoy.getFullYear();
+  const logo = CFG.logoUrl || '';
+  const razon = misDatos.razon || CFG.empresaRazonSocial || '';
+  const footerTxt = [razon, 'Grupo VAZSE', misDatos.direccion || '', misDatos.tel || ''].filter(Boolean).join('  |  ');
+
+  const fila = (lbl, val, lbl2, val2) => {
+    if (!val && !val2) return '';
+    return '<div class="row">' +
+      (val  ? '<div class="cell"><span class="lbl">' + lbl  + '</span><span class="val">' + val  + '</span></div>' : '<div class="cell"></div>') +
+      (val2 ? '<div class="cell"><span class="lbl">' + lbl2 + '</span><span class="val">' + val2 + '</span></div>' : '<div class="cell"></div>') +
+    '</div>';
+  };
+  const seccion = (titulo, contenido) => contenido.trim()
+    ? '<div class="sec"><div class="sec-t">' + titulo + '</div>' + contenido + '</div>' : '';
+
+  const cuerpo =
+    seccion('1 · Pedimento',
+      fila('No. Pedimento', g('ci-pedimento'), 'Referencia', g('ci-ref')) +
+      fila('Patente', g('ci-patente'), 'Aduana', g('ci-aduana')) +
+      fila('Régimen', g('ci-regimen'), 'Fecha de pago', g('ci-fecha-pago'))) +
+    seccion('2 · Contenedor / Embarque',
+      fila('Contenedor', g('ci-contenedor'), 'BL', g('ci-bl')) +
+      fila('Naviera', g('ci-naviera'), 'Tipo', g('ci-tipo-cont'))) +
+    seccion('3 · Peso y bultos',
+      fila('Bultos', g('ci-bultos'), 'Peso bruto (kg)', g('ci-peso')) +
+      fila('Volumen (m³)', g('ci-volumen'), 'Sello', g('ci-sello'))) +
+    seccion('4 · Mercancía',
+      fila('Descripción', g('ci-desc'), 'Clave SAT', g('ci-fraccion')) +
+      fila('País de origen', g('ci-origen-mercia'), 'Factura', g('ci-factura')) +
+      fila('Proveedor', g('ci-proveedor-mercia'), '', '')) +
+    seccion('5 · Instrucciones de entrega',
+      fila('Destinatario', g('ci-destinatario'), 'Contacto', g('ci-contacto-entrega')) +
+      fila('Dirección', g('ci-direccion'), 'Teléfono', g('ci-tel-entrega')) +
+      fila('Fecha solicitada', g('ci-fecha-entrega'), 'Horario', g('ci-horario')) +
+      fila('Requiere cita', g('ci-cita'), 'No. de cita', g('ci-num-cita')) +
+      fila('Observaciones', g('ci-obs-entrega'), '', '')) +
+    seccion('6 · Facturación',
+      fila('Facturar a', g('ci-fact-razon'), 'RFC', g('ci-rfc')) +
+      fila('Régimen fiscal', g('ci-regimen-fiscal'), 'Uso CFDI', g('ci-cfdi')) +
+      fila('Método de pago', g('ci-metodo-pago'), 'Forma de pago', g('ci-forma-pago')) +
+      fila('Paga el flete', g('ci-paga-flete'), 'Correo factura', g('ci-email-fact'))) +
+    seccion('7 · Observaciones generales',
+      fila('Notas', g('ci-obs-generales'), '', ''));
+
+  const html = '<!DOCTYPE html><html lang="es-MX"><head><meta charset="utf-8">' +
+  '<title>Carta de Instrucciones ' + (g('ci-ref') || '') + '</title>' +
+  '<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">' +
+  '<style>' +
+  ':root{--azul:#005baa;--azul-oscuro:#003a7a;--amarillo:#f7c325;--gris-texto:#4a4a4a;--gris-linea:#e8ebf0}' +
+  '*{margin:0;padding:0;box-sizing:border-box}' +
+  'body{background:#eef1f5;font-family:Montserrat,Arial,sans-serif;color:var(--gris-texto);-webkit-font-smoothing:antialiased}' +
+  '.page{width:210mm;min-height:297mm;background:#fff;margin:20px auto;box-shadow:0 20px 50px rgba(15,59,122,.15);position:relative;display:flex;flex-direction:column}' +
+  '.header-minimal{padding:14mm 22mm 0 22mm;display:flex;align-items:center;gap:14px}' +
+  '.logo-icon{width:42px;height:auto}' +
+  '.header-line{flex:1;height:1px;background:linear-gradient(90deg,#d1d5db,transparent)}' +
+  '.brand{font-size:9pt;color:#6b7280;font-weight:600;letter-spacing:.5px}' +
+  '.watermark{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;opacity:.03;width:320px}' +
+  '.watermark img{width:100%;filter:grayscale(100%)}' +
+  '.content{padding:8mm 22mm 10mm 22mm;flex:1;position:relative;z-index:1}' +
+  '.fecha{font-size:10pt;color:var(--gris-texto);text-align:right;font-weight:500;margin-bottom:14px}' +
+  '.asunto{font-weight:700;color:var(--azul-oscuro);font-size:11.5pt;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}' +
+  '.asunto-sub{font-size:9.5pt;color:#6b7280;margin-bottom:18px;border-bottom:2px solid var(--amarillo);display:inline-block;padding-bottom:4px}' +
+  '.sec{margin-bottom:13px;break-inside:avoid}' +
+  '.sec-t{font-size:9pt;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--gris-linea);padding-bottom:3px;margin-bottom:6px}' +
+  '.row{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}' +
+  '.cell{display:flex;gap:8px;padding:2.5px 0;font-size:9.8pt;align-items:baseline}' +
+  '.lbl{color:#8a94a3;font-size:8.3pt;font-weight:600;text-transform:uppercase;letter-spacing:.3px;flex:none;min-width:110px}' +
+  '.val{color:#1f2937;font-weight:500}' +
+  '.firma{margin-top:auto;padding:26px 22mm 8px;text-align:center;position:relative;z-index:1}' +
+  '.firma-linea{border-top:1px solid #9ca3af;width:240px;margin:0 auto 6px}' +
+  '.firma-nombre{font-weight:700;font-size:10pt;color:#111827;text-transform:uppercase;letter-spacing:.5px}' +
+  '.firma-cargo{font-size:9pt;color:var(--azul);font-weight:600}' +
+  '.footer-minimal{text-align:center;font-size:8pt;color:#9ca3af;padding:8px 22mm 12mm;border-top:1px solid #e5e7eb;letter-spacing:.3px;position:relative;z-index:1}' +
+  '@media print{@page{size:A4;margin:0}body{background:#fff!important}.page{margin:0;box-shadow:none!important;width:210mm!important}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}' +
+  '</style></head><body><div class="page">' +
+  '<header class="header-minimal"><img src="' + logo + '" class="logo-icon" onerror="this.style.display=\'none\'">' +
+  '<div class="header-line"></div><div class="brand">RESOLUCIÓN ESTRATÉGICA</div></header>' +
+  '<div class="watermark"><img src="' + logo + '" onerror="this.style.display=\'none\'"></div>' +
+  '<main class="content">' +
+  '<div class="fecha">' + fechaTxt + '</div>' +
+  '<div class="asunto">Carta de Instrucciones — Entrega de Mercancía</div>' +
+  '<div class="asunto-sub">Referencia: ' + (g('ci-ref') || '—') + (g('ci-contenedor') ? ' · Contenedor: ' + g('ci-contenedor') : '') + '</div>' +
+  cuerpo +
+  '</main>' +
+  '<div class="firma"><div class="firma-linea"></div>' +
+  '<div class="firma-nombre">' + razon + '</div>' +
+  '<div class="firma-cargo">Operaciones · Grupo VAZSE</div></div>' +
+  '<footer class="footer-minimal">' + footerTxt + '</footer>' +
+  '</div><scr' + 'ipt>window.onload=function(){window.print();}</scr' + 'ipt></body></html>';
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+}
 
 async function descargarCarta() {
   try { memorizarMercancia(); } catch(e) {}
