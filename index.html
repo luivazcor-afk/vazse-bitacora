@@ -4742,6 +4742,54 @@ function abrirEditViaje(id) {
 
 function cerrarEditViaje(e) { if(e.target===document.getElementById('ev-overlay')) document.getElementById('ev-overlay').classList.remove('show'); }
 
+// Cascada: sincroniza cobranzas y pagos ligados al viaje editado (por referencia + prefijo de folio)
+async function cascadaEditViaje(viejo, nuevo) {
+  const refVieja = (viejo.referencia || '').trim();
+  if (!refVieja) return;
+  const cobsLig = cobranzas.filter(c => (c.referencia || '').trim() === refVieja);
+  const pagosLig = pagos.filter(p => (p.referencia || '').trim() === refVieja);
+  if (!cobsLig.length && !pagosLig.length) return;
+
+  const planes = [];
+  cobsLig.forEach(c => {
+    const esMan = String(c.folio || '').startsWith('MAN-');
+    const montoNuevo = esMan ? (nuevo.maniobrasCobrado || nuevo.maniobras || 0) : (nuevo.cobrado || 0);
+    const cambia = Math.abs((c.monto || 0) - montoNuevo) > 0.009 ||
+                   (c.cliente || '') !== (nuevo.cliente || '') ||
+                   (c.referencia || '') !== (nuevo.referencia || '');
+    if (cambia && montoNuevo > 0)
+      planes.push({ tipo: 'cobranza', obj: c, montoNuevo,
+        desc: 'Factura ' + c.folio + ': ' + fmt(c.monto) + ' → ' + fmt(montoNuevo) });
+  });
+  pagosLig.forEach(p => {
+    const esMan = /^PAG-?M/.test(String(p.folio || ''));
+    const montoNuevo = esMan ? (nuevo.maniobras || 0) : (nuevo.costo || 0);
+    const cambia = Math.abs((p.monto || 0) - montoNuevo) > 0.009 ||
+                   (p.proveedor || '') !== (nuevo.unidad || '') ||
+                   (p.referencia || '') !== (nuevo.referencia || '');
+    if (cambia && montoNuevo > 0)
+      planes.push({ tipo: 'pago', obj: p, montoNuevo,
+        desc: 'Pago ' + p.folio + ': ' + fmt(p.monto) + ' → ' + fmt(montoNuevo) + (p.proveedor !== nuevo.unidad ? ' · ' + nuevo.unidad : '') });
+  });
+  if (!planes.length) return;
+  if (!confirm('Este viaje tiene ' + planes.length + ' movimiento(s) ligados:\n\n' +
+    planes.map(p => '· ' + p.desc).join('\n') + '\n\n¿Actualizarlos también?')) return;
+
+  for (const plan of planes) {
+    if (plan.tipo === 'cobranza') {
+      const c = plan.obj;
+      c.monto = plan.montoNuevo; c.cliente = nuevo.cliente; c.referencia = nuevo.referencia;
+      await sendPost({ action: 'cobranza_update', folio: c.folio, cobranza: c });
+    } else {
+      const p = plan.obj;
+      p.monto = plan.montoNuevo; p.proveedor = nuevo.unidad; p.referencia = nuevo.referencia;
+      await sendPost({ action: 'pago_update', folio: p.folio, pago: p });
+    }
+  }
+  filtrarCobranza(); filtrarPagos();
+  toast(planes.length + ' movimiento(s) ligados actualizados ✓', 'ok');
+}
+
 async function guardarEditViaje() {
   const id = parseInt(document.getElementById('ev-id').value);
   const r = viajes.find(v => v.id === id);
@@ -4785,6 +4833,7 @@ async function guardarEditViaje() {
     await sendPost({action:'update_viaje', referencia:r.referencia, registro:updated});
     const idx = viajes.findIndex(v => v.id === id);
     if (idx !== -1) viajes[idx] = updated;
+    await cascadaEditViaje(r, updated);
     filtrarViajes(); actualizarGraficaV(); filtrarPagos();
     registrarHistorial('editar','Viaje',updated.cliente+' · '+updated.tipo+' · '+updated.fecha);
     document.getElementById('ev-overlay').classList.remove('show');
