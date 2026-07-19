@@ -2868,6 +2868,16 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
           <button onclick="agregarSeguimiento()">+ Agregar nota</button>
         </div>
       </div>
+      <div class="fg" style="grid-column:1/-1">
+        <label>💵 Abonos (pagos parciales)</label>
+        <div class="seguimiento-wrap" id="ec-abonos-list"></div>
+        <div class="seguimiento-input" style="flex-wrap:wrap">
+          <input type="date" id="ec-abono-fecha" style="max-width:150px">
+          <input type="number" id="ec-abono-monto" placeholder="Monto $" min="0" step="0.01" style="max-width:130px">
+          <input type="text" id="ec-abono-nota" placeholder="Nota (transferencia, ref...)" style="flex:1;min-width:140px">
+          <button onclick="agregarAbono()">+ Registrar abono</button>
+        </div>
+      </div>
 
       <!-- PDF FACTURA EDIT -->
       <div class="fg">
@@ -3522,7 +3532,8 @@ function normalizarDatosV30(data) {
         folio: a[0], cliente: a[1], monto: a[2], fechaEmision: a[3],
         fechaVencimiento: a[4], estado: estado, referencia: a[6],
         urlFactura: a[7], urlEvidencia: a[8], notas: a[9],
-        fechaCobro: a[10], seguimiento: parseJSON(a[11], [])
+        fechaCobro: a[10], seguimiento: parseJSON(a[11], []),
+        abonos: parseJSON(a[12], [])
       };
     });
   }
@@ -4853,6 +4864,10 @@ let ecUrlPdfActual = '', ecUrlEviActual = '';
 function abrirEditCobranza(id) {
   const r = cobranzas.find(c => c.id === id);
   if (!r) return;
+  _ecAbonos = Array.isArray(r.abonos) ? JSON.parse(JSON.stringify(r.abonos)) : [];
+  const _fa = document.getElementById('ec-abono-fecha');
+  if (_fa) _fa.value = new Date().toISOString().split('T')[0];
+  setTimeout(renderAbonosEdit, 0);
   // Reset estado de archivos
   ecPdfFile = null; ecEviFile = null;
   ecUrlPdfNuevo = ''; ecUrlEviNuevo = '';
@@ -4951,6 +4966,7 @@ async function guardarEditCobranza() {
       fechaCobro: document.getElementById('ec-fechacobro') ? document.getElementById('ec-fechacobro').value : '',
       referencia: document.getElementById('ec-referencia').value.trim(),
       seguimiento: _ecSeguimiento,
+      abonos: _ecAbonos,
       urlFactura: ecUrlPdfNuevo || ecUrlPdfActual,
       urlEvidencia: ecUrlEviNuevo || ecUrlEviActual,
       notas: document.getElementById('ec-notas').value.trim()
@@ -5579,6 +5595,49 @@ function restaurarFormularioSiHayBackup() {
 
 // ── SEGUIMIENTO COBRANZA ─────────────────────────────
 let _ecSeguimiento = [];
+let _ecAbonos = [];
+
+function renderAbonosEdit() {
+  const el = document.getElementById('ec-abonos-list');
+  if (!el) return;
+  const monto = parseFloat(document.getElementById('ec-monto').value) || 0;
+  const abonado = _ecAbonos.reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+  if (!_ecAbonos.length) { el.innerHTML = '<div class="muted" style="font-size:12px;padding:4px 0">Sin abonos registrados</div>'; return; }
+  el.innerHTML = _ecAbonos.map((a, i) => `
+    <div class="seguimiento-entry">
+      <span class="seguimiento-ts">${a.fecha || ''}</span>
+      <span class="seguimiento-txt"><b>${fmt(a.monto)}</b>${a.nota ? ' · ' + a.nota : ''}</span>
+      <button class="btn-sm del" onclick="eliminarAbono(${i})" title="Eliminar abono">✕</button>
+    </div>`).join('') +
+    `<div style="font-size:12px;font-weight:600;padding:6px 0;color:${abonado >= monto && monto > 0 ? '#0F6E56' : '#854F0B'}">
+      Abonado: ${fmt(abonado)} · Saldo: ${fmt(Math.max(monto - abonado, 0))}</div>`;
+}
+
+function agregarAbono() {
+  const monto = parseFloat(document.getElementById('ec-abono-monto').value) || 0;
+  if (monto <= 0) { toast('Captura el monto del abono', 'err'); return; }
+  const fecha = document.getElementById('ec-abono-fecha').value || new Date().toISOString().split('T')[0];
+  _ecAbonos.push({ fecha, monto, nota: document.getElementById('ec-abono-nota').value.trim() });
+  document.getElementById('ec-abono-monto').value = '';
+  document.getElementById('ec-abono-nota').value = '';
+  // estado automático según lo abonado
+  const total = _ecAbonos.reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+  const montoFact = parseFloat(document.getElementById('ec-monto').value) || 0;
+  const est = document.getElementById('ec-estado');
+  if (montoFact > 0 && total >= montoFact - 0.009) {
+    est.value = 'pagado';
+    const fc = document.getElementById('ec-fechacobro');
+    if (fc && !fc.value) fc.value = fecha;
+    toast('Abono registrado — factura liquidada ✓ (guarda los cambios)', 'ok');
+  } else {
+    est.value = 'parcial';
+    toast('Abono registrado — estado: parcial (guarda los cambios)', 'inf');
+  }
+  renderAbonosEdit();
+}
+
+function eliminarAbono(i) { _ecAbonos.splice(i, 1); renderAbonosEdit(); }
+
 let _ecCobranzaId = null;
 
 function renderSeguimiento(items, cobId) {
@@ -5939,14 +5998,18 @@ function verDetalleCobCliente(i) {
            : d === 0 ? '<span style="color:#EF9F27;font-weight:600">vence hoy</span>'
            : `vence en ${-d} días`;
     }
-    if (est === 'pagado') totalPagado += r.monto || 0; else totalAdeudo += r.monto || 0;
+    const abonado = (r.abonos || []).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+    const saldo = Math.max((r.monto || 0) - abonado, 0);
+    if (est === 'pagado') totalPagado += r.monto || 0; else totalAdeudo += saldo;
     return `<tr>
       <td style="font-weight:500;white-space:nowrap">${r.folio || '—'}</td>
       <td style="white-space:nowrap;font-size:12px">${fmtFecha(r.fechaEmision)}</td>
       <td style="white-space:nowrap;font-size:12px">${venc || '—'}</td>
       <td style="font-size:12px;white-space:nowrap">${dias}</td>
       <td class="trunc" style="font-size:12px">${r.referencia || ''} ${r.notas ? '· ' + r.notas : ''}</td>
-      <td class="num" style="font-weight:600">${fmt(r.monto)}</td>
+      <td class="num">${fmt(r.monto)}</td>
+      <td class="num" style="color:#0F6E56">${abonado ? fmt(abonado) : '—'}</td>
+      <td class="num" style="font-weight:600">${est === 'pagado' ? '—' : fmt(saldo)}</td>
       <td>${badgeEstado(est)}</td>
     </tr>`;
   }).join('');
@@ -5961,8 +6024,8 @@ function verDetalleCobCliente(i) {
     </div>
     <div class="table-outer"><div class="table-wrap">
       <table class="sum-table">
-        <thead><tr><th>Folio</th><th>Emisión</th><th>Vencimiento</th><th>Días</th><th>Referencia / Notas</th><th class="num">Monto</th><th>Estado</th></tr></thead>
-        <tbody>${filas || '<tr><td colspan="7"><div class="empty-state"><p>Sin movimientos</p></div></td></tr>'}</tbody>
+        <thead><tr><th>Folio</th><th>Emisión</th><th>Vencimiento</th><th>Días</th><th>Referencia / Notas</th><th class="num">Monto</th><th class="num">Abonado</th><th class="num">Saldo</th><th>Estado</th></tr></thead>
+        <tbody>${filas || '<tr><td colspan="9"><div class="empty-state"><p>Sin movimientos</p></div></td></tr>'}</tbody>
       </table>
     </div></div>`;
   document.getElementById('rep-cob-detalle').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -5975,14 +6038,18 @@ function imprimirEdoCuenta(i) {
   const adeudos = cobranzas
     .filter(r => (r.cliente || '(sin cliente)') === cliente && _cobEstadoReal(r, hoyStr) !== 'pagado')
     .sort((a, b) => fmtFecha(a.fechaVencimiento) < fmtFecha(b.fechaVencimiento) ? -1 : 1);
-  const total = adeudos.reduce((s, r) => s + (r.monto || 0), 0);
+  const _saldoDe = r => Math.max((r.monto || 0) - (r.abonos || []).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0), 0);
+  const total = adeudos.reduce((s, r) => s + _saldoDe(r), 0);
   const filas = adeudos.map(r => {
     const venc = fmtFecha(r.fechaVencimiento);
     const d = (venc && venc !== '—') ? Math.round((new Date(hoyStr) - new Date(venc)) / 86400000) : null;
+    const abonado = (r.abonos || []).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
     return `<tr>
       <td>${r.folio || '—'}</td><td>${fmtFecha(r.fechaEmision)}</td><td>${venc || '—'}</td>
       <td style="color:${d > 0 ? '#C0392B' : '#555'}">${d === null ? '—' : d > 0 ? d + ' días vencida' : d === 0 ? 'vence hoy' : 'por vencer'}</td>
       <td>${r.referencia || ''}</td><td class="num">${fmt(r.monto)}</td>
+      <td class="num">${abonado ? fmt(abonado) : '—'}</td>
+      <td class="num"><b>${fmt(_saldoDe(r))}</b></td>
     </tr>`;
   }).join('');
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Estado de cuenta — ${cliente}</title>
@@ -6011,9 +6078,9 @@ function imprimirEdoCuenta(i) {
   </div>
   <p><b>Cliente:</b> ${cliente}</p>
   <table>
-    <thead><tr><th>Folio</th><th>Emisión</th><th>Vencimiento</th><th>Situación</th><th>Referencia</th><th class="num">Monto (MXN)</th></tr></thead>
+    <thead><tr><th>Folio</th><th>Emisión</th><th>Vencimiento</th><th>Situación</th><th>Referencia</th><th class="num">Monto</th><th class="num">Abonado</th><th class="num">Saldo (MXN)</th></tr></thead>
     <tbody>${filas}
-      <tr class="tot"><td colspan="5" class="num" style="text-align:right">TOTAL ADEUDO</td><td class="num">${fmt(total)}</td></tr>
+      <tr class="tot"><td colspan="7" class="num" style="text-align:right">TOTAL ADEUDO</td><td class="num">${fmt(total)}</td></tr>
     </tbody>
   </table>
   <div class="cond">Documento informativo con corte al ${hoyStr}. Favor de enviar comprobantes de pago a ${(CFG.emailFactura || '').split(';')[0]}.</div>
