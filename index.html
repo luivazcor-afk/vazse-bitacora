@@ -4513,8 +4513,32 @@ async function agregarCobranza() {
 
 async function cambiarEstado(folio, nuevoEstado) {
   try {
-    await sendPost({action:'cobranza_update_estado',folio,estado:nuevoEstado});
     const r = cobranzas.find(c=>String(c.folio)===String(folio));
+    if (nuevoEstado === 'parcial' && r) {
+      const abonado = (r.abonos||[]).reduce((s,a)=>s+(parseFloat(a.monto)||0),0);
+      const saldo = Math.max((r.monto||0) - abonado, 0);
+      const resp = prompt('💵 ¿Cuánto abonó el cliente?\n\nFactura ' + folio + ' — Monto: ' + fmt(r.monto) +
+        (abonado ? '\nYa abonado: ' + fmt(abonado) : '') + '\nSaldo actual: ' + fmt(saldo), '');
+      if (resp === null) { filtrarCobranza(); return; }
+      const monto = parseFloat(resp) || 0;
+      if (monto <= 0) { toast('Monto inválido — usa el ✏️ para capturar abonos con nota', 'err'); filtrarCobranza(); return; }
+      r.abonos = r.abonos || [];
+      const hoyA = new Date().toISOString().split('T')[0];
+      r.abonos.push({ fecha: hoyA, monto, nota: 'captura rápida' });
+      const totalAb = r.abonos.reduce((s,a)=>s+(parseFloat(a.monto)||0),0);
+      if ((r.monto||0) > 0 && totalAb >= (r.monto||0) - 0.009) {
+        r.estado = 'pagado';
+        if (!r.fechaCobro) r.fechaCobro = hoyA;
+        toast('Abono de ' + fmt(monto) + ' registrado — factura liquidada ✓', 'ok');
+      } else {
+        r.estado = 'parcial';
+        toast('Abono de ' + fmt(monto) + ' registrado · saldo ' + fmt(Math.max((r.monto||0)-totalAb,0)), 'ok');
+      }
+      await sendPost({action:'cobranza_update', folio, cobranza:r});
+      filtrarCobranza();
+      return;
+    }
+    await sendPost({action:'cobranza_update_estado',folio,estado:nuevoEstado});
     if (r) r.estado = nuevoEstado;
     filtrarCobranza(); toast('Estado actualizado','ok');
   } catch(e){ toast('No se pudo actualizar','err'); }
@@ -6254,8 +6278,28 @@ async function agregarPago() {
 
 async function cambiarEstadoPago(folio, estado) {
   try {
-    await sendPost({action:'pago_update_estado', folio, estado});
     const r = pagos.find(p=>String(p.folio)===String(folio));
+    if (estado === 'parcial' && r) {
+      const resp = prompt('💵 ¿Cuánto se le pagó al proveedor?\n\nPago ' + folio + ' — Monto total: ' + fmt(r.monto), '');
+      if (resp === null) { filtrarPagos(); return; }
+      const monto = parseFloat(resp) || 0;
+      if (monto > 0) {
+        const hoyP = new Date().toISOString().split('T')[0];
+        const resta = Math.max((r.monto||0) - monto, 0);
+        r.notas = ((r.notas||'') + ' | Abonado ' + fmt(monto) + ' el ' + hoyP + ' — resta ' + fmt(resta)).replace(/^ \| /,'');
+        if ((r.monto||0) > 0 && monto >= (r.monto||0) - 0.009) {
+          r.estado = 'pagado'; r.fechaPago = r.fechaPago || hoyP;
+          toast('Pago liquidado ✓', 'ok');
+        } else {
+          r.estado = 'parcial';
+          toast('Abono a proveedor registrado · resta ' + fmt(resta), 'ok');
+        }
+        await sendPost({action:'pago_update', folio, pago:r});
+        filtrarPagos();
+        return;
+      }
+    }
+    await sendPost({action:'pago_update_estado', folio, estado});
     if(r) r.estado = estado;
     filtrarPagos(); toast('Estado actualizado','ok');
   } catch(e){ toast('No se pudo actualizar','err'); }
