@@ -2720,6 +2720,8 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         <div class="carta-grid">
           <div class="carta-field full carta-grid"><label>Facturar a (razón social)</label>
             <input type="text" id="ci-fact-razon"></div>
+          <div class="carta-field full carta-grid"><label>Domicilio fiscal</label>
+            <input type="text" id="ci-fact-domicilio" placeholder="Calle, número, colonia, C.P., ciudad, estado"></div>
           <div class="carta-field"><label>RFC</label>
             <input type="text" id="ci-rfc"></div>
           <div class="carta-field"><label>Régimen fiscal</label>
@@ -8177,6 +8179,7 @@ poblarAduanas();
 function cartaFactMisDatos() {
   const s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
   s('ci-fact-razon', misDatos.razon || CFG.empresaRazonSocial);
+  s('ci-fact-domicilio', misDatos.direccion);
   s('ci-rfc', misDatos.rfc);
   s('ci-regimen-fiscal', misDatos.regimen);
   s('ci-cfdi', misDatos.cfdi);
@@ -8191,6 +8194,7 @@ function cartaFactCliente() {
   const cli = v ? catClientes.find(x => x.nombre.toUpperCase() === (v.cliente || '').toUpperCase()) : null;
   const s = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   s('ci-fact-razon', cli ? cli.nombre : (v ? v.cliente : ''));
+  s('ci-fact-domicilio', '');
   s('ci-rfc', cli ? cli.rfc : '');
   s('ci-email-fact', cli ? cli.email : '');
   s('ci-regimen-fiscal', '');
@@ -8339,6 +8343,7 @@ function imprimirCartaMembretada() {
       fila('Observaciones', g('ci-obs-entrega'), '', '')) +
     seccion('6 · Facturación',
       fila('Facturar a', g('ci-fact-razon'), 'RFC', g('ci-rfc')) +
+      fila('Domicilio fiscal', g('ci-fact-domicilio'), '', '') +
       fila('Régimen fiscal', g('ci-regimen-fiscal'), 'Uso CFDI', g('ci-cfdi')) +
       fila('Método de pago', g('ci-metodo-pago'), 'Forma de pago', g('ci-forma-pago')) +
       fila('Paga el flete', g('ci-paga-flete'), 'Correo factura', g('ci-email-fact'))) +
@@ -8542,6 +8547,7 @@ async function descargarCarta() {
     sectionTitle('6','INSTRUCCIONES DE FACTURACIÓN'),
     makeTable([
       dataRow('Facturar a (razón social):', g('ci-fact-razon'), null, null),
+      dataRow('Domicilio fiscal:', g('ci-fact-domicilio'), null, null),
       dataRow('RFC:', g('ci-rfc'), 'Régimen fiscal:', g('ci-regimen-fiscal')),
       dataRow('Uso del CFDI:', g('ci-cfdi'), 'Método de pago:', g('ci-metodo-pago')),
       dataRow('Forma de pago:', g('ci-forma-pago'), 'Quien paga el flete:', g('ci-paga-flete')),
