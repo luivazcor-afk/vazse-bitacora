@@ -2691,15 +2691,15 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap" id="ci-dom-btns"></div>
           </div>
           <div class="carta-field full carta-grid"><label>Dirección</label>
-            <input type="text" id="ci-direccion"></div>
+            <input type="text" id="ci-direccion" oninput="guardarDomicilioManualCarta()"></div>
           <div class="carta-field"><label>Contacto / Persona que recibe</label>
-            <input type="text" id="ci-contacto-entrega"></div>
+            <input type="text" id="ci-contacto-entrega" oninput="guardarDomicilioManualCarta()"></div>
           <div class="carta-field"><label>Teléfono</label>
-            <input type="text" id="ci-tel-entrega"></div>
+            <input type="text" id="ci-tel-entrega" oninput="guardarDomicilioManualCarta()"></div>
           <div class="carta-field"><label>Fecha de entrega solicitada</label>
             <input type="date" id="ci-fecha-entrega"></div>
           <div class="carta-field"><label>Horario de recepción</label>
-            <input type="text" id="ci-horario" placeholder="Lun-Vie 8:00-17:00"></div>
+            <input type="text" id="ci-horario" placeholder="Lun-Vie 8:00-17:00" oninput="guardarDomicilioManualCarta()"></div>
           <div class="carta-field"><label>¿Requiere cita?</label>
             <select id="ci-cita"><option value="No">No</option><option value="Sí">Sí</option></select></div>
           <div class="carta-field"><label>No. de cita</label>
@@ -8258,6 +8258,8 @@ function abrirCarta(viajeId) {
 
   // Pre-fill from catClientes
   const cli = catClientes.find(x => x.nombre.toUpperCase() === (v.cliente||'').toUpperCase());
+  // Recall last domicilio used for THIS viaje (selección previa o dirección escrita a mano)
+  const domMem = _cartaDomMem()[v.id] || null;
   // Reset domicilio selector
   const domWrap = document.getElementById('ci-dom-selector-wrap');
   const domBtns = document.getElementById('ci-dom-btns');
@@ -8270,13 +8272,15 @@ function abrirCarta(viajeId) {
     document.getElementById('ci-email-fact').value    = cli.email || '';
     const doms = (cli.domicilios || []).filter(d => d.dir || d.nombre);
     if (doms.length > 0) {
-      // Always fill with first domicilio
-      aplicarDomicilioCarta(doms[0]);
+      let appliedIdx = 0;
+      if (domMem && typeof domMem.idx === 'number' && doms[domMem.idx]) appliedIdx = domMem.idx;
+      // Usa la dirección escrita a mano la última vez (si existe), si no la memorizada por botón, si no la primera
+      aplicarDomicilioCarta(domMem && domMem.custom ? domMem.custom : doms[appliedIdx]);
       if (doms.length > 1) {
         // Show selector buttons
         domWrap.style.display = '';
         domBtns.innerHTML = doms.map((d, i) => `
-          <button class="dom-btn${i===0?' dom-btn-active':''}" onclick="seleccionarDomCarta(${i})" data-idx="${i}">
+          <button class="dom-btn${(!(domMem && domMem.custom) && i===appliedIdx)?' dom-btn-active':''}" onclick="seleccionarDomCarta(${i})" data-idx="${i}">
             ${d.nombre || 'Domicilio '+(i+1)}
           </button>`).join('');
         // Store domicilios in a temp global for the onclick handler
@@ -8285,7 +8289,10 @@ function abrirCarta(viajeId) {
     } else {
       document.getElementById('ci-contacto-entrega').value = cli.contacto || '';
       document.getElementById('ci-tel-entrega').value      = cli.tel || '';
+      if (domMem && domMem.custom) aplicarDomicilioCarta(domMem.custom);
     }
+  } else if (domMem && domMem.custom) {
+    aplicarDomicilioCarta(domMem.custom);
   }
 
   // Show modal
@@ -8806,6 +8813,15 @@ function filtrarPorVencer() {
 }
 
 // ── DOMICILIO SELECTOR (Carta de instrucciones) ──────
+const CARTA_DOM_MEM_KEY = 'vazse_carta_dom_mem';
+function _cartaDomMem() {
+  try { return JSON.parse(localStorage.getItem(CARTA_DOM_MEM_KEY) || '{}'); } catch(e) { return {}; }
+}
+function _guardarCartaDomMem(viajeId, entry) {
+  const mem = _cartaDomMem();
+  mem[viajeId] = entry;
+  try { localStorage.setItem(CARTA_DOM_MEM_KEY, JSON.stringify(mem)); } catch(e) {}
+}
 function aplicarDomicilioCarta(dom) {
   document.getElementById('ci-direccion').value         = dom.dir || '';
   document.getElementById('ci-contacto-entrega').value  = dom.contacto || '';
@@ -8817,6 +8833,21 @@ function seleccionarDomCarta(idx) {
   aplicarDomicilioCarta(window._cartaDoms[idx]);
   document.querySelectorAll('#ci-dom-btns .dom-btn').forEach((b, i) => {
     b.classList.toggle('dom-btn-active', i === idx);
+  });
+  if (_cartaViajeId) _guardarCartaDomMem(_cartaViajeId, { idx });
+}
+// Se dispara al escribir manualmente en dirección/contacto/tel/horario — recuerda
+// esa dirección específica para este viaje aunque no coincida con ningún domicilio guardado del cliente.
+function guardarDomicilioManualCarta() {
+  if (!_cartaViajeId) return;
+  document.querySelectorAll('#ci-dom-btns .dom-btn').forEach(b => b.classList.remove('dom-btn-active'));
+  _guardarCartaDomMem(_cartaViajeId, {
+    custom: {
+      dir:      document.getElementById('ci-direccion').value,
+      contacto: document.getElementById('ci-contacto-entrega').value,
+      tel:      document.getElementById('ci-tel-entrega').value,
+      horario:  document.getElementById('ci-horario').value
+    }
   });
 }
 
