@@ -7230,16 +7230,19 @@ function actualizarLabelMes() {
 }
 
 function navMes(delta) {
-  const d = new Date(mesCargado + '-01');
+  // Si veníamos de "Todo" (mesCargado null), parte del mes actual en vez de crashear con fecha inválida.
+  const d = mesCargado ? new Date(mesCargado + '-01T00:00:00') : new Date();
   d.setMonth(d.getMonth() + delta);
   mesCargado = d.toISOString().substring(0,7);
   cargandoTodo = false;
+  actualizarLabelMes();
   cargar();
 }
 
 function cargarTodo() {
   cargandoTodo = true;
   mesCargado = null;
+  actualizarLabelMes();
   cargar();
 }
 
@@ -8045,6 +8048,7 @@ async function hacerLogin() {
       localStorage.setItem('vazse_auth', token);
       document.getElementById('login-screen').style.display = 'none';
       err.classList.remove('show');
+      actualizarLabelMes();
       cargar();
     } else {
       err.classList.add('show');
@@ -8646,6 +8650,7 @@ cargarConfig().then(() => {
       if (pid === 'viajes') p.classList.add('active');
     }
   });
+    actualizarLabelMes();
     cargar();
   }
 });
