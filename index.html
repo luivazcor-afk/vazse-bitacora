@@ -3198,7 +3198,7 @@ async function sincronizarCola() {
 }
 
 function sendPostJsonp(payload) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const cbName = '_vazse_cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
     const encoded = encodeURIComponent(JSON.stringify(payload));
     const url = getScriptUrlBase() + '?action=write&data=' + encoded + '&cb=' + cbName;
@@ -3228,14 +3228,18 @@ function sendPostJsonp(payload) {
       console.warn('[VAZSE] JSONP error, trying no-cors fetch');
       // Fallback to no-cors fetch
       fetch(url, {mode:'no-cors'}).catch(()=>{});
-      if (!terminado) { terminado = true; resolve(); }
+      // IMPORTANTE: antes esto resolvía en silencio y el llamador daba por hecho
+      // que el guardado había funcionado (p.ej. cobranza_append se perdía sin aviso).
+      // Ahora se rechaza para que sendPost() lo encole y avise al usuario.
+      if (!terminado) { terminado = true; reject(new Error('JSONP falló en '+payload.action)); }
     };
     const timer = setTimeout(function() {
       delete window[cbName];
       if (window.cb === handler) { try { delete window.cb; } catch(e){ window.cb = undefined; } }
       if (script.parentNode) script.parentNode.removeChild(script);
       console.warn('[VAZSE] JSONP timeout for:', payload.action);
-      if (!terminado) { terminado = true; resolve(); }
+      // Igual que arriba: antes resolvía en silencio perdiendo el registro sin avisar.
+      if (!terminado) { terminado = true; reject(new Error('Tiempo de espera agotado en '+payload.action)); }
     }, 20000);
     document.head.appendChild(script);
   });
@@ -8195,7 +8199,7 @@ function cartaFactMisDatos() {
 
 function cartaFactCliente() {
   const v = viajes.find(x => x.id === _cartaViajeId);
-  const cli = v ? catClientes.find(x => x.nombre.toUpperCase() === (v.cliente || '').toUpperCase()) : null;
+  const cli = v ? catClientes.find(x => (x.nombre||'').trim().toUpperCase() === (v.cliente || '').trim().toUpperCase()) : null;
   const s = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   s('ci-fact-razon', cli ? cli.nombre : (v ? v.cliente : ''));
   s('ci-fact-domicilio', '');
@@ -8261,7 +8265,7 @@ function abrirCarta(viajeId) {
   document.getElementById('ci-fecha-entrega').value = fmtFecha(v.fecha) || '';
 
   // Pre-fill from catClientes
-  const cli = catClientes.find(x => x.nombre.toUpperCase() === (v.cliente||'').toUpperCase());
+  const cli = catClientes.find(x => (x.nombre||'').trim().toUpperCase() === (v.cliente||'').trim().toUpperCase());
   // Recall last domicilio used for THIS viaje (selección previa o dirección escrita a mano)
   const domMem = _cartaDomMem()[v.id] || null;
   // Reset domicilio selector
