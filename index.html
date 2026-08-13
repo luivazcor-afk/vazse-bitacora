@@ -4573,6 +4573,10 @@ function filtrarCobranza() {
     return true;
   });
   cFiltrados.sort((a,b)=>{
+    // Lo ya pagado siempre al fondo, sin importar la columna de orden elegida
+    const aPag = a.estado === 'pagado' ? 1 : 0;
+    const bPag = b.estado === 'pagado' ? 1 : 0;
+    if (aPag !== bPag) return aPag - bPag;
     let va=a[cSortCol], vb=b[cSortCol];
     if(typeof va==='string')va=va.toLowerCase();
     if(typeof vb==='string')vb=vb.toLowerCase();
@@ -6183,6 +6187,10 @@ function filtrarPagos() {
     return true;
   });
   pFiltrados.sort((a,b)=>{
+    // Lo ya pagado siempre al fondo, sin importar la columna de orden elegida
+    const aPag = a.estado === 'pagado' ? 1 : 0;
+    const bPag = b.estado === 'pagado' ? 1 : 0;
+    if (aPag !== bPag) return aPag - bPag;
     let va=a[pSortCol], vb=b[pSortCol];
     if(typeof va==='string')va=va.toLowerCase();
     if(typeof vb==='string')vb=vb.toLowerCase();
