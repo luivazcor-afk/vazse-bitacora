@@ -274,6 +274,10 @@ tbody td{padding:8px 7px;color:#1C1C1A;vertical-align:middle}
 .badge-traslado{background:#FEF3E2;color:#92400E}
 .badge-otro{background:#F1EFE8;color:#6B6A67}
 
+/* usuario que capturó/editó el movimiento */
+.badge-usuario{display:inline-block;font-size:10px;padding:1px 6px;border-radius:5px;font-weight:500;background:var(--color-brand-light,#E7EFFB);color:var(--color-brand,#185FA5);white-space:nowrap;margin-top:2px}
+html[data-theme=dark] .badge-usuario{background:#22314A;color:#8FB8ED}
+
 /* ══ TABLE ACTIONS ════════════════════════════════════ */
 .td-actions{display:flex;gap:4px;align-items:center}
 .btn-sm{
@@ -1459,6 +1463,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         </div>
       </div>
       <div class="btns" style="align-items:center">
+        <button class="btn" id="badge-usuario" onclick="abrirSelectorUsuario()" title="Cambiar quién está usando el equipo" style="font-size:11px;padding:5px 10px">👤 Elegir usuario</button>
         <button class="btn" onclick="abrirMisDatos()" title="Mis datos y aduanas" style="font-size:11px;padding:5px 10px">⚙️</button>
         <button class="btn" onclick="cerrarSesion()" title="Cerrar sesión" style="font-size:11px;padding:5px 10px">🔒 Salir</button>
         <div class="mes-nav-pill" style="display:flex;align-items:center;gap:2px;border-radius:8px;padding:3px 6px">
@@ -1587,6 +1592,9 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       </select>
       <input type="date" id="v-fil-desde" onchange="filtrarViajes()" title="Desde">
       <input type="date" id="v-fil-hasta" onchange="filtrarViajes()" title="Hasta">
+      <select id="v-fil-usuario" onchange="filtrarViajes()" title="Filtrar por usuario">
+        <option value="">Todos los usuarios</option>
+      </select>
       <button class="btn-clear" onclick="limpiarFiltrosV()">✕ Limpiar</button>
       <select onchange="cambiarPorPagina(this.value)" class="pp-select" title="Registros por página">
         <option value="10">10 / pág</option>
@@ -1733,6 +1741,9 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       </select>
       <input type="date" id="c-fil-desde" onchange="filtrarCobranza()" title="Desde">
       <input type="date" id="c-fil-hasta" onchange="filtrarCobranza()" title="Hasta">
+      <select id="c-fil-usuario" onchange="filtrarCobranza()" title="Filtrar por usuario">
+        <option value="">Todos los usuarios</option>
+      </select>
       <button class="btn-clear" onclick="limpiarFiltrosC()">✕ Limpiar</button>
       <select onchange="cambiarPorPagina(this.value)" class="pp-select" title="Registros por página">
         <option value="10">10 / pág</option>
@@ -2196,6 +2207,9 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       </select>
       <input type="date" id="p-fil-desde" onchange="filtrarPagos()" title="Desde">
       <input type="date" id="p-fil-hasta" onchange="filtrarPagos()" title="Hasta">
+      <select id="p-fil-usuario" onchange="filtrarPagos()" title="Filtrar por usuario">
+        <option value="">Todos los usuarios</option>
+      </select>
       <button class="btn-clear" onclick="limpiarFiltrosP()">✕ Limpiar</button>
       <select onchange="cambiarPorPagina(this.value)" class="pp-select" title="Registros por página">
         <option value="10">10 / pág</option>
@@ -2510,6 +2524,23 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 
 
   <!-- MODAL EDITAR CLIENTE -->
+  <!-- MODAL SELECCIONAR USUARIO (identifica quién captura cada movimiento) -->
+  <div id="sel-usuario-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarSelectorUsuario()">
+    <div class="cat-modal" style="max-width:380px">
+      <button class="cat-modal-close" onclick="cerrarSelectorUsuario()">✕</button>
+      <div class="cat-modal-title">👤 ¿Quién eres?</div>
+      <p style="font-size:12px;color:var(--color-text-secondary,#888780);margin:0 0 12px">
+        La contraseña se comparte, pero tu nombre queda guardado en los viajes, cobranza y pagos que registres o edites desde este equipo.
+      </p>
+      <div id="sel-usuario-rapidos" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+      <div class="fg"><label>Tu nombre</label>
+        <input type="text" id="sel-usuario-input" placeholder="Ej. Luis, Carlos..." onkeydown="if(event.key==='Enter')confirmarUsuario()"></div>
+      <div style="display:flex;gap:8px;margin-top:1rem;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="confirmarUsuario()">Continuar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="edit-cli-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarEditCli()">
     <div class="cat-modal">
       <button class="cat-modal-close" onclick="cerrarEditCli()">✕</button>
@@ -3245,7 +3276,20 @@ function sendPostJsonp(payload) {
   });
 }
 
+// Etiqueta automáticamente cada escritura con "quién" la hizo (ver USUARIO_ACTUAL),
+// para poder distinguir en las tablas qué movimiento capturó/editó cada persona.
+function _etiquetarUsuario(payload) {
+  const u = typeof usuarioActual === 'function' ? usuarioActual() : '';
+  if (!u) return payload;
+  if (payload.registro && typeof payload.registro === 'object') payload.registro.usuario = u;
+  if (payload.cobranza && typeof payload.cobranza === 'object') payload.cobranza.usuario = u;
+  if (payload.pago && typeof payload.pago === 'object') payload.pago.usuario = u;
+  if (payload.action === 'cobranza_update_estado' || payload.action === 'pago_update_estado') payload.usuario = u;
+  return payload;
+}
+
 async function sendPost(payload) {
+  payload = _etiquetarUsuario(payload);
   if (estaOnline()) {
     try {
       const resp = await sendPostJsonp(payload);
@@ -3461,6 +3505,30 @@ function badgeEstado(estado) {
   return `<span class="badge ${m[estado]||'b-pendiente'}"><span class="badge-dot"></span>${estado}</span>`;
 }
 
+// Muestra quién capturó/editó por última vez el movimiento (viaje, cobro o pago)
+function usuarioBadge(u) {
+  if (!u) return '';
+  return `<span class="badge-usuario" title="Capturado/editado por">👤 ${u}</span>`;
+}
+
+// Puebla los 3 selects de filtro por usuario con los nombres realmente presentes en los datos
+function poblarFiltrosUsuario() {
+  const cfg = [
+    { id: 'v-fil-usuario', datos: typeof viajes !== 'undefined' ? viajes : [] },
+    { id: 'c-fil-usuario', datos: typeof cobranzas !== 'undefined' ? cobranzas : [] },
+    { id: 'p-fil-usuario', datos: typeof pagos !== 'undefined' ? pagos : [] }
+  ];
+  cfg.forEach(({id, datos}) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const actual = sel.value;
+    const nombres = Array.from(new Set(datos.map(r => (r.usuario||'').trim()).filter(Boolean))).sort();
+    sel.innerHTML = '<option value="">Todos los usuarios</option>' +
+      nombres.map(n => `<option value="${n}">${n}</option>`).join('');
+    sel.value = nombres.includes(actual) ? actual : '';
+  });
+}
+
 function fmtFecha(f) {
   if (!f) return '—';
   // If it's already a proper date object or timestamp
@@ -3517,14 +3585,15 @@ function normalizarDatosV30(data) {
     return def;
   };
 
-  // registros / BITÁCORA: 18 columnas
+  // registros / BITÁCORA: 18 columnas (+ usuario en la 19a, v11)
   if (esArray(data.registros)) {
     data.registros = data.registros.map(a => ({
       fecha: a[0], tipo: a[1], cliente: a[2], unidad: a[3],
       origen: a[4], destino: a[5], costo: a[6], cobrado: a[7],
       utilidad: a[8], referencia: a[9], notas: a[10], contenedor: a[11],
       patio: a[12], maniobras: a[13], maniobrasCobrado: a[14],
-      maniobrasDesc: a[15], urlEir: a[16], estadoFlete: a[17]
+      maniobrasDesc: a[15], urlEir: a[16], estadoFlete: a[17],
+      usuario: a[18] || ''
     }));
   }
 
@@ -3539,17 +3608,17 @@ function normalizarDatosV30(data) {
         fechaVencimiento: a[4], estado: estado, referencia: a[6],
         urlFactura: a[7], urlEvidencia: a[8], notas: a[9],
         fechaCobro: a[10], seguimiento: parseJSON(a[11], []),
-        abonos: parseJSON(a[12], [])
+        abonos: parseJSON(a[12], []), usuario: a[13] || ''
       };
     });
   }
 
-  // pagos / PROVEEDORES (movimientos): 9 columnas
+  // pagos / PROVEEDORES (movimientos): 9 columnas (+ usuario en la 10a, v11)
   if (esArray(data.pagos)) {
     data.pagos = data.pagos.map(a => ({
       folio: a[0], proveedor: a[1], monto: a[2], fecha: a[3],
       fechaPago: a[4], estado: a[5], referencia: a[6],
-      concepto: a[7], notas: a[8]
+      concepto: a[7], notas: a[8], usuario: a[9] || ''
     }));
   }
 
@@ -3712,12 +3781,14 @@ function filtrarViajes() {
   const tipo = document.getElementById('v-fil-tipo').value;
   const desde = document.getElementById('v-fil-desde').value;
   const hasta = document.getElementById('v-fil-hasta').value;
+  const usuarioSel = document.getElementById('v-fil-usuario')?.value || '';
   vFiltrados = viajes.filter(r => {
     const txt = [r.cliente,r.unidad,r.origen,r.destino,r.notas,r.referencia,r.contenedor,r.tipo].join(' ').toLowerCase();
     if (q && !txt.includes(q)) return false;
     if (tipo && r.tipo !== tipo) return false;
     if (desde && fmtFecha(r.fecha) < desde) return false;
     if (hasta && fmtFecha(r.fecha) > hasta) return false;
+    if (usuarioSel && (r.usuario||'') !== usuarioSel) return false;
     return true;
   });
   vFiltrados.sort((a, b) => {
@@ -3738,7 +3809,7 @@ function ordenarV(col) {
 }
 
 function limpiarFiltrosV() {
-  ['v-buscar','v-fil-tipo','v-fil-desde','v-fil-hasta'].forEach(id => document.getElementById(id).value = '');
+  ['v-buscar','v-fil-tipo','v-fil-desde','v-fil-hasta','v-fil-usuario'].forEach(id => { const el=document.getElementById(id); if (el) el.value = ''; });
   filtrarViajes();
 }
 
@@ -3919,7 +3990,7 @@ function renderViajes() {
         <td style="white-space:nowrap;color:var(--color-text-secondary,#888780);font-size:12px">${fmtFecha(r.fecha)}</td>
         <td style="font-size:12px;white-space:nowrap;color:var(--color-brand);font-weight:500">${r.referencia||'<span class="muted">—</span>'}</td>
         <td>${badgeViaje(r.tipo)}</td>
-        <td class="trunc">${r.cliente||'<span class="muted">—</span>'}</td>
+        <td class="trunc">${r.cliente||'<span class="muted">—</span>'}<br>${usuarioBadge(r.usuario)}</td>
         <td style="font-size:12px;white-space:nowrap">${r.unidad||'<span class="muted">—</span>'}</td>
         <td class="trunc" style="max-width:140px;color:var(--color-text-secondary,#888780);font-size:12px">${ruta}</td>
         <td style="white-space:nowrap">${fmt((r.costo||0)+(r.maniobras||0))}${r.maniobras>0?'<span style="font-size:10px;color:var(--color-text-secondary,#888780);display:block">Flete: '+fmt(r.costo)+' + Man: '+fmt(r.maniobras)+'</span>':''}</td>
@@ -4564,12 +4635,14 @@ function filtrarCobranza() {
   const estado = document.getElementById('c-fil-estado').value;
   const desde = document.getElementById('c-fil-desde').value;
   const hasta = document.getElementById('c-fil-hasta').value;
+  const usuarioSel = document.getElementById('c-fil-usuario')?.value || '';
   cFiltrados = cobranzas.filter(r => {
     const txt = [r.folio,r.cliente,r.notas].join(' ').toLowerCase();
     if (q && !txt.includes(q)) return false;
     if (estado && r.estado !== estado) return false;
     if (desde && fmtFecha(r.fechaEmision) < desde) return false;
     if (hasta && fmtFecha(r.fechaEmision) > hasta) return false;
+    if (usuarioSel && (r.usuario||'') !== usuarioSel) return false;
     return true;
   });
   cFiltrados.sort((a,b)=>{
@@ -4593,7 +4666,7 @@ function ordenarC(col){
 }
 
 function limpiarFiltrosC(){
-  ['c-buscar','c-fil-estado','c-fil-desde','c-fil-hasta'].forEach(id=>document.getElementById(id).value='');
+  ['c-buscar','c-fil-estado','c-fil-desde','c-fil-hasta','c-fil-usuario'].forEach(id=>{ const el=document.getElementById(id); if (el) el.value=''; });
   filtrarCobranza();
 }
 
@@ -4632,7 +4705,7 @@ function renderCobranza(){
           ${r.seguimiento && r.seguimiento.length > 0 ? '<span class="seg-badge" onclick="abrirEditCobranza('+r.id+')" title="Ver notas de seguimiento">💬 '+r.seguimiento.length+'</span>' : ''}
           ${r.fechaCobro?'<br><span class="cobro-real-badge">💰 '+fmtFecha(r.fechaCobro)+'</span>':''}
         </td>
-        <td class="trunc">${r.cliente||'—'}</td>
+        <td class="trunc">${r.cliente||'—'}<br>${usuarioBadge(r.usuario)}</td>
         <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
         <td style="font-size:12px;white-space:nowrap;color:var(--color-text-secondary,#888780)">${fmtFecha(r.fechaEmision)||'—'}</td>
         <td>${diasBadge(diasCredito(r.fechaEmision), r.estado)}</td>
@@ -6178,12 +6251,14 @@ function filtrarPagos() {
   const est = document.getElementById('p-fil-estado').value;
   const desde = document.getElementById('p-fil-desde').value;
   const hasta = document.getElementById('p-fil-hasta').value;
+  const usuarioSel = document.getElementById('p-fil-usuario')?.value || '';
   pFiltrados = pagos.filter(r => {
     const txt = [r.folio,r.proveedor,r.referencia,r.concepto,r.notas].join(' ').toLowerCase();
     if (q && !txt.includes(q)) return false;
     if (est && r.estado !== est) return false;
     if (desde && fmtFecha(r.fecha) < desde) return false;
     if (hasta && fmtFecha(r.fecha) > hasta) return false;
+    if (usuarioSel && (r.usuario||'') !== usuarioSel) return false;
     return true;
   });
   pFiltrados.sort((a,b)=>{
@@ -6207,7 +6282,7 @@ function ordenarP(col){
 }
 
 function limpiarFiltrosP(){
-  ['p-buscar','p-fil-estado','p-fil-desde','p-fil-hasta'].forEach(id=>document.getElementById(id).value='');
+  ['p-buscar','p-fil-estado','p-fil-desde','p-fil-hasta','p-fil-usuario'].forEach(id=>{ const el=document.getElementById(id); if (el) el.value=''; });
   filtrarPagos();
 }
 
@@ -6238,7 +6313,7 @@ function renderPagos() {
     };
     tbody.innerHTML = pagina.map(r => `<tr>
       <td style="font-size:12px;font-weight:500;white-space:nowrap">${r.folio||'—'}</td>
-      <td style="font-weight:500">${r.proveedor||'—'}</td>
+      <td style="font-weight:500">${r.proveedor||'—'}<br>${usuarioBadge(r.usuario)}</td>
       <td style="white-space:nowrap;font-weight:500">${fmt(r.monto)}</td>
       <td style="font-size:12px;color:var(--color-text-secondary,#888780);white-space:nowrap">${fmtFecha(r.fecha)||'—'}</td>
       <td style="font-size:12px;color:var(--color-text-secondary,#888780);white-space:nowrap">${r.fechaPago?fmtFecha(r.fechaPago):'—'}</td>
@@ -6690,6 +6765,7 @@ function cargarCatalogos(data) {
   renderCatProveedores();
   renderCatServicios();
   poblarFiltroTipos();
+  poblarFiltrosUsuario();
   // Re-activate visible cat panel
   const activeCatPanel = document.querySelector('.cat-panel.active');
   if (activeCatPanel) activeCatPanel.style.display = 'block';
@@ -7353,6 +7429,7 @@ function renderViajesCards(pagina) {
             ${badgeViaje(r.tipo)}
             ${r.referencia ? '<span style="color:var(--color-brand);font-weight:500">'+r.referencia+'</span>' : ''}
           </div>
+          ${usuarioBadge(r.usuario)}
         </div>
         <div style="text-align:right">
           <div class="card-monto">${fmt(totalCob)}</div>
@@ -7394,6 +7471,7 @@ function renderCobranzaCards(pagina) {
             <span>${fmtFecha(r.fechaEmision)}</span>
             ${segs > 0 ? '<span class="seg-badge">💬 '+segs+'</span>' : ''}
           </div>
+          ${usuarioBadge(r.usuario)}
         </div>
         <div style="text-align:right">
           <div class="card-monto">${fmt(r.monto)}</div>
@@ -8060,8 +8138,13 @@ async function hacerLogin() {
       localStorage.setItem('vazse_auth', token);
       document.getElementById('login-screen').style.display = 'none';
       err.classList.remove('show');
-      actualizarLabelMes();
-      cargar();
+      actualizarBadgeUsuario();
+      if (!USUARIO_ACTUAL) {
+        abrirSelectorUsuario(() => { actualizarLabelMes(); cargar(); });
+      } else {
+        actualizarLabelMes();
+        cargar();
+      }
     } else {
       err.classList.add('show');
       document.getElementById('login-pass').value = '';
@@ -8102,6 +8185,65 @@ function verificarAuth() {
   }
   if (el) el.style.display = 'none';
   return true;
+}
+
+// ── IDENTIFICACIÓN DE USUARIO ────────────────────────
+// El usuario/contraseña de login sigue siendo compartido entre todos.
+// Esto solo identifica "quién" está usando la app en este equipo/sesión,
+// para poder distinguir en Bitácora/Cobranza/Pagos quién capturó o editó cada movimiento.
+let USUARIO_ACTUAL = localStorage.getItem('vazse_usuario_actual') || '';
+let _usuarioCallback = null;
+
+function usuarioActual() { return USUARIO_ACTUAL || ''; }
+
+function usuariosConocidos() {
+  try { return JSON.parse(localStorage.getItem('vazse_usuarios_conocidos') || '[]'); } catch(e) { return []; }
+}
+
+function _recordarUsuarioConocido(nombre) {
+  let lista = usuariosConocidos().filter(x => x.toUpperCase() !== nombre.toUpperCase());
+  lista.unshift(nombre);
+  localStorage.setItem('vazse_usuarios_conocidos', JSON.stringify(lista.slice(0, 6)));
+}
+
+function actualizarBadgeUsuario() {
+  const el = document.getElementById('badge-usuario');
+  if (el) el.textContent = USUARIO_ACTUAL ? '👤 ' + USUARIO_ACTUAL : '👤 Elegir usuario';
+}
+
+function abrirSelectorUsuario(callback) {
+  _usuarioCallback = callback || null;
+  const wrap = document.getElementById('sel-usuario-rapidos');
+  if (wrap) {
+    const conocidos = usuariosConocidos();
+    wrap.innerHTML = conocidos.length
+      ? conocidos.map(u => `<button type="button" class="btn" style="font-size:12px;padding:5px 12px" onclick="document.getElementById('sel-usuario-input').value='${u.replace(/'/g,"\\'")}'">${u}</button>`).join('')
+      : '';
+  }
+  const input = document.getElementById('sel-usuario-input');
+  if (input) input.value = USUARIO_ACTUAL || '';
+  const ov = document.getElementById('sel-usuario-overlay');
+  if (ov) ov.classList.add('show');
+  setTimeout(() => { if (input) input.focus(); }, 50);
+}
+
+function cerrarSelectorUsuario() {
+  const ov = document.getElementById('sel-usuario-overlay');
+  if (ov) ov.classList.remove('show');
+}
+
+function confirmarUsuario() {
+  const input = document.getElementById('sel-usuario-input');
+  const nombre = (input?.value || '').trim();
+  if (!nombre) { toast('Escribe tu nombre para continuar', 'err'); return; }
+  USUARIO_ACTUAL = nombre;
+  localStorage.setItem('vazse_usuario_actual', nombre);
+  _recordarUsuarioConocido(nombre);
+  actualizarBadgeUsuario();
+  cerrarSelectorUsuario();
+  if (typeof poblarFiltrosUsuario === 'function') poblarFiltrosUsuario();
+  const cb = _usuarioCallback; _usuarioCallback = null;
+  if (cb) cb();
 }
 
 // ── CARTA DE INSTRUCCIONES ───────────────────────────
@@ -8662,8 +8804,13 @@ cargarConfig().then(() => {
       if (pid === 'viajes') p.classList.add('active');
     }
   });
-    actualizarLabelMes();
-    cargar();
+    actualizarBadgeUsuario();
+    if (!USUARIO_ACTUAL) {
+      abrirSelectorUsuario(() => { actualizarLabelMes(); cargar(); });
+    } else {
+      actualizarLabelMes();
+      cargar();
+    }
   }
 });
 renderHistorial();
