@@ -4863,10 +4863,19 @@ function cerrarEditViaje(e) { if(e.target===document.getElementById('ev-overlay'
 // Cascada: sincroniza cobranzas y pagos ligados al viaje editado (por referencia + prefijo de folio)
 async function cascadaEditViaje(viejo, nuevo) {
   const refVieja = (viejo.referencia || '').trim();
-  if (!refVieja) return;
-  const cobsLig = cobranzas.filter(c => (c.referencia || '').trim() === refVieja);
-  const pagosLig = pagos.filter(p => (p.referencia || '').trim() === refVieja);
-  if (!cobsLig.length && !pagosLig.length) return;
+  if (!refVieja) {
+    toast('⚠️ El viaje no tiene referencia — no se pudo buscar cobranza/pago ligados para actualizar', 'inf');
+    return;
+  }
+  // Comparación tolerante a mayúsculas/espacios extra, para no fallar en silencio
+  // por diferencias de captura entre la referencia del viaje y la de cobranza/pagos.
+  const norm = s => (s || '').toString().trim().toUpperCase();
+  const cobsLig = cobranzas.filter(c => norm(c.referencia) === norm(refVieja));
+  const pagosLig = pagos.filter(p => norm(p.referencia) === norm(refVieja));
+  if (!cobsLig.length && !pagosLig.length) {
+    toast('⚠️ No se encontró cobranza ni pago ligados a la referencia "' + refVieja + '" — revisa manualmente si hace falta actualizar montos', 'inf');
+    return;
+  }
 
   const planes = [];
   cobsLig.forEach(c => {
@@ -4889,23 +4898,41 @@ async function cascadaEditViaje(viejo, nuevo) {
       planes.push({ tipo: 'pago', obj: p, montoNuevo,
         desc: 'Pago ' + p.folio + ': ' + fmt(p.monto) + ' → ' + fmt(montoNuevo) + (p.proveedor !== nuevo.unidad ? ' · ' + nuevo.unidad : '') });
   });
-  if (!planes.length) return;
+  if (!planes.length) {
+    toast('Cobranza y pagos ligados a esta referencia ya estaban al día', 'inf');
+    return;
+  }
   if (!confirm('Este viaje tiene ' + planes.length + ' movimiento(s) ligados:\n\n' +
-    planes.map(p => '· ' + p.desc).join('\n') + '\n\n¿Actualizarlos también?')) return;
+    planes.map(p => '· ' + p.desc).join('\n') + '\n\n¿Actualizarlos también?')) {
+    toast('No se actualizó la cobranza/pago ligados (cancelado)', 'inf');
+    return;
+  }
 
+  let okCount = 0;
+  const fallos = [];
   for (const plan of planes) {
-    if (plan.tipo === 'cobranza') {
-      const c = plan.obj;
-      c.monto = plan.montoNuevo; c.cliente = nuevo.cliente; c.referencia = nuevo.referencia;
-      await sendPost({ action: 'cobranza_update', folio: c.folio, cobranza: c });
-    } else {
-      const p = plan.obj;
-      p.monto = plan.montoNuevo; p.proveedor = nuevo.unidad; p.referencia = nuevo.referencia;
-      await sendPost({ action: 'pago_update', folio: p.folio, pago: p });
+    try {
+      if (plan.tipo === 'cobranza') {
+        const c = plan.obj;
+        c.monto = plan.montoNuevo; c.cliente = nuevo.cliente; c.referencia = nuevo.referencia;
+        await sendPost({ action: 'cobranza_update', folio: c.folio, cobranza: c });
+      } else {
+        const p = plan.obj;
+        p.monto = plan.montoNuevo; p.proveedor = nuevo.unidad; p.referencia = nuevo.referencia;
+        await sendPost({ action: 'pago_update', folio: p.folio, pago: p });
+      }
+      okCount++;
+    } catch(e) {
+      console.error('[VAZSE] cascadaEditViaje falló en', plan.desc, e);
+      fallos.push(plan.desc);
     }
   }
   filtrarCobranza(); filtrarPagos();
-  toast(planes.length + ' movimiento(s) ligados actualizados ✓', 'ok');
+  if (fallos.length) {
+    toast(okCount + ' actualizado(s), ' + fallos.length + ' fallaron — reintenta: ' + fallos.join(' · '), 'err');
+  } else {
+    toast(planes.length + ' movimiento(s) ligados actualizados ✓', 'ok');
+  }
 }
 
 async function guardarEditViaje() {
