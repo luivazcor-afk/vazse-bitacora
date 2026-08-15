@@ -4861,6 +4861,10 @@ function abrirEditViaje(id) {
 function cerrarEditViaje(e) { if(e.target===document.getElementById('ev-overlay')) document.getElementById('ev-overlay').classList.remove('show'); }
 
 // Cascada: sincroniza cobranzas y pagos ligados al viaje editado (por referencia + prefijo de folio)
+// v11: además de ACTUALIZAR los que ya existen, si agregas maniobras a un viaje que
+// originalmente no las tenía (por eso nunca se creó su factura/pago "MAN-"), ahora
+// esta función los CREA — antes solo funcionaba si ya existían de antes, por eso
+// "a veces sí, a veces no".
 async function cascadaEditViaje(viejo, nuevo) {
   const refVieja = (viejo.referencia || '').trim();
   if (!refVieja) {
@@ -4872,10 +4876,6 @@ async function cascadaEditViaje(viejo, nuevo) {
   const norm = s => (s || '').toString().trim().toUpperCase();
   const cobsLig = cobranzas.filter(c => norm(c.referencia) === norm(refVieja));
   const pagosLig = pagos.filter(p => norm(p.referencia) === norm(refVieja));
-  if (!cobsLig.length && !pagosLig.length) {
-    toast('⚠️ No se encontró cobranza ni pago ligados a la referencia "' + refVieja + '" — revisa manualmente si hace falta actualizar montos', 'inf');
-    return;
-  }
 
   const planes = [];
   cobsLig.forEach(c => {
@@ -4898,12 +4898,40 @@ async function cascadaEditViaje(viejo, nuevo) {
       planes.push({ tipo: 'pago', obj: p, montoNuevo,
         desc: 'Pago ' + p.folio + ': ' + fmt(p.monto) + ' → ' + fmt(montoNuevo) + (p.proveedor !== nuevo.unidad ? ' · ' + nuevo.unidad : '') });
   });
+
+  // ── Maniobras agregadas por primera vez: no hay "MAN-" que actualizar, hay que crearlo ──
+  const yaTieneManCobranza = cobsLig.some(c => String(c.folio || '').startsWith('MAN-'));
+  const yaTieneManPago = pagosLig.some(p => /^PAG-?M/.test(String(p.folio || '')));
+  const _tsMan = Date.now();
+  if (!yaTieneManCobranza && (nuevo.maniobrasCobrado || 0) > 0) {
+    const folioNuevo = 'MAN-' + (nuevo.fecha || '').replace(/-/g, '') + '-' + String(_tsMan).slice(-3);
+    planes.push({ tipo: 'cobranza-nueva', montoNuevo: nuevo.maniobrasCobrado,
+      desc: 'Nueva factura de maniobras (' + folioNuevo + '): ' + fmt(nuevo.maniobrasCobrado),
+      cobranza: { folio: folioNuevo, cliente: nuevo.cliente, monto: nuevo.maniobrasCobrado,
+        fechaEmision: nuevo.fecha, fechaVencimiento: '', estado: 'pendiente', referencia: nuevo.referencia,
+        urlFactura: '', urlEvidencia: '',
+        notas: 'Maniobras' + (nuevo.maniobrasDesc ? ' · ' + nuevo.maniobrasDesc : '') + (nuevo.contenedor ? ' · ' + nuevo.contenedor : '') } });
+  }
+  if (!yaTieneManPago && (nuevo.maniobras || 0) > 0 && nuevo.unidad) {
+    const folioPagoNuevo = 'PAG-MAN-' + (nuevo.fecha || '').replace(/-/g, '') + '-' + String(_tsMan + 1).slice(-3);
+    planes.push({ tipo: 'pago-nuevo', montoNuevo: nuevo.maniobras,
+      desc: 'Nuevo pago a proveedor de maniobras (' + folioPagoNuevo + '): ' + fmt(nuevo.maniobras),
+      pago: { folio: folioPagoNuevo, proveedor: nuevo.unidad, monto: nuevo.maniobras, fecha: nuevo.fecha,
+        fechaPago: '', estado: 'pendiente', referencia: nuevo.referencia,
+        concepto: 'Maniobras' + (nuevo.maniobrasDesc ? ' · ' + nuevo.maniobrasDesc : ''),
+        notas: 'Auto: ' + nuevo.cliente + (nuevo.contenedor ? ' · ' + nuevo.contenedor : '') } });
+  }
+
   if (!planes.length) {
-    toast('Cobranza y pagos ligados a esta referencia ya estaban al día', 'inf');
+    if (!cobsLig.length && !pagosLig.length) {
+      toast('⚠️ No se encontró cobranza ni pago ligados a la referencia "' + refVieja + '" — revisa manualmente si hace falta actualizar montos', 'inf');
+    } else {
+      toast('Cobranza y pagos ligados a esta referencia ya estaban al día', 'inf');
+    }
     return;
   }
-  if (!confirm('Este viaje tiene ' + planes.length + ' movimiento(s) ligados:\n\n' +
-    planes.map(p => '· ' + p.desc).join('\n') + '\n\n¿Actualizarlos también?')) {
+  if (!confirm('Este viaje tiene ' + planes.length + ' movimiento(s) por sincronizar:\n\n' +
+    planes.map(p => '· ' + p.desc).join('\n') + '\n\n¿Continuar?')) {
     toast('No se actualizó la cobranza/pago ligados (cancelado)', 'inf');
     return;
   }
@@ -4916,10 +4944,16 @@ async function cascadaEditViaje(viejo, nuevo) {
         const c = plan.obj;
         c.monto = plan.montoNuevo; c.cliente = nuevo.cliente; c.referencia = nuevo.referencia;
         await sendPost({ action: 'cobranza_update', folio: c.folio, cobranza: c });
-      } else {
+      } else if (plan.tipo === 'pago') {
         const p = plan.obj;
         p.monto = plan.montoNuevo; p.proveedor = nuevo.unidad; p.referencia = nuevo.referencia;
         await sendPost({ action: 'pago_update', folio: p.folio, pago: p });
+      } else if (plan.tipo === 'cobranza-nueva') {
+        await sendPost({ action: 'cobranza_append', cobranza: plan.cobranza });
+        cobranzas.unshift({ ...plan.cobranza, id: Date.now() });
+      } else if (plan.tipo === 'pago-nuevo') {
+        await sendPost({ action: 'pago_append', pago: plan.pago });
+        pagos.unshift({ ...plan.pago, id: Date.now() + 1 });
       }
       okCount++;
     } catch(e) {
@@ -4929,9 +4963,9 @@ async function cascadaEditViaje(viejo, nuevo) {
   }
   filtrarCobranza(); filtrarPagos();
   if (fallos.length) {
-    toast(okCount + ' actualizado(s), ' + fallos.length + ' fallaron — reintenta: ' + fallos.join(' · '), 'err');
+    toast(okCount + ' sincronizado(s), ' + fallos.length + ' fallaron — reintenta: ' + fallos.join(' · '), 'err');
   } else {
-    toast(planes.length + ' movimiento(s) ligados actualizados ✓', 'ok');
+    toast(planes.length + ' movimiento(s) de cobranza/pago sincronizados ✓', 'ok');
   }
 }
 
