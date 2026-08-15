@@ -754,6 +754,9 @@ html[data-theme=dark] .res-refresh:hover{background:#233447;color:#7FB2EA}
   justify-content:center;padding:1rem
 }
 .cat-overlay.show{display:flex}
+/* Este overlay se abre ENCIMA de la Carta de Instrucciones (#carta-overlay, z-index:1000),
+   por eso necesita quedar por arriba de esa capa y no solo del z-index:200 genérico de .cat-overlay */
+#sel-usuario-overlay, #pedimento-review-overlay{ z-index:1100 }
 .cat-modal{
   background:#fff;border-radius:16px;width:100%;
   max-width:640px;max-height:90vh;overflow-y:auto;
