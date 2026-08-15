@@ -7,6 +7,7 @@
 <title id="page-title">Bitácora VAZSE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
@@ -2524,6 +2525,22 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
 
 
   <!-- MODAL EDITAR CLIENTE -->
+  <!-- MODAL REVISIÓN DE EXTRACCIÓN DE PEDIMENTO PDF -->
+  <div id="pedimento-review-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarRevisionPedimento()">
+    <div class="cat-modal" style="max-width:520px">
+      <button class="cat-modal-close" onclick="cerrarRevisionPedimento()">✕</button>
+      <div class="cat-modal-title">📤 Revisa lo que se extrajo del pedimento</div>
+      <p style="font-size:12px;color:var(--color-text-secondary,#888780);margin:0 0 12px">
+        Es una lectura automática — revisa y corrige antes de aplicar. Destilda lo que no quieras sobreescribir.
+      </p>
+      <div id="pedimento-review-list" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto"></div>
+      <div style="display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end">
+        <button class="btn" onclick="cerrarRevisionPedimento()">Cancelar</button>
+        <button class="btn btn-primary" onclick="aplicarExtraccionPedimento()">Aplicar a la carta</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL SELECCIONAR USUARIO (identifica quién captura cada movimiento) -->
   <div id="sel-usuario-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarSelectorUsuario()">
     <div class="cat-modal" style="max-width:380px">
@@ -2641,6 +2658,14 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       <button class="carta-close" onclick="cerrarCarta()">✕</button>
     </div>
     <div class="carta-body">
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+        <button type="button" class="btn" onclick="document.getElementById('pedimento-pdf-input').click()" style="font-size:12px;padding:6px 12px">
+          📤 Extraer de pedimento (PDF)
+        </button>
+        <input type="file" id="pedimento-pdf-input" accept="application/pdf" style="display:none" onchange="archivoPedimentoSeleccionado(this)">
+      </div>
+      <div id="pedimento-extract-status" style="display:none;font-size:12px;color:var(--color-text-secondary,#888780);margin-bottom:8px;padding:8px 12px;background:var(--color-brand-light,#EEF3FB);border-radius:8px"></div>
 
       <!-- 1. PEDIMENTO -->
       <div class="carta-section">
@@ -8521,6 +8546,195 @@ function abrirCarta(viajeId) {
 
 function cerrarCarta() {
   document.getElementById('carta-overlay').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════
+//  EXTRACTOR DE PEDIMENTO (PDF) → Carta de Instrucciones
+//  1) pdf.js saca el texto del PDF (rápido, sin servidor).
+//  2) Si el PDF es un escaneo/foto y no trae texto seleccionable,
+//     cae a OCR con Tesseract.js (se carga solo si hace falta).
+//  3) Un parser por expresiones regulares busca los campos típicos
+//     de un pedimento mexicano.
+//  4) Nada se aplica a ciegas: se muestra una lista para revisar/
+//     corregir/destildar antes de escribir en los campos ci-*.
+// ══════════════════════════════════════════════════════
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+const PEDIMENTO_CAMPOS = [
+  { key:'pedimento', label:'No. Pedimento', ciId:'ci-pedimento',
+    re:/PEDIMENTO\s*[:\-]?\s*\n?\s*(\d{2}\s?\d{2}\s?\d{4}\s?\d{7})/i },
+  { key:'patente', label:'Patente', ciId:'ci-patente',
+    re:/PATENTE\s*[:\-]?\s*(\d{3,4})/i },
+  { key:'aduana', label:'Aduana', ciId:'ci-aduana',
+    re:/ADUANA\s*(?:E\s*\/\s*S)?\s*[:\-]?\s*(\d{2,3}(?:\s*[–\-]\s*[A-ZÁÉÍÓÚÑ ]{3,25})?)/i },
+  { key:'regimen', label:'Régimen', ciId:'ci-regimen',
+    re:/REG[IÍ]MEN\s*[:\-]?\s*([A-Z]{2,4}(?:\s*[–\-]\s*[A-ZÁÉÍÓÚÑ ]{4,40})?)/i },
+  { key:'fechaPago', label:'Fecha de pago', ciId:'ci-fecha-pago', tipo:'fecha',
+    re:/FECHA\s*(?:DE\s*)?PAGO\s*[:\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i },
+  { key:'contenedor', label:'Contenedor', ciId:'ci-contenedor',
+    re:/CONTENEDOR(?:ES)?\s*[:\-]?\s*([A-Z]{4}\s?\d{6,7}\-?\d?)/i,
+    reAlt:/\b([A-Z]{4}\d{7})\b/ },
+  { key:'bl', label:'BL / Conocimiento', ciId:'ci-bl',
+    re:/(?:B\s*\/?\s*L|CONOCIMIENTO\s*(?:DE\s*)?EMBARQUE)\s*(?:N[ÚU]M(?:ERO)?)?\s*[:\-]?\s*([A-Z0-9]{6,20})/i },
+  { key:'naviera', label:'Línea naviera', ciId:'ci-naviera',
+    re:/(?:L[IÍ]NEA\s*NAVIERA|NAVIERA)\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ ][^\n]{2,39})/i },
+  { key:'bultos', label:'Total de bultos', ciId:'ci-bultos',
+    re:/(?:TOTAL\s*DE\s*)?BULTOS\s*[:\-]?\s*([\d,]{1,9})/i },
+  { key:'peso', label:'Peso bruto (kg)', ciId:'ci-peso',
+    re:/PESO\s*BRUTO\s*(?:\(?\s*KG\s*\)?)?\s*[:\-]?\s*([\d,]+\.?\d*)/i },
+  { key:'volumen', label:'Volumen (m³)', ciId:'ci-volumen',
+    re:/VOLUMEN\s*(?:\(?\s*M[3³]\s*\)?)?\s*[:\-]?\s*([\d,]+\.?\d*)/i },
+  { key:'sello', label:'Sello / Candado', ciId:'ci-sello',
+    re:/SELLO\S*\s*[:\-]?\s*([A-Z0-9\-]{4,20})/i },
+  { key:'factura', label:'Factura', ciId:'ci-factura',
+    re:/FACTURA\s*[:\-]?\s*([A-Z0-9\-\/]{4,25})/i },
+  { key:'fraccion', label:'Clave SAT / Fracción', ciId:'ci-fraccion',
+    re:/FRACCI[ÓO]N\s*(?:ARANCELARIA)?\s*[:\-]?\s*(\d{8})/i }
+];
+
+function _pedimentoStatus(msg) {
+  const el = document.getElementById('pedimento-extract-status');
+  if (!el) return;
+  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg || '';
+}
+
+async function archivoPedimentoSeleccionado(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (typeof pdfjsLib === 'undefined') {
+    toast('No se pudo cargar el lector de PDF (pdf.js) — revisa tu conexión e intenta de nuevo', 'err');
+    return;
+  }
+  _pedimentoStatus('📄 Leyendo el PDF...');
+  try {
+    const buf = await file.arrayBuffer();
+    let texto = await _extraerTextoPDF(buf.slice(0));
+    if ((texto || '').replace(/\s/g, '').length < 40) {
+      _pedimentoStatus('🔍 El PDF parece escaneado — leyendo con OCR (puede tardar unos segundos)...');
+      texto = await _extraerTextoConOCR(buf.slice(0));
+    }
+    if ((texto || '').replace(/\s/g, '').length < 20) {
+      _pedimentoStatus('');
+      toast('No se pudo leer texto de este PDF. Prueba con un PDF de mejor calidad o captura los datos a mano.', 'err');
+      return;
+    }
+    const datos = _parsearPedimento(texto);
+    _pedimentoStatus('');
+    if (!Object.keys(datos).length) {
+      toast('Se leyó el PDF pero no se reconoció ningún campo conocido — revisa el formato', 'inf');
+      return;
+    }
+    mostrarRevisionPedimento(datos);
+  } catch(e) {
+    console.error('[VAZSE] Error extrayendo pedimento:', e);
+    _pedimentoStatus('');
+    toast('No se pudo procesar el PDF: ' + e, 'err');
+  }
+}
+
+async function _extraerTextoPDF(arrayBuffer) {
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let texto = '';
+  const maxPaginas = Math.min(pdf.numPages, 6);
+  for (let i = 1; i <= maxPaginas; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    texto += content.items.map(it => it.str).join(' ') + '\n';
+  }
+  return texto;
+}
+
+let _tesseractCargado = false;
+function _cargarTesseract() {
+  return new Promise((resolve, reject) => {
+    if (typeof Tesseract !== 'undefined') { resolve(); return; }
+    if (_tesseractCargado) {
+      // Ya se disparó la carga desde otra llamada; espera un poco y revisa.
+      const iv = setInterval(() => { if (typeof Tesseract !== 'undefined') { clearInterval(iv); resolve(); } }, 200);
+      setTimeout(() => { clearInterval(iv); reject(new Error('Tesseract no cargó a tiempo')); }, 15000);
+      return;
+    }
+    _tesseractCargado = true;
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('No se pudo cargar el motor de OCR'));
+    document.head.appendChild(s);
+  });
+}
+
+async function _extraerTextoConOCR(arrayBuffer) {
+  await _cargarTesseract();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const maxPaginas = Math.min(pdf.numPages, 3); // OCR es lento — limitamos páginas
+  let texto = '';
+  for (let i = 1; i <= maxPaginas; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    const { data: { text } } = await Tesseract.recognize(canvas, 'spa');
+    texto += text + '\n';
+  }
+  return texto;
+}
+
+function _parsearPedimento(texto) {
+  const limpio = texto.replace(/\r/g, '');
+  const datos = {};
+  PEDIMENTO_CAMPOS.forEach(campo => {
+    let m = limpio.match(campo.re);
+    if (!m && campo.reAlt) m = limpio.match(campo.reAlt);
+    if (m && m[1]) {
+      let val = m[1].replace(/\s+/g, ' ').trim();
+      if (campo.tipo === 'fecha') {
+        const p = val.split(/[\/\-]/);
+        if (p.length === 3) {
+          const [d, mo, y] = p;
+          val = y.length === 4 ? `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}` : val;
+        }
+      }
+      if (val) datos[campo.key] = { label: campo.label, ciId: campo.ciId, valor: val };
+    }
+  });
+  return datos;
+}
+
+let _pedimentoDatosExtraidos = {};
+function mostrarRevisionPedimento(datos) {
+  _pedimentoDatosExtraidos = datos;
+  const wrap = document.getElementById('pedimento-review-list');
+  wrap.innerHTML = Object.entries(datos).map(([key, d]) => `
+    <div class="fg" style="display:flex;align-items:center;gap:8px;margin:0">
+      <input type="checkbox" id="pr-chk-${key}" checked style="width:16px;height:16px;flex:none">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--color-text-secondary,#888780)">${d.label}</label>
+        <input type="text" id="pr-val-${key}" value="${d.valor.replace(/"/g,'&quot;')}">
+      </div>
+    </div>`).join('');
+  document.getElementById('pedimento-review-overlay').classList.add('show');
+}
+
+function cerrarRevisionPedimento() {
+  document.getElementById('pedimento-review-overlay').classList.remove('show');
+}
+
+function aplicarExtraccionPedimento() {
+  let aplicados = 0;
+  Object.entries(_pedimentoDatosExtraidos).forEach(([key, d]) => {
+    const chk = document.getElementById('pr-chk-' + key);
+    const val = document.getElementById('pr-val-' + key);
+    if (!chk || !chk.checked || !val) return;
+    const el = document.getElementById(d.ciId);
+    if (el) { el.value = val.value; aplicados++; }
+  });
+  cerrarRevisionPedimento();
+  toast(aplicados + ' campo(s) aplicados a la carta ✓', 'ok');
 }
 
 function g(id) { return document.getElementById(id)?.value || ''; }
