@@ -1701,7 +1701,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
             <option value="parcial">Parcial</option>
           </select>
         </div>
-        <div class="fg"><label>Fecha emisión</label><input type="date" id="c-femision"></div>
+        <div class="fg"><label>Fecha emisión</label><input type="date" id="c-femision" onchange="sugerirVencimientoCobranza()"></div>
         <div class="fg"><label>Fecha vencimiento</label><input type="date" id="c-fvencimiento"></div>
         <div class="fg"><label>Fecha de cobro real</label><input type="date" id="c-fechacobro"></div>
         <div class="fg"><label>Referencia</label><input type="text" id="c-referencia" placeholder="N° transferencia, cheque, etc."></div>
@@ -2237,12 +2237,13 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
               <th>Fecha pago</th>
               <th>Estado</th>
               <th onclick="ordenarP('referencia')">Ref. viaje <span class="sort-arrow" id="pa-referencia">↕</span></th>
+              <th>Contenedor</th>
               <th>Concepto</th>
               <th>Notas</th>
               <th class="no-sort"></th>
             </tr>
           </thead>
-          <tbody id="p-tbody"><tr><td colspan="10"><div class="empty-state"><p>Cargando...</p></div></td></tr></tbody>
+          <tbody id="p-tbody"><tr><td colspan="11"><div class="empty-state"><p>Cargando...</p></div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -3580,6 +3581,16 @@ function fmtFecha(f) {
   return s.substring(0, 10);
 }
 
+// Días de crédito por default: al crear el viaje, la cobranza generada
+// automáticamente vence a los N días si nadie captura otra fecha.
+const DIAS_VENCIMIENTO_DEFAULT = 7;
+function fechaMasDias(fechaBase, dias) {
+  const base = fechaBase ? new Date(fechaBase + 'T00:00:00') : new Date();
+  if (isNaN(base.getTime())) return '';
+  base.setDate(base.getDate() + dias);
+  return base.getFullYear() + '-' + String(base.getMonth()+1).padStart(2,'0') + '-' + String(base.getDate()).padStart(2,'0');
+}
+
 // ── CARGA DATOS ───────────────────────────────────────
 const CACHE_KEY = 'vazse_cache_datos';
 
@@ -4136,7 +4147,7 @@ async function agregarViaje() {
     const _ruta  = [registro.origen, registro.destino].filter(Boolean).join(' - ');
     const notaBase = 'Auto: '+tipo.replace('_',' ')+(registro.contenedor?' · '+registro.contenedor:'')+(_ruta?' · '+_ruta:'')+(registro.unidad?' · '+registro.unidad:'');
     const _cob = { folio:_folio, cliente:registro.cliente, monto:registro.cobrado,
-      fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
+      fechaEmision:fecha, fechaVencimiento:fechaMasDias(fecha, DIAS_VENCIMIENTO_DEFAULT), estado:'pendiente',
       referencia:registro.referencia, urlFactura:'', urlEvidencia:'', notas:notaBase };
     console.log('[VAZSE] Guardando cobranza:', _cob);
     await sendPost({action:'cobranza_append', cobranza:_cob});
@@ -4147,7 +4158,7 @@ async function agregarViaje() {
     if (esFlete && registro.maniobras > 0) {
       const _folio2 = 'MAN-' + fecha.replace(/-/g,'') + '-' + String(_ts).slice(-3);
       const _cob2 = { folio:_folio2, cliente:registro.cliente, monto:registro.maniobrasCobrado||registro.maniobras,
-        fechaEmision:fecha, fechaVencimiento:'', estado:'pendiente',
+        fechaEmision:fecha, fechaVencimiento:fechaMasDias(fecha, DIAS_VENCIMIENTO_DEFAULT), estado:'pendiente',
         referencia:registro.referencia,
         urlFactura:'', urlEvidencia:'',
         notas:'Maniobras'+(registro.maniobrasDesc?' · '+registro.maniobrasDesc:'')+(registro.contenedor?' · '+registro.contenedor:'') };
@@ -4411,7 +4422,7 @@ async function ejecutarImportViajes() {
       const _ts = Date.now() + n;
       const _ruta = [r.origen, r.destino].filter(Boolean).join(' - ');
       const _cob = { folio: 'VJ-' + r.fecha.replace(/-/g, '') + '-' + String(_ts).slice(-3),
-        cliente: r.cliente, monto: r.cobrado, fechaEmision: r.fecha, fechaVencimiento: '',
+        cliente: r.cliente, monto: r.cobrado, fechaEmision: r.fecha, fechaVencimiento: fechaMasDias(r.fecha, DIAS_VENCIMIENTO_DEFAULT),
         estado: 'pendiente', referencia: r.referencia, urlFactura: '', urlEvidencia: '',
         notas: 'Auto: ' + r.tipo.toLowerCase().replace('_', ' ') + (_ruta ? ' · ' + _ruta : '') };
       await sendPost({ action: 'cobranza_append', cobranza: _cob });
@@ -4557,6 +4568,16 @@ async function subirArchivoConToken(file, progressId, token) {
   } catch(err) {
     if (progress) progress.classList.remove('show');
     throw err;
+  }
+}
+
+// Sugiere fecha de vencimiento a 7 días de la emisión (default) — solo si el usuario
+// no ha escrito ya una fecha propia, para no pisar lo que capturó a mano.
+function sugerirVencimientoCobranza() {
+  const femision = document.getElementById('c-femision');
+  const fvenc = document.getElementById('c-fvencimiento');
+  if (femision && fvenc && femision.value && !fvenc.value) {
+    fvenc.value = fechaMasDias(femision.value, DIAS_VENCIMIENTO_DEFAULT);
   }
 }
 
@@ -4936,7 +4957,7 @@ async function cascadaEditViaje(viejo, nuevo) {
     planes.push({ tipo: 'cobranza-nueva', montoNuevo: nuevo.maniobrasCobrado,
       desc: 'Nueva factura de maniobras (' + folioNuevo + '): ' + fmt(nuevo.maniobrasCobrado),
       cobranza: { folio: folioNuevo, cliente: nuevo.cliente, monto: nuevo.maniobrasCobrado,
-        fechaEmision: nuevo.fecha, fechaVencimiento: '', estado: 'pendiente', referencia: nuevo.referencia,
+        fechaEmision: nuevo.fecha, fechaVencimiento: fechaMasDias(nuevo.fecha, DIAS_VENCIMIENTO_DEFAULT), estado: 'pendiente', referencia: nuevo.referencia,
         urlFactura: '', urlEvidencia: '',
         notas: 'Maniobras' + (nuevo.maniobrasDesc ? ' · ' + nuevo.maniobrasDesc : '') + (nuevo.contenedor ? ' · ' + nuevo.contenedor : '') } });
   }
@@ -6335,6 +6356,15 @@ function renderReporteCobClientes() {
 // ══════════════════════════════════════════════════════
 let pagos = [], pFiltrados = [], pPag = 1, pSortCol = 'fecha', pSortDir = -1;
 
+// Contenedor del viaje ligado a un pago (por referencia), para facilitar
+// la conciliación con proveedores que manejan sus propias referencias.
+function contenedorPorReferencia(referencia) {
+  if (!referencia) return '';
+  const ref = referencia.toString().trim().toUpperCase();
+  const v = viajes.find(v => (v.referencia||'').toString().trim().toUpperCase() === ref);
+  return v ? (v.contenedor || '') : '';
+}
+
 function filtrarPagos() {
   const q = (document.getElementById('p-buscar').value||'').toLowerCase();
   const est = document.getElementById('p-fil-estado').value;
@@ -6342,7 +6372,7 @@ function filtrarPagos() {
   const hasta = document.getElementById('p-fil-hasta').value;
   const usuarioSel = document.getElementById('p-fil-usuario')?.value || '';
   pFiltrados = pagos.filter(r => {
-    const txt = [r.folio,r.proveedor,r.referencia,r.concepto,r.notas].join(' ').toLowerCase();
+    const txt = [r.folio,r.proveedor,r.referencia,r.concepto,r.notas,contenedorPorReferencia(r.referencia)].join(' ').toLowerCase();
     if (q && !txt.includes(q)) return false;
     if (est && r.estado !== est) return false;
     if (desde && fmtFecha(r.fecha) < desde) return false;
@@ -6393,7 +6423,7 @@ function renderPagos() {
   const pagina = pFiltrados.slice((pPag-1)*POR_PAGINA, pPag*POR_PAGINA);
   document.getElementById('p-info').textContent = total+' resultado'+(total!==1?'s':'');
   if(!pagina.length){
-    tbody.innerHTML='<tr><td colspan="10"><div class="empty-state"><p>No hay pagos que coincidan.</p></div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="11"><div class="empty-state"><p>No hay pagos que coincidan.</p></div></td></tr>';
   } else {
     const estBadge = {
       pendiente:'<span class="badge b-pendiente"><span class="badge-dot"></span>Pendiente</span>',
@@ -6414,6 +6444,7 @@ function renderPagos() {
         </select>
       </td>
       <td style="font-size:12px;color:var(--color-brand);font-weight:500">${r.referencia||'—'}</td>
+      <td style="font-size:12px;font-weight:500">${contenedorPorReferencia(r.referencia)||'—'}</td>
       <td style="font-size:12px">${r.concepto||'—'}</td>
       <td class="trunc muted" style="font-size:12px">${r.notas||'—'}</td>
       <td style="display:flex;gap:4px">
@@ -6527,11 +6558,11 @@ function abrirEditPago(id) {
 
 function exportarProveedores() {
   const wb = XLSX.utils.book_new();
-  const headers=['Folio','Proveedor','Monto','Fecha','Fecha Pago','Estado','Ref. Viaje','Concepto','Notas'];
+  const headers=['Folio','Proveedor','Monto','Fecha','Fecha Pago','Estado','Ref. Viaje','Contenedor','Concepto','Notas'];
   const filas = pagos.map(r=>[r.folio,r.proveedor,r.monto,fmtFecha(r.fecha),
-    r.fechaPago?fmtFecha(r.fechaPago):'',r.estado,r.referencia||'',r.concepto||'',r.notas||'']);
+    r.fechaPago?fmtFecha(r.fechaPago):'',r.estado,r.referencia||'',contenedorPorReferencia(r.referencia)||'',r.concepto||'',r.notas||'']);
   const ws = XLSX.utils.aoa_to_sheet([headers,...filas]);
-  ws['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:12},{wch:11},{wch:18},{wch:18},{wch:28}];
+  ws['!cols']=[{wch:12},{wch:22},{wch:12},{wch:12},{wch:12},{wch:11},{wch:18},{wch:16},{wch:18},{wch:28}];
   XLSX.utils.book_append_sheet(wb,ws,'Proveedores');
   XLSX.writeFile(wb,`pagos_proveedores_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
