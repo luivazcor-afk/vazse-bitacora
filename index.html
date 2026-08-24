@@ -6723,6 +6723,92 @@ async function eliminarCatalogo(tipo, id) {
   toast('Eliminado','ok');
 }
 
+// ── ESTADO DE CUENTA POR WHATSAPP ─────────────────────
+// Junta las cobranzas no pagadas de un cliente (pendiente/vencido/parcial),
+// con su contenedor (vía referencia → viajes) y días de atraso, para armar
+// un mensaje de WhatsApp con el estado de cuenta.
+function cobranzasPendientesCliente(nombreCliente) {
+  const nom = (nombreCliente || '').trim().toUpperCase();
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  return cobranzas
+    .filter(r => (r.cliente || '').trim().toUpperCase() === nom && r.estado !== 'pagado')
+    .map(r => {
+      const iso = fmtFecha(r.fechaVencimiento);
+      let diasAtraso = null;
+      if (iso !== '—') {
+        const venc = new Date(iso + 'T00:00:00');
+        if (!isNaN(venc.getTime())) diasAtraso = Math.round((hoy - venc) / 86400000);
+      }
+      return { ...r, contenedor: contenedorPorReferencia(r.referencia), diasAtraso };
+    })
+    .sort((a,b) => (b.diasAtraso||-999) - (a.diasAtraso||-999));
+}
+
+function _fechaCorta(iso) {
+  if (!iso || iso === '—') return '—';
+  const [y,m,d] = iso.split('-');
+  return d && m && y ? `${d}/${m}/${y}` : iso;
+}
+
+function mensajeEstadoCuenta(nombreCliente) {
+  const pendientes = cobranzasPendientesCliente(nombreCliente);
+  if (!pendientes.length) return { texto: '', total: 0, count: 0 };
+  const lineas = pendientes.map((r, i) => {
+    const venc = r.diasAtraso === null ? ''
+      : r.diasAtraso > 0 ? `Vencida hace ${r.diasAtraso} día${r.diasAtraso===1?'':'s'}`
+      : r.diasAtraso === 0 ? 'Vence hoy'
+      : `Vence en ${Math.abs(r.diasAtraso)} día${Math.abs(r.diasAtraso)===1?'':'s'}`;
+    return `${i+1}) Ref: ${r.referencia||'—'} | Cont: ${r.contenedor||'—'}\n   Monto: ${fmt(r.monto)}${r.estado==='parcial'?' (parcial)':''} — ${venc}`;
+  });
+  const total = pendientes.reduce((s,r) => s + (r.monto||0), 0);
+  const texto = `📋 *Estado de cuenta VAZSE*\nCliente: ${(nombreCliente||'').toUpperCase()}\n\n`
+    + lineas.join('\n\n')
+    + `\n\n————————\nTotal pendiente: ${fmt(total)} (${pendientes.length} factura${pendientes.length===1?'':'s'})\n\n`
+    + `Quedamos atentos a tu comprobante de pago. ¡Gracias!`;
+  return { texto, total, count: pendientes.length };
+}
+
+// Limpia un teléfono capturado en cualquier formato y arma el número para wa.me
+// (agrega código de país 52 si detecta un número mexicano de 10 dígitos).
+function _telWaLink(tel) {
+  let digits = (tel || '').replace(/\D/g, '');
+  digits = digits.replace(/^(01|044|045)/, '');
+  if (digits.length === 10) digits = '52' + digits;
+  return digits;
+}
+
+function enviarEstadoCuentaWhatsApp(nombreCliente) {
+  const cli = catClientes.find(c => (c.nombre||'').trim().toUpperCase() === (nombreCliente||'').trim().toUpperCase());
+  if (!cli || !cli.tel) {
+    toast('Este cliente no tiene teléfono registrado — agrégalo en Editar cliente', 'err');
+    return;
+  }
+  const { texto, total, count } = mensajeEstadoCuenta(nombreCliente);
+  if (!count) {
+    toast('Este cliente no tiene cobranza pendiente', 'inf');
+    return;
+  }
+  const numero = _telWaLink(cli.tel);
+  if (!numero) {
+    toast('El teléfono del cliente no parece válido — revísalo en Editar cliente', 'err');
+    return;
+  }
+  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, '_blank');
+  registrarHistorial('enviar', 'Estado de cuenta', nombreCliente + ' · ' + fmt(total) + ' (' + count + ')');
+}
+
+// Salto directo a Cobranza filtrado por cliente, para aplicar el comprobante
+// que el cliente responda (adjuntar evidencia + cambiar estado ya existe
+// en el editor de cada cobranza).
+function irACobranzaCliente(nombreCliente) {
+  const btn = document.querySelector('.tab[onclick*="cambiarTab(\'cobranza\'"]');
+  cambiarTab('cobranza', btn);
+  setTimeout(() => {
+    const buscar = document.getElementById('c-buscar');
+    if (buscar) { buscar.value = nombreCliente; filtrarCobranza(); }
+  }, 100);
+}
+
 function renderCatClientes() {
   const tbody = document.getElementById('cat-cli-tbody');
   if (!catClientes.length) {
@@ -6734,6 +6820,8 @@ function renderCatClientes() {
     const domsBadge = doms.length > 0
       ? '<span class="seg-badge" title="'+doms.map(d=>d.nombre||d.dir).join(', ')+'">📍 '+doms.length+'</span>'
       : '—';
+    const nPend = cobranzasPendientesCliente(e.nombre).length;
+    const nombreEsc = e.nombre.replace(/'/g,"\\'");
     return `<tr>
       <td style="font-weight:500">${e.nombre}<br><span style="font-size:11px;color:var(--color-text-secondary,#888780)">${e.rfc||''}</span></td>
       <td style="font-size:12px">${e.contacto||'—'}</td>
@@ -6741,7 +6829,9 @@ function renderCatClientes() {
       <td style="font-size:12px;color:var(--color-brand)">${e.email?'<a href="mailto:'+e.email+'">'+e.email+'</a>':'—'}</td>
       <td>${domsBadge}</td>
       <td class="trunc muted" style="font-size:12px">${e.notas||'—'}</td>
-      <td style="white-space:nowrap;display:flex;gap:4px">
+      <td style="white-space:nowrap;display:flex;gap:4px;align-items:center">
+        <button class="btn-sm view" onclick="enviarEstadoCuentaWhatsApp('${nombreEsc}')" title="Enviar estado de cuenta por WhatsApp">📲${nPend?' '+nPend:''}</button>
+        <button class="btn-sm view" onclick="irACobranzaCliente('${nombreEsc}')" title="Ver cobranza de este cliente (para aplicar comprobante)">📎</button>
         <button class="btn-sm view" onclick="abrirEditCli(${e.id})" title="Editar">✏️</button>
         <button class="btn-sm del" onclick="eliminarCatalogo('cliente',${e.id})" title="Eliminar">✕</button>
       </td>
