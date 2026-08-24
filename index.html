@@ -2554,7 +2554,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         La contraseña se comparte, pero tu nombre queda guardado en los viajes, cobranza y pagos que registres o edites desde este equipo.
       </p>
       <div id="sel-usuario-rapidos" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
-      <div class="fg"><label>Tu nombre</label>
+      <div class="fg"><label id="sel-usuario-label">Tu nombre</label>
         <input type="text" id="sel-usuario-input" placeholder="Ej. Luis, Carlos..." onkeydown="if(event.key==='Enter')confirmarUsuario()"></div>
       <div style="display:flex;gap:8px;margin-top:1rem;justify-content:flex-end">
         <button class="btn btn-primary" onclick="confirmarUsuario()">Continuar</button>
@@ -8334,14 +8334,16 @@ function actualizarBadgeUsuario() {
 function abrirSelectorUsuario(callback) {
   _usuarioCallback = callback || null;
   const wrap = document.getElementById('sel-usuario-rapidos');
+  const conocidos = usuariosConocidos();
   if (wrap) {
-    const conocidos = usuariosConocidos();
     wrap.innerHTML = conocidos.length
-      ? conocidos.map(u => `<button type="button" class="btn" style="font-size:12px;padding:5px 12px" onclick="document.getElementById('sel-usuario-input').value='${u.replace(/'/g,"\\'")}'">${u}</button>`).join('')
+      ? conocidos.map(u => `<button type="button" class="btn" style="font-size:12px;padding:5px 12px" onclick="seleccionarUsuarioConocido('${u.replace(/'/g,"\\'")}')">👤 ${u}</button>`).join('')
       : '';
   }
+  const label = document.getElementById('sel-usuario-label');
+  if (label) label.textContent = conocidos.length ? '¿Tu nombre no está en la lista? Escríbelo aquí' : 'Tu nombre';
   const input = document.getElementById('sel-usuario-input');
-  if (input) input.value = USUARIO_ACTUAL || '';
+  if (input) input.value = '';
   const ov = document.getElementById('sel-usuario-overlay');
   if (ov) ov.classList.add('show');
   setTimeout(() => { if (input) input.focus(); }, 50);
@@ -8352,13 +8354,36 @@ function cerrarSelectorUsuario() {
   if (ov) ov.classList.remove('show');
 }
 
-function confirmarUsuario() {
-  const input = document.getElementById('sel-usuario-input');
-  const nombre = (input?.value || '').trim();
-  if (!nombre) { toast('Escribe tu nombre para continuar', 'err'); return; }
+// Un clic sobre un nombre ya conocido lo confirma de inmediato — evita que,
+// tras seleccionarlo, alguien lo edite por error en el input de texto.
+function seleccionarUsuarioConocido(nombre) {
   USUARIO_ACTUAL = nombre;
   localStorage.setItem('vazse_usuario_actual', nombre);
   _recordarUsuarioConocido(nombre);
+  actualizarBadgeUsuario();
+  cerrarSelectorUsuario();
+  if (typeof poblarFiltrosUsuario === 'function') poblarFiltrosUsuario();
+  const cb = _usuarioCallback; _usuarioCallback = null;
+  if (cb) cb();
+}
+
+function confirmarUsuario() {
+  const input = document.getElementById('sel-usuario-input');
+  const nombre = (input?.value || '').trim();
+  if (!nombre) { toast('Escribe tu nombre o elige uno de la lista', 'err'); return; }
+  // Si ya existen nombres guardados y lo escrito no coincide con ninguno,
+  // probablemente sea un error de dedo (p.ej. "Luiz" en vez de "Luis").
+  // Se confirma antes de crear un usuario nuevo, para no ir acumulando variantes.
+  const conocidos = usuariosConocidos();
+  const coincide = conocidos.find(u => u.toUpperCase() === nombre.toUpperCase());
+  if (!coincide && conocidos.length) {
+    const ok = confirm('No encontré "' + nombre + '" en la lista de usuarios ya registrados:\n\n' + conocidos.join(', ') + '\n\n¿Seguro que quieres crear un usuario nuevo con ese nombre?\n\n(Si fue un error de dedo, cancela y selecciona tu nombre de la lista)');
+    if (!ok) return;
+  }
+  const nombreFinal = coincide || nombre;
+  USUARIO_ACTUAL = nombreFinal;
+  localStorage.setItem('vazse_usuario_actual', nombreFinal);
+  _recordarUsuarioConocido(nombreFinal);
   actualizarBadgeUsuario();
   cerrarSelectorUsuario();
   if (typeof poblarFiltrosUsuario === 'function') poblarFiltrosUsuario();
