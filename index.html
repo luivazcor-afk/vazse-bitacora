@@ -1879,6 +1879,8 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
           </table>
         </div>
       </div>
+      <div class="muted" style="font-size:11.5px;margin-top:6px">💡 Haz clic en un cliente para ver su estado de cuenta individual (imprimir / WhatsApp)</div>
+      <div id="rep-cli-detalle" style="margin-top:1rem"></div>
     </div>
 
     <!-- POR UNIDAD -->
@@ -5341,8 +5343,19 @@ function renderResumenTabla(tbody_id, rows) {
 const CHART_COLORS = ['#378ADD','#1D9E75','#D85A30','#7F77DD','#BA7517','#3B6D11','#A32D2D','var(--color-brand)','#854F0B','#444441'];
 
 function renderReporteClientes() {
-  const rows = agrupar('cliente').slice(0,10);
-  renderResumenTabla('rep-clientes-tbody', rows);
+  const todos = agrupar('cliente');
+  const rows = todos.slice(0,10); // la gráfica muestra solo el top 10
+  // La tabla lista TODOS los clientes; cada fila abre su estado de cuenta individual
+  const _d = document.getElementById('rep-cli-detalle'); if (_d) _d.innerHTML = '';
+  _repCobRows = todos.map(r => r.key);
+  document.getElementById('rep-clientes-tbody').innerHTML = todos.length ? todos.map((r, _i) => `<tr style="cursor:pointer" onclick="verDetalleCobCliente(${_i},'rep-cli-detalle')" title="Clic para ver estado de cuenta">
+    <td style="font-weight:500;color:var(--color-brand)">${r.key} <span style="font-size:10px;opacity:.6">▸</span></td>
+    <td class="num neu">${r.count}</td>
+    <td class="num pos">${fmt(r.cobrado)}</td>
+    <td class="num neg">${fmt(r.costo)}</td>
+    <td class="num" style="color:${r.util>=0?'#0F6E56':'#993C1D'};font-weight:500">${fmt(r.util)}</td>
+    <td class="num" style="color:${colorMargen(r.margen)};font-weight:500">${fmtPct(r.margen)}</td>
+  </tr>`).join('') : '<tr><td colspan="6"><div class="empty-state"><p>Sin datos</p></div></td></tr>';
   if(graficaClientes) graficaClientes.destroy();
   graficaClientes = new Chart(document.getElementById('chart-clientes'),{
     type:'bar',
@@ -6193,11 +6206,18 @@ function _cobEstadoReal(r, hoyStr) {
   return r.estado || 'pendiente';
 }
 
-function verDetalleCobCliente(i) {
+// Comparación de nombres de cliente tolerante a mayúsculas/espacios
+function _mismoCliente(a, b) {
+  const n = s => (s || '(sin cliente)').toString().trim().toUpperCase();
+  return n(a) === n(b);
+}
+
+function verDetalleCobCliente(i, destId) {
+  destId = destId || 'rep-cob-detalle';
   const cliente = _repCobRows[i];
   if (!cliente) return;
   const hoyStr = new Date().toISOString().split('T')[0];
-  const facts = cobranzas.filter(r => (r.cliente || '(sin cliente)') === cliente);
+  const facts = cobranzas.filter(r => _mismoCliente(r.cliente, cliente));
   const orden = { vencido: 0, parcial: 1, pendiente: 2, pagado: 3 };
   facts.sort((a, b) => {
     const ea = _cobEstadoReal(a, hoyStr), eb = _cobEstadoReal(b, hoyStr);
@@ -6230,10 +6250,11 @@ function verDetalleCobCliente(i) {
       <td>${badgeEstado(est)}</td>
     </tr>`;
   }).join('');
-  document.getElementById('rep-cob-detalle').innerHTML = `
+  document.getElementById(destId).innerHTML = `
     <div class="section-label" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       Estado de cuenta — ${cliente}
-      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="imprimirEdoCuenta(${i})">🖨️ Imprimir / enviar</button>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="imprimirEdoCuenta(${i})">🖨️ Imprimir / PDF</button>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="enviarEstadoCuentaWhatsApp(_repCobRows[${i}])">📲 WhatsApp</button>
     </div>
     <div class="flujo-grid" style="margin-bottom:10px">
       <div class="flujo-card flujo-salida"><div class="flujo-label">🔴 Adeudo total</div><div class="flujo-val neg">${fmt(totalAdeudo)}</div><div class="flujo-sub">${facts.filter(r => _cobEstadoReal(r, hoyStr) !== 'pagado').length} movimiento(s)</div></div>
@@ -6245,7 +6266,7 @@ function verDetalleCobCliente(i) {
         <tbody>${filas || '<tr><td colspan="9"><div class="empty-state"><p>Sin movimientos</p></div></td></tr>'}</tbody>
       </table>
     </div></div>`;
-  document.getElementById('rep-cob-detalle').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById(destId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function imprimirEdoCuenta(i) {
@@ -6253,7 +6274,7 @@ function imprimirEdoCuenta(i) {
   if (!cliente) return;
   const hoyStr = new Date().toISOString().split('T')[0];
   const adeudos = cobranzas
-    .filter(r => (r.cliente || '(sin cliente)') === cliente && _cobEstadoReal(r, hoyStr) !== 'pagado')
+    .filter(r => _mismoCliente(r.cliente, cliente) && _cobEstadoReal(r, hoyStr) !== 'pagado')
     .sort((a, b) => fmtFecha(a.fechaVencimiento) < fmtFecha(b.fechaVencimiento) ? -1 : 1);
   const _saldoDe = r => Math.max((r.monto || 0) - (r.abonos || []).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0), 0);
   const total = adeudos.reduce((s, r) => s + _saldoDe(r), 0);
@@ -6318,7 +6339,8 @@ function renderReporteCobClientes() {
     if (r.estado==='pagado') map[k].pagado += r.monto||0;
     else map[k].pendiente += r.monto||0;
   });
-  const rows = Object.entries(map).sort((a,b)=>b[1].total-a[1].total).slice(0,10);
+  const rowsAll = Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  const rows = rowsAll; // tabla con TODOS los clientes; la gráfica usa el top 10
 
   const _det = document.getElementById('rep-cob-detalle'); if (_det) _det.innerHTML = '';
   _repCobRows = rows.map(([k]) => k);
@@ -6336,12 +6358,13 @@ function renderReporteCobClientes() {
     }).join('') : '<tr><td colspan="6"><div class="empty-state"><p>Sin datos</p></div></td></tr>';
 
   if (graficaCobClientes) graficaCobClientes.destroy();
-  const labels = rows.map(([k])=>k.length>12?k.slice(0,12)+'…':k);
+  const rowsChart = rows.slice(0,10);
+  const labels = rowsChart.map(([k])=>k.length>12?k.slice(0,12)+'…':k);
   graficaCobClientes = new Chart(document.getElementById('chart-cob-clientes'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:'Pagado',data:rows.map(([,v])=>+v.pagado.toFixed(2)),backgroundColor:'#5DCAA5',borderRadius:3},
-      {label:'Pendiente',data:rows.map(([,v])=>+v.pendiente.toFixed(2)),backgroundColor:'#F0997B',borderRadius:3},
+      {label:'Pagado',data:rowsChart.map(([,v])=>+v.pagado.toFixed(2)),backgroundColor:'#5DCAA5',borderRadius:3},
+      {label:'Pendiente',data:rowsChart.map(([,v])=>+v.pendiente.toFixed(2)),backgroundColor:'#F0997B',borderRadius:3},
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:12}}},
