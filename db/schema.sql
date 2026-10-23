@@ -1,0 +1,156 @@
+-- Bitácora VAZSE — esquema MySQL/MariaDB
+-- Reemplaza las hojas de Google Sheets (Bitácora, Cobranza, Proveedores,
+-- Clientes, ProveedoresCat, ServiciosCat, Cotizaciones, Config).
+-- Fechas: se guardan como DATE en hora de México (el Sheet las exponía
+-- como medianoche local = 06:00Z).
+
+CREATE DATABASE IF NOT EXISTS vazse_bitacora
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE vazse_bitacora;
+
+-- Hoja "Bitácora". La referencia NO es única (hay viajes que la comparten),
+-- por eso cada viaje tiene su propio id.
+CREATE TABLE IF NOT EXISTS viajes (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  fecha             DATE NULL,
+  tipo              VARCHAR(60)   NOT NULL DEFAULT '',
+  cliente           VARCHAR(150)  NOT NULL DEFAULT '',
+  unidad            VARCHAR(150)  NOT NULL DEFAULT '',  -- proveedor / transportista
+  origen            VARCHAR(120)  NOT NULL DEFAULT '',
+  destino           VARCHAR(120)  NOT NULL DEFAULT '',
+  costo             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  cobrado           DECIMAL(12,2) NOT NULL DEFAULT 0,
+  utilidad          DECIMAL(12,2) NOT NULL DEFAULT 0,
+  referencia        VARCHAR(60)   NOT NULL DEFAULT '',
+  notas             TEXT          NULL,
+  contenedor        VARCHAR(30)   NOT NULL DEFAULT '',
+  patio             VARCHAR(60)   NOT NULL DEFAULT '',
+  maniobras         DECIMAL(12,2) NOT NULL DEFAULT 0,
+  maniobras_cobrado DECIMAL(12,2) NOT NULL DEFAULT 0,
+  maniobras_desc    VARCHAR(255)  NOT NULL DEFAULT '',
+  url_eir           VARCHAR(500)  NOT NULL DEFAULT '',
+  estado_flete      VARCHAR(20)   NOT NULL DEFAULT '',
+  usuario           VARCHAR(60)   NOT NULL DEFAULT '',
+  creado_en         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_fecha (fecha),
+  KEY idx_referencia (referencia),
+  KEY idx_contenedor (contenedor),
+  KEY idx_cliente (cliente)
+) ENGINE=InnoDB;
+
+-- Hoja "Cobranza"
+CREATE TABLE IF NOT EXISTS cobranza (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  folio             VARCHAR(40)   NOT NULL,
+  cliente           VARCHAR(150)  NOT NULL DEFAULT '',
+  monto             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  fecha_emision     DATE NULL,
+  fecha_vencimiento DATE NULL,
+  estado            VARCHAR(20)   NOT NULL DEFAULT 'pendiente',
+  referencia        VARCHAR(60)   NOT NULL DEFAULT '',
+  url_factura       VARCHAR(500)  NOT NULL DEFAULT '',
+  url_evidencia     VARCHAR(500)  NOT NULL DEFAULT '',
+  notas             TEXT          NULL,
+  fecha_cobro       DATE NULL,
+  seguimiento       JSON          NULL,
+  abonos            JSON          NULL,
+  usuario           VARCHAR(60)   NOT NULL DEFAULT '',
+  creado_en         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_folio (folio),
+  KEY idx_estado (estado),
+  KEY idx_referencia (referencia)
+) ENGINE=InnoDB;
+
+-- Hoja "Proveedores" (movimientos / pagos a proveedores)
+CREATE TABLE IF NOT EXISTS pagos (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  folio             VARCHAR(40)   NOT NULL,
+  proveedor         VARCHAR(150)  NOT NULL DEFAULT '',
+  monto             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  fecha             DATE NULL,
+  fecha_pago        DATE NULL,
+  estado            VARCHAR(20)   NOT NULL DEFAULT 'pendiente',
+  referencia        VARCHAR(60)   NOT NULL DEFAULT '',
+  concepto          VARCHAR(255)  NOT NULL DEFAULT '',
+  notas             TEXT          NULL,
+  usuario           VARCHAR(60)   NOT NULL DEFAULT '',
+  creado_en         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_folio (folio),
+  KEY idx_proveedor (proveedor),
+  KEY idx_referencia (referencia)
+) ENGINE=InnoDB;
+
+-- Hoja "Clientes"
+CREATE TABLE IF NOT EXISTS clientes (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre            VARCHAR(150)  NOT NULL,
+  rfc               VARCHAR(20)   NOT NULL DEFAULT '',
+  contacto          VARCHAR(120)  NOT NULL DEFAULT '',
+  tel               VARCHAR(40)   NOT NULL DEFAULT '',
+  email             VARCHAR(150)  NOT NULL DEFAULT '',
+  notas             TEXT          NULL,
+  domicilios        JSON          NULL,
+  UNIQUE KEY uk_nombre (nombre)
+) ENGINE=InnoDB;
+
+-- Hoja "ProveedoresCat"
+CREATE TABLE IF NOT EXISTS proveedores_cat (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre            VARCHAR(150)  NOT NULL,
+  rfc               VARCHAR(20)   NOT NULL DEFAULT '',
+  tipo              VARCHAR(40)   NOT NULL DEFAULT '',
+  contacto          VARCHAR(120)  NOT NULL DEFAULT '',
+  tel1              VARCHAR(40)   NOT NULL DEFAULT '',
+  tel2              VARCHAR(40)   NOT NULL DEFAULT '',
+  email1            VARCHAR(150)  NOT NULL DEFAULT '',
+  email2            VARCHAR(150)  NOT NULL DEFAULT '',
+  cuentas           JSON          NULL,
+  notas             TEXT          NULL,
+  UNIQUE KEY uk_nombre (nombre)
+) ENGINE=InnoDB;
+
+-- Hoja "ServiciosCat"
+CREATE TABLE IF NOT EXISTS servicios_cat (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre            VARCHAR(150)  NOT NULL,
+  clave_sat         VARCHAR(20)   NOT NULL DEFAULT '',
+  unidad_sat        VARCHAR(10)   NOT NULL DEFAULT '',
+  descripcion       VARCHAR(255)  NOT NULL DEFAULT '',
+  retencion         ENUM('si','no') NOT NULL DEFAULT 'no',
+  UNIQUE KEY uk_nombre (nombre)
+) ENGINE=InnoDB;
+
+-- Hoja "Cotizaciones"
+CREATE TABLE IF NOT EXISTS cotizaciones (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  folio             VARCHAR(40)   NOT NULL,
+  fecha             DATE NULL,
+  cliente           VARCHAR(150)  NOT NULL DEFAULT '',
+  unidad            VARCHAR(30)   NOT NULL DEFAULT '',
+  unidad_nombre     VARCHAR(80)   NOT NULL DEFAULT '',
+  origen            VARCHAR(120)  NOT NULL DEFAULT '',
+  destino           VARCHAR(120)  NOT NULL DEFAULT '',
+  km                DECIMAL(10,2) NOT NULL DEFAULT 0,
+  redondo           VARCHAR(20)   NOT NULL DEFAULT '',
+  casetas           DECIMAL(12,2) NOT NULL DEFAULT 0,
+  maniobras         DECIMAL(12,2) NOT NULL DEFAULT 0,
+  otros             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  costo             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  precio            DECIMAL(12,2) NOT NULL DEFAULT 0,
+  margen            DECIMAL(6,2)  NOT NULL DEFAULT 0,
+  estado            VARCHAR(20)   NOT NULL DEFAULT 'borrador',
+  vigencia          INT           NOT NULL DEFAULT 15,
+  notas             TEXT          NULL,
+  UNIQUE KEY uk_folio (folio)
+) ENGINE=InnoDB;
+
+-- Hoja "Config" (pares clave/valor)
+CREATE TABLE IF NOT EXISTS config (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  clave             VARCHAR(60)   NOT NULL,
+  valor             TEXT          NULL,
+  UNIQUE KEY uk_clave (clave)
+) ENGINE=InnoDB;
