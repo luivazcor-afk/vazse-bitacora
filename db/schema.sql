@@ -147,6 +147,31 @@ CREATE TABLE IF NOT EXISTS cotizaciones (
   UNIQUE KEY uk_folio (folio)
 ) ENGINE=InnoDB;
 
+-- Cuentas de acceso (una por persona). nombre es lo que se guarda en el
+-- campo "usuario" de viajes, cobranza y pagos.
+CREATE TABLE IF NOT EXISTS usuarios (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  usuario           VARCHAR(40)   NOT NULL,
+  nombre            VARCHAR(60)   NOT NULL,
+  password_hash     VARCHAR(255)  NOT NULL,
+  rol               ENUM('admin','usuario') NOT NULL DEFAULT 'usuario',
+  activo            TINYINT(1)    NOT NULL DEFAULT 1,
+  debe_cambiar      TINYINT(1)    NOT NULL DEFAULT 0,  -- forzar cambio de contraseña al entrar
+  creado_en         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ultimo_acceso     TIMESTAMP     NULL,
+  UNIQUE KEY uk_usuario (usuario)
+) ENGINE=InnoDB;
+
+-- Intentos de login fallidos, para bloquear ataques de fuerza bruta
+CREATE TABLE IF NOT EXISTS login_intentos (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  usuario           VARCHAR(40)   NOT NULL,
+  ip                VARCHAR(45)   NOT NULL,
+  fecha             TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_usuario_fecha (usuario, fecha),
+  KEY idx_ip_fecha (ip, fecha)
+) ENGINE=InnoDB;
+
 -- Hoja "Config" (pares clave/valor)
 CREATE TABLE IF NOT EXISTS config (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

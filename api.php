@@ -12,14 +12,7 @@
  * normalizarDatosV30() del frontend funcione sin cambios.
  */
 
-require __DIR__ . '/db/conexion.php';
-
-// Sin login todavía: solo se aceptan peticiones desde esta computadora.
-$ip = $_SERVER['REMOTE_ADDR'] ?? '';
-if (!in_array($ip, ['127.0.0.1', '::1'], true)) {
-  http_response_code(403);
-  exit('Acceso solo desde localhost');
-}
+require __DIR__ . '/db/sesion.php';
 
 const TZ_MX = 'America/Mexico_City';
 
@@ -436,20 +429,41 @@ function procesarEscritura(array $p): array {
 
 $cb = $_GET['cb'] ?? $_GET['callback'] ?? 'cb';
 if (!preg_match('/^[A-Za-z_$][\w$]{0,80}$/', $cb)) $cb = 'cb';
+$esPost = $_SERVER['REQUEST_METHOD'] === 'POST';
+
+// Toda petición requiere sesión. Se responde con 200 + auth:false (y no 401)
+// porque un <script> JSONP con error HTTP no ejecuta el callback y la app
+// no podría distinguirlo de un fallo de red.
+$yo = usuarioSesion();
+if (!$yo) {
+  responder(['ok' => false, 'auth' => false, 'error' => 'Tu sesión expiró. Vuelve a iniciar sesión.'], $esPost ? null : $cb);
+}
+if ($yo['debe_cambiar']) {
+  responder(['ok' => false, 'auth' => false, 'cambiarPassword' => true, 'error' => 'Debes cambiar tu contraseña antes de continuar.'], $esPost ? null : $cb);
+}
+
+// "Quién capturó" lo define la sesión, no lo que mande el navegador
+function etiquetarUsuario(array $p, string $nombre): array {
+  foreach (['registro', 'cobranza', 'pago'] as $k) {
+    if (isset($p[$k]) && is_array($p[$k])) $p[$k]['usuario'] = $nombre;
+  }
+  $p['usuario'] = $nombre;
+  return $p;
+}
 
 try {
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if ($esPost) {
     $payload = json_decode(file_get_contents('php://input'), true, 512, JSON_THROW_ON_ERROR);
-    responder(is_array($payload) ? procesarEscritura($payload) : ['ok' => false, 'error' => 'payload inválido'], null);
+    responder(is_array($payload) ? procesarEscritura(etiquetarUsuario($payload, $yo['nombre'])) : ['ok' => false, 'error' => 'payload inválido'], null);
   }
   if (($_GET['action'] ?? '') === 'write' && isset($_GET['data'])) {
     $payload = json_decode($_GET['data'], true, 512, JSON_THROW_ON_ERROR);
-    responder(is_array($payload) ? procesarEscritura($payload) : ['ok' => false, 'error' => 'payload inválido'], $cb);
+    responder(is_array($payload) ? procesarEscritura(etiquetarUsuario($payload, $yo['nombre'])) : ['ok' => false, 'error' => 'payload inválido'], $cb);
   }
   responder(leerTodo(), $cb);
 } catch (Throwable $e) {
   error_log('[api.php] ' . $e->getMessage());
-  $esWrite = $_SERVER['REQUEST_METHOD'] === 'POST' || ($_GET['action'] ?? '') === 'write';
+  $esWrite = $esPost || ($_GET['action'] ?? '') === 'write';
   responder($esWrite ? ['ok' => false, 'error' => $e->getMessage()] : ['error' => $e->getMessage()],
-    $_SERVER['REQUEST_METHOD'] === 'POST' ? null : $cb);
+    $esPost ? null : $cb);
 }

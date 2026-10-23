@@ -757,6 +757,8 @@ html[data-theme=dark] .res-refresh:hover{background:#233447;color:#7FB2EA}
 /* Este overlay se abre ENCIMA de la Carta de Instrucciones (#carta-overlay, z-index:1000),
    por eso necesita quedar por arriba de esa capa y no solo del z-index:200 genérico de .cat-overlay */
 #sel-usuario-overlay, #pedimento-review-overlay{ z-index:1100 }
+/* Cuenta / contraseña / usuarios: por encima de los demás modales (el login, z-index:9999, ya está oculto cuando se abren) */
+#cuenta-overlay, #pass-overlay, #usuarios-overlay{ z-index:1200 }
 .cat-modal{
   background:#fff;border-radius:16px;width:100%;
   max-width:640px;max-height:90vh;overflow-y:auto;
@@ -1278,7 +1280,13 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
            onerror="this.style.display='none'">
     </div>
     <div class="login-title" id="login-title">Resolución Estratégica VAZSE</div>
-    <div class="login-sub">Sistema de control de viajes y cobranza</div>
+    <div class="login-sub" id="login-sub">Sistema de control de viajes y cobranza</div>
+    <!-- Solo en modo servidor (PHP), cuando aún no existe ningún usuario -->
+    <div class="login-field" id="login-nombre-wrap" style="display:none">
+      <label>Tu nombre (así aparecerá en lo que captures)</label>
+      <input type="text" id="login-nombre" placeholder="Ej. Luis Vázquez" autocomplete="name"
+             onkeydown="if(event.key==='Enter')document.getElementById('login-user').focus()">
+    </div>
     <div class="login-field">
       <label>Usuario</label>
       <input type="text" id="login-user" placeholder="usuario" autocomplete="username"
@@ -1287,6 +1295,11 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
     <div class="login-field">
       <label>Contraseña</label>
       <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')hacerLogin()">
+    </div>
+    <div class="login-field" id="login-pass2-wrap" style="display:none">
+      <label>Confirma la contraseña</label>
+      <input type="password" id="login-pass2" placeholder="••••••••" autocomplete="new-password"
              onkeydown="if(event.key==='Enter')hacerLogin()">
     </div>
     <button class="login-btn" onclick="hacerLogin()">Ingresar →</button>
@@ -1467,7 +1480,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         </div>
       </div>
       <div class="btns" style="align-items:center">
-        <button class="btn" id="badge-usuario" onclick="abrirSelectorUsuario()" title="Cambiar quién está usando el equipo" style="font-size:11px;padding:5px 10px">👤 Elegir usuario</button>
+        <button class="btn" id="badge-usuario" onclick="clicBadgeUsuario()" title="Cambiar quién está usando el equipo" style="font-size:11px;padding:5px 10px">👤 Elegir usuario</button>
         <button class="btn" onclick="abrirMisDatos()" title="Mis datos y aduanas" style="font-size:11px;padding:5px 10px">⚙️</button>
         <button class="btn" onclick="cerrarSesion()" title="Cerrar sesión" style="font-size:11px;padding:5px 10px">🔒 Salir</button>
         <div class="mes-nav-pill" style="display:flex;align-items:center;gap:2px;border-radius:8px;padding:3px 6px">
@@ -2564,6 +2577,71 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
     </div>
   </div>
 
+  <!-- MODO SERVIDOR (PHP): MI CUENTA -->
+  <div id="cuenta-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarCuenta()">
+    <div class="cat-modal" style="max-width:380px">
+      <button class="cat-modal-close" onclick="cerrarCuenta()">✕</button>
+      <div class="cat-modal-title">👤 Mi cuenta</div>
+      <div id="cuenta-info" style="font-size:13px;margin-bottom:1rem"></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn" onclick="cerrarCuenta();abrirCambioPassword(false)">🔑 Cambiar mi contraseña</button>
+        <button class="btn" id="cuenta-btn-usuarios" style="display:none" onclick="cerrarCuenta();abrirUsuarios()">👥 Administrar usuarios</button>
+        <button class="btn btn-danger" onclick="cerrarSesion()">🔒 Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODO SERVIDOR (PHP): CAMBIAR CONTRASEÑA -->
+  <div id="pass-overlay" class="cat-overlay" onclick="if(event.target===this && !_passForzado)cerrarCambioPassword()">
+    <div class="cat-modal" style="max-width:380px">
+      <button class="cat-modal-close" id="pass-close" onclick="cerrarCambioPassword()">✕</button>
+      <div class="cat-modal-title">🔑 Cambiar contraseña</div>
+      <p id="pass-aviso" style="display:none;font-size:12px;color:#854F0B;background:#FFFBF0;border-radius:8px;padding:8px 10px;margin:0 0 12px">
+        Tu contraseña es temporal. Elige una nueva para continuar.
+      </p>
+      <div class="fg"><label>Contraseña actual</label><input type="password" id="pass-actual" autocomplete="current-password"></div>
+      <div class="fg" style="margin-top:8px"><label>Contraseña nueva</label><input type="password" id="pass-nueva" autocomplete="new-password"></div>
+      <div class="fg" style="margin-top:8px"><label>Confirma la contraseña nueva</label>
+        <input type="password" id="pass-nueva2" autocomplete="new-password" onkeydown="if(event.key==='Enter')guardarCambioPassword()"></div>
+      <div style="display:flex;gap:8px;margin-top:1rem;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="guardarCambioPassword()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODO SERVIDOR (PHP): ADMINISTRAR USUARIOS (solo admin) -->
+  <div id="usuarios-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarUsuarios()">
+    <div class="cat-modal" style="max-width:760px">
+      <button class="cat-modal-close" onclick="cerrarUsuarios()">✕</button>
+      <div class="cat-modal-title">👥 Usuarios</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;min-width:0;border-collapse:collapse;font-size:12px">
+          <thead><tr style="text-align:left;border-bottom:1px solid var(--color-border,#E5E3DE)">
+            <th style="padding:6px">Nombre</th><th style="padding:6px">Usuario</th><th style="padding:6px">Rol</th>
+            <th style="padding:6px">Estado</th><th style="padding:6px">Último acceso</th><th style="padding:6px"></th>
+          </tr></thead>
+          <tbody id="usuarios-tbody"></tbody>
+        </table>
+      </div>
+      <div class="cat-modal-title" id="usr-form-titulo" style="margin:1.5rem 0 .75rem">➕ Nuevo usuario</div>
+      <input type="hidden" id="usr-id">
+      <div class="form-grid">
+        <div class="fg"><label>Nombre</label><input type="text" id="usr-nombre" placeholder="Ej. Carlos Pérez"></div>
+        <div class="fg"><label>Usuario (para entrar)</label><input type="text" id="usr-usuario" placeholder="ej. carlos" autocomplete="off"></div>
+        <div class="fg"><label id="usr-pass-label">Contraseña temporal</label><input type="text" id="usr-pass" autocomplete="off"></div>
+        <div class="fg"><label>Rol</label>
+          <select id="usr-rol"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></div>
+      </div>
+      <p style="font-size:11px;color:var(--color-text-secondary,#888780);margin:8px 0 0">
+        La contraseña temporal se le pedirá cambiar la primera vez que entre. Compártela en persona, no por correo ni chat.
+      </p>
+      <div style="display:flex;gap:8px;margin-top:1rem;justify-content:flex-end">
+        <button class="btn" id="usr-cancelar" style="display:none" onclick="limpiarFormUsuario()">Cancelar</button>
+        <button class="btn btn-primary" id="usr-guardar" onclick="guardarUsuario()">Crear usuario</button>
+      </div>
+    </div>
+  </div>
+
   <div id="edit-cli-overlay" class="cat-overlay" onclick="if(event.target===this)cerrarEditCli()">
     <div class="cat-modal">
       <button class="cat-modal-close" onclick="cerrarEditCli()">✕</button>
@@ -3324,6 +3402,15 @@ async function sendPost(payload) {
   if (estaOnline()) {
     try {
       const resp = await sendPostJsonp(payload);
+      if (resp && resp.auth === false) {
+        // Sesión expirada: guardar el cambio en la cola para reenviarlo al volver a entrar
+        const cola = getCola();
+        cola.push(payload);
+        saveCola(cola);
+        manejarSesionInvalida(resp);
+        toast('Tu sesión expiró — el cambio se guardará al volver a entrar', 'inf');
+        return resp;
+      }
       if (resp && resp.ok === false && resp.error) {
         console.warn('[VAZSE] Backend rechazó', payload.action, resp.error);
         toast('⚠️ ' + resp.error, 'err');
@@ -3749,6 +3836,13 @@ async function cargar() {
     } else {
       data = JSON.parse(trimmed);
     }
+    // Modo servidor: sesión expirada o contraseña temporal → pedir login, sin usar caché
+    if (data && data.auth === false) {
+      setStatus('v', 'err', 'Sesión expirada');
+      setStatus('c', 'err', 'Sesión expirada');
+      manejarSesionInvalida(data);
+      return;
+    }
     // El v30 devuelve filas como arrays crudos; normalizar a objetos.
     data = normalizarDatosV30(data);
 
@@ -3777,8 +3871,9 @@ async function cargar() {
     filtrarViajes(); actualizarGraficaV();
     filtrarCobranza();
     filtrarPagos();
-    setStatus('v', 'ok', 'Conectado a Google Sheets');
-    setStatus('c', 'ok', 'Conectado a Google Sheets');
+    const _origen = authServidor() ? 'Conectado al servidor' : 'Conectado a Google Sheets';
+    setStatus('v', 'ok', _origen);
+    setStatus('c', 'ok', _origen);
     verificarVencidos();
     actualizarEstadoOffline();
 
@@ -8358,11 +8453,260 @@ async function _sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
+// ── LOGIN EN SERVIDOR (PHP) ──────────────────────────
+// Cuando scriptUrl apunta a api.php el login lo valida el servidor (auth.php)
+// con una cuenta por persona. Con el Apps Script se usa el login de arriba.
+function authServidor() { return /(^|\/)api\.php(\?|$)/.test(getScriptUrlBase()); }
+function _authUrl() { return getScriptUrlBase().replace(/api\.php.*$/, 'auth.php'); }
+
+let USUARIO_SERVIDOR = null;   // {usuario, nombre, rol, debeCambiar}
+let _setupModo = false;
+
+async function authPost(payload) {
+  const res = await fetch(_authUrl(), {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  try { return await res.json(); }
+  catch (e) { return { ok: false, error: 'Respuesta inválida del servidor (' + res.status + ')' }; }
+}
+
+function _escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function _mostrarErrorLogin(msg) {
+  const err = document.getElementById('login-error');
+  err.textContent = msg;
+  err.classList.add('show');
+}
+
+// El usuario de la sesión es quien captura: reemplaza al selector "¿Quién eres?"
+function aplicarUsuarioServidor(u) {
+  USUARIO_SERVIDOR = u;
+  USUARIO_ACTUAL = u ? u.nombre : '';
+  actualizarBadgeUsuario();
+  const b = document.getElementById('badge-usuario');
+  if (b) b.title = 'Mi cuenta';
+}
+
+function _modoSetup(activo, permitido) {
+  _setupModo = activo && permitido;
+  document.getElementById('login-nombre-wrap').style.display = _setupModo ? '' : 'none';
+  document.getElementById('login-pass2-wrap').style.display = _setupModo ? '' : 'none';
+  document.getElementById('login-sub').textContent = !activo
+    ? 'Sistema de control de viajes y cobranza'
+    : (permitido ? 'Primer uso: crea la cuenta de administrador'
+                 : 'El sistema aún no tiene usuarios. El administrador debe crearse desde la computadora del servidor.');
+  document.querySelector('.login-btn').textContent = _setupModo ? 'Crear administrador →' : 'Ingresar →';
+  document.getElementById('login-pass').autocomplete = _setupModo ? 'new-password' : 'current-password';
+}
+
+// Arranque en modo servidor: true si hay sesión válida
+async function verificarAuthServidor() {
+  const el = document.getElementById('login-screen');
+  let r;
+  try { r = await authPost({ action: 'estado' }); }
+  catch (e) { r = { ok: false, error: 'No se pudo conectar con el servidor' }; }
+  if (r.ok && r.autenticado) {
+    aplicarUsuarioServidor(r.usuario);
+    if (el) el.style.display = 'none';
+    if (r.usuario.debeCambiar) abrirCambioPassword(true);
+    return true;
+  }
+  if (el) el.style.display = 'flex';
+  if (!r.ok) _mostrarErrorLogin(r.error || 'No se pudo conectar con el servidor');
+  _modoSetup(!!r.setup, !!r.setupPermitido);
+  return false;
+}
+
+// Al entrar (login o setup): pedir cambio de contraseña si es temporal, luego cargar
+function _despuesDeEntrar(u) {
+  aplicarUsuarioServidor(u);
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-pass2').value = '';
+  if (u.debeCambiar) { abrirCambioPassword(true); return; }
+  actualizarLabelMes();
+  cargar().then(() => { if (getCola().length) sincronizarCola(); });
+}
+
+async function _hacerLoginServidor() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  let r;
+  if (_setupModo) {
+    const nombre = document.getElementById('login-nombre').value.trim();
+    if (pass !== document.getElementById('login-pass2').value) { _mostrarErrorLogin('Las contraseñas no coinciden'); return; }
+    r = await authPost({ action: 'setup', usuario: user, nombre, password: pass });
+    if (r.ok) toast('Administrador creado ✓', 'ok');
+  } else {
+    r = await authPost({ action: 'login', usuario: user, password: pass });
+  }
+  if (!r.ok) {
+    _mostrarErrorLogin(r.error || 'Usuario o contraseña incorrectos');
+    if (!_setupModo) { document.getElementById('login-pass').value = ''; document.getElementById('login-pass').focus(); }
+    return;
+  }
+  _modoSetup(false, false);
+  _despuesDeEntrar(r.usuario);
+}
+
+// La API respondió auth:false (sesión expirada o contraseña temporal)
+function manejarSesionInvalida(resp) {
+  if (resp && resp.cambiarPassword) { abrirCambioPassword(true); return; }
+  USUARIO_SERVIDOR = null;
+  _modoSetup(false, false);
+  document.getElementById('login-screen').style.display = 'flex';
+  _mostrarErrorLogin((resp && resp.error) || 'Tu sesión expiró. Vuelve a iniciar sesión.');
+}
+
+function clicBadgeUsuario() {
+  if (!authServidor()) { abrirSelectorUsuario(); return; }
+  const u = USUARIO_SERVIDOR;
+  if (!u) return;
+  document.getElementById('cuenta-info').innerHTML =
+    '<div style="font-weight:600">' + _escHtml(u.nombre) + '</div>' +
+    '<div style="color:var(--color-text-secondary,#888780)">' + _escHtml(u.usuario) + ' · ' + (u.rol === 'admin' ? 'Administrador' : 'Usuario') + '</div>';
+  document.getElementById('cuenta-btn-usuarios').style.display = u.rol === 'admin' ? '' : 'none';
+  document.getElementById('cuenta-overlay').classList.add('show');
+}
+function cerrarCuenta() { document.getElementById('cuenta-overlay').classList.remove('show'); }
+
+// ── Cambio de contraseña ──
+let _passForzado = false;
+function abrirCambioPassword(forzado) {
+  _passForzado = !!forzado;
+  ['pass-actual', 'pass-nueva', 'pass-nueva2'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pass-aviso').style.display = _passForzado ? '' : 'none';
+  document.getElementById('pass-close').style.display = _passForzado ? 'none' : '';
+  document.getElementById('pass-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('pass-actual').focus(), 50);
+}
+function cerrarCambioPassword() {
+  if (_passForzado) return;
+  document.getElementById('pass-overlay').classList.remove('show');
+}
+async function guardarCambioPassword() {
+  const actual = document.getElementById('pass-actual').value;
+  const nueva = document.getElementById('pass-nueva').value;
+  if (nueva !== document.getElementById('pass-nueva2').value) { toast('Las contraseñas nuevas no coinciden', 'err'); return; }
+  const r = await authPost({ action: 'cambiar_password', actual, nueva });
+  if (!r.ok) { toast(r.error || 'No se pudo cambiar la contraseña', 'err'); return; }
+  const eraForzado = _passForzado;
+  _passForzado = false;
+  cerrarCambioPassword();
+  toast('Contraseña actualizada ✓', 'ok');
+  if (USUARIO_SERVIDOR) USUARIO_SERVIDOR.debeCambiar = false;
+  if (eraForzado) { actualizarLabelMes(); cargar().then(() => { if (getCola().length) sincronizarCola(); }); }
+}
+
+// ── Administración de usuarios (solo admin) ──
+let _usuariosLista = [];
+async function abrirUsuarios() {
+  limpiarFormUsuario();
+  document.getElementById('usuarios-overlay').classList.add('show');
+  await renderUsuarios();
+}
+function cerrarUsuarios() { document.getElementById('usuarios-overlay').classList.remove('show'); }
+
+async function renderUsuarios() {
+  const tb = document.getElementById('usuarios-tbody');
+  tb.innerHTML = '<tr><td colspan="6" style="padding:10px;color:#888">Cargando...</td></tr>';
+  const r = await authPost({ action: 'usuarios_listar' });
+  if (!r.ok) { tb.innerHTML = '<tr><td colspan="6" style="padding:10px;color:#C0392B">' + _escHtml(r.error) + '</td></tr>'; return; }
+  _usuariosLista = r.usuarios;
+  tb.innerHTML = r.usuarios.map(u => {
+    const acceso = u.ultimoAcceso ? new Date(u.ultimoAcceso.replace(' ', 'T')).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+    const estado = !u.activo ? '<span style="color:#C0392B">Desactivado</span>'
+      : (u.debeCambiar ? '<span style="color:#854F0B">Contraseña temporal</span>' : '<span style="color:#0F6E56">Activo</span>');
+    return '<tr style="border-bottom:1px solid var(--color-border,#EEE)' + (u.activo ? '' : ';opacity:.6') + '">' +
+      '<td style="padding:6px;font-weight:500">' + _escHtml(u.nombre) + '</td>' +
+      '<td style="padding:6px">' + _escHtml(u.usuario) + '</td>' +
+      '<td style="padding:6px">' + (u.rol === 'admin' ? 'Administrador' : 'Usuario') + '</td>' +
+      '<td style="padding:6px">' + estado + '</td>' +
+      '<td style="padding:6px">' + acceso + '</td>' +
+      '<td style="padding:6px;text-align:right"><div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap">' +
+        '<button class="btn" style="font-size:11px;padding:3px 8px" title="Editar" onclick="editarUsuario(' + u.id + ')">✏️</button>' +
+        '<button class="btn' + (u.activo ? ' btn-danger' : '') + '" style="font-size:11px;padding:3px 8px" onclick="alternarUsuarioActivo(' + u.id + ')">' + (u.activo ? 'Desactivar' : 'Activar') + '</button>' +
+      '</div></td></tr>';
+  }).join('');
+}
+
+function limpiarFormUsuario() {
+  ['usr-id', 'usr-nombre', 'usr-usuario', 'usr-pass'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('usr-rol').value = 'usuario';
+  document.getElementById('usr-usuario').disabled = false;
+  document.getElementById('usr-form-titulo').textContent = '➕ Nuevo usuario';
+  document.getElementById('usr-pass-label').textContent = 'Contraseña temporal';
+  document.getElementById('usr-pass').placeholder = '';
+  document.getElementById('usr-guardar').textContent = 'Crear usuario';
+  document.getElementById('usr-cancelar').style.display = 'none';
+}
+
+function editarUsuario(id) {
+  const u = _usuariosLista.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('usr-id').value = u.id;
+  document.getElementById('usr-nombre').value = u.nombre;
+  document.getElementById('usr-usuario').value = u.usuario;
+  document.getElementById('usr-usuario').disabled = true;
+  document.getElementById('usr-rol').value = u.rol;
+  document.getElementById('usr-pass').value = '';
+  document.getElementById('usr-form-titulo').textContent = '✏️ Editar: ' + u.nombre;
+  document.getElementById('usr-pass-label').textContent = 'Nueva contraseña temporal (opcional)';
+  document.getElementById('usr-pass').placeholder = 'déjalo vacío para no cambiarla';
+  document.getElementById('usr-guardar').textContent = 'Guardar cambios';
+  document.getElementById('usr-cancelar').style.display = '';
+  document.getElementById('usr-nombre').focus();
+}
+
+async function guardarUsuario() {
+  const id = parseInt(document.getElementById('usr-id').value || '0');
+  const nombre = document.getElementById('usr-nombre').value.trim();
+  const usuario = document.getElementById('usr-usuario').value.trim().toLowerCase();
+  const password = document.getElementById('usr-pass').value;
+  const rol = document.getElementById('usr-rol').value;
+  let r;
+  if (!id) {
+    r = await authPost({ action: 'usuario_crear', nombre, usuario, password, rol });
+  } else {
+    r = await authPost({ action: 'usuario_actualizar', id, nombre, rol });
+    if (r.ok && password) r = await authPost({ action: 'usuario_reset_password', id, password });
+  }
+  if (!r.ok) { toast(r.error || 'No se pudo guardar', 'err'); return; }
+  toast(id ? 'Usuario actualizado ✓' : 'Usuario creado ✓', 'ok');
+  // Si el admin se editó a sí mismo, refrescar su nombre/rol en la barra
+  const est = await authPost({ action: 'estado' });
+  if (est.ok && est.usuario) aplicarUsuarioServidor(est.usuario);
+  limpiarFormUsuario();
+  if (est.usuario && est.usuario.rol === 'admin') renderUsuarios(); else cerrarUsuarios();
+}
+
+async function alternarUsuarioActivo(id) {
+  const u = _usuariosLista.find(x => x.id === id);
+  if (!u) return;
+  const r = await authPost({ action: 'usuario_actualizar', id, activo: !u.activo });
+  if (!r.ok) { toast(r.error || 'No se pudo actualizar', 'err'); return; }
+  toast(u.activo ? 'Usuario desactivado' : 'Usuario activado', 'ok');
+  renderUsuarios();
+}
+
 async function hacerLogin() {
+  const btn  = document.querySelector('.login-btn');
+  if (authServidor()) {
+    const texto = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+    try { await _hacerLoginServidor(); }
+    catch (e) { _mostrarErrorLogin('No se pudo conectar con el servidor'); }
+    finally { if (btn) { btn.disabled = false; if (btn.textContent === 'Verificando...') btn.textContent = texto; } }
+    return;
+  }
   const user = document.getElementById('login-user').value.trim().toLowerCase();
   const pass = document.getElementById('login-pass').value;
   const err  = document.getElementById('login-error');
-  const btn  = document.querySelector('.login-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
   try {
     const hash = await _sha256(user + ':' + pass + ':' + _AUTH_SALT);
@@ -8390,7 +8734,12 @@ async function hacerLogin() {
   }
 }
 
-function cerrarSesion() {
+async function cerrarSesion() {
+  if (authServidor()) {
+    try { await authPost({ action: 'logout' }); } catch (e) {}
+    location.reload();
+    return;
+  }
   localStorage.removeItem('vazse_auth');
   location.reload();
 }
@@ -9254,7 +9603,22 @@ window.addEventListener('offline', () => {
 // Single repo — no config needed
 
 // Cargar config y luego verificar auth
-cargarConfig().then(() => {
+cargarConfig().then(async () => {
+  if (authServidor()) {
+    if (await verificarAuthServidor()) {
+      _TODOS_PANELES.forEach(function(pid) {
+        var p = document.getElementById('panel-' + pid);
+        if (p) {
+          p.classList.remove('active');
+          p.style.display = '';
+          if (pid === 'viajes') p.classList.add('active');
+        }
+      });
+      // Con contraseña temporal, cargar() se llama después de cambiarla
+      if (!USUARIO_SERVIDOR.debeCambiar) { actualizarLabelMes(); cargar(); }
+    }
+    return;
+  }
   if (verificarAuth()) {
   _TODOS_PANELES.forEach(function(pid) {
     var p = document.getElementById('panel-' + pid);

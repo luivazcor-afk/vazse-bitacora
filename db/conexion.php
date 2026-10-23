@@ -4,7 +4,9 @@
 function db(): PDO {
   static $pdo = null;
   if ($pdo) return $pdo;
-  $host = getenv('VAZSE_DB_HOST') ?: 'localhost';
+  // 127.0.0.1 y no "localhost": MySQL solo escucha en IPv4 y "localhost"
+  // intenta primero ::1, lo que agrega ~2 s a cada conexión en Windows.
+  $host = getenv('VAZSE_DB_HOST') ?: '127.0.0.1';
   $name = getenv('VAZSE_DB_NAME') ?: 'vazse_bitacora';
   $user = getenv('VAZSE_DB_USER') ?: 'root';
   $pass = getenv('VAZSE_DB_PASS') ?: '';

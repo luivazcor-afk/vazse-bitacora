@@ -17,7 +17,7 @@ if (!$archivo || !is_file($archivo)) exit("Uso: php importar_sheets.php sheet_da
 
 $d = json_decode(file_get_contents($archivo), true, 512, JSON_THROW_ON_ERROR);
 
-$pdo = new PDO('mysql:host=localhost;dbname=vazse_bitacora;charset=utf8mb4', 'root', '', [
+$pdo = new PDO('mysql:host=127.0.0.1;dbname=vazse_bitacora;charset=utf8mb4', 'root', '', [
   PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
 
