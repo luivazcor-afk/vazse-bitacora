@@ -48,9 +48,22 @@ La vista previa queda en `logs\ultimo_diario.html`; el historial en `logs\tareas
 3. Corte: `C:\xampp\php\php.exe C:\vazse-bitacora\db\corte_final.php` → escribe `SI`.
    Respalda la base en `C:\vazse-respaldos\`, descarga el Sheet y lo importa.
    No toca usuarios ni archivos subidos.
-4. En el Sheet → Extensiones → Apps Script → **Activadores**: elimina `triggerDiario` y
-   `triggerSemanal` (si no, llegarán los correos dos veces, y los del Sheet con datos viejos).
+4. ~~En el Sheet → Extensiones → Apps Script → **Activadores**: elimina `triggerDiario` y
+   `triggerSemanal`.~~ Hecho el 23-oct-2026 (`triggerBackup` se dejó).
 5. Desde ese momento todos capturan solo en el sistema nuevo.
+
+### Cerrar el sistema viejo (justo después del corte)
+
+6. **GitHub Pages → aviso de mudanza.** En la rama `main`, reemplazar `index.html` por
+   `servidor/aviso_mudanza.html`. Quien abra luivazcor-afk.github.io/vazse-bitacora verá
+   el aviso con la dirección nueva en vez de la app vieja.
+7. **Apps Script → dejar de publicar la app web.** Extensiones → Apps Script →
+   Implementar → Administrar implementaciones → **Archivar** la implementación.
+   Importante: hoy esa URL está en `config.json` (público en GitHub) y **cualquiera que la
+   conozca puede leer y modificar todos los datos** sin contraseña. Hacerlo **después** del
+   paso 3, porque `corte_final.php` descarga los datos por esa URL.
+8. **Google Sheet en solo lectura.** Compartir → a cada persona cámbiala de *Editor* a
+   *Lector*. Queda como archivo histórico.
 
 Para regresar al estado anterior al corte:
 `C:\xampp\mysql\bin\mysql.exe -h 127.0.0.1 -u root < "C:\vazse-respaldos\antes_del_corte_<fecha>.sql"`

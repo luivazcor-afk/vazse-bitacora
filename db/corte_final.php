@@ -81,3 +81,7 @@ if ($code !== 0) falla('La importación falló (ver mensaje arriba)');
 
 echo "\nCorte terminado. Si algo salió mal, el respaldo para regresar está en:\n  $respaldo\n";
 echo "(se restaura con:  C:\\xampp\\mysql\\bin\\mysql.exe -h 127.0.0.1 -u root < \"$respaldo\")\n";
+echo "\nAhora cierra el sistema viejo (servidor\\LEEME.md, pasos 6 a 8):\n";
+echo "  6. GitHub Pages: publicar el aviso de mudanza\n";
+echo "  7. Apps Script: Archivar la implementación de la app web\n";
+echo "  8. Google Sheet: dejar a todos como Lector\n";
