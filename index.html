@@ -1582,7 +1582,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
                 <div class="file-zone-text">📋 <strong>Seleccionar EIR</strong> o arrastra aquí</div>
               </div>
               <div id="eir-attached" style="display:none"></div>
-              <div class="upload-progress" id="eir-progress"><div class="spinner"></div><span>Subiendo EIR a Drive...</span></div>
+              <div class="upload-progress" id="eir-progress"><div class="spinner"></div><span>Subiendo EIR...</span></div>
             </div>
           </div>
         </div>
@@ -1727,7 +1727,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
             <div class="file-zone-text">📄 <strong>Seleccionar PDF</strong> o arrastra aquí</div>
           </div>
           <div id="pdf-attached" style="display:none"></div>
-          <div class="upload-progress" id="pdf-progress"><div class="spinner"></div><span>Subiendo factura a Drive...</span></div>
+          <div class="upload-progress" id="pdf-progress"><div class="spinner"></div><span>Subiendo factura...</span></div>
         </div>
 
         <!-- EVIDENCIA DE PAGO -->
@@ -1738,7 +1738,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
             <div class="file-zone-text">🧾 <strong>Seleccionar archivo</strong> o arrastra aquí</div>
           </div>
           <div id="evi-attached" style="display:none"></div>
-          <div class="upload-progress" id="evi-progress"><div class="spinner"></div><span>Subiendo evidencia a Drive...</span></div>
+          <div class="upload-progress" id="evi-progress"><div class="spinner"></div><span>Subiendo evidencia...</span></div>
         </div>
 
         <div class="fg full"><label>Notas</label><textarea id="c-notas" placeholder="Observaciones, referencia de pago, etc."></textarea></div>
@@ -4227,7 +4227,7 @@ async function agregarViaje() {
   try {
     // Subir EIR si hay
     if (esFlete && archivoEir && !urlEirSubido) {
-      toast('Subiendo EIR a Drive...','inf');
+      toast('Subiendo EIR...','inf');
       urlEirSubido = await subirArchivo(archivoEir, 'eir-progress');
     }
     registro.urlEir = urlEirSubido || '';
@@ -4596,6 +4596,7 @@ async function subirArchivo(file, progressId) {
   if (file.size > 50 * 1024 * 1024) {
     throw 'El archivo supera el límite de 50 MB. Por favor selecciona un archivo más pequeño.';
   }
+  if (authServidor()) return subirArchivoServidor(file, progressId);
   restoreToken();
   if (!gdriveToken || Date.now() >= gdriveTokenExpiry - 60000) {
     // Save file reference and redirect to auth
@@ -4612,6 +4613,26 @@ async function subirArchivo(file, progressId) {
     return; // page will redirect
   }
   return subirArchivoConToken(file, progressId, gdriveToken);
+}
+
+// Modo servidor (PHP): el archivo se guarda en el servidor (archivos.php) en vez de Drive
+async function subirArchivoServidor(file, progressId) {
+  const progress = document.getElementById(progressId);
+  if (progress) progress.classList.add('show');
+  try {
+    const fd = new FormData();
+    fd.append('archivo', file, file.name);
+    const res = await fetch(getScriptUrlBase().replace(/api\.php.*$/, 'archivos.php'), {
+      method: 'POST', credentials: 'same-origin', body: fd
+    });
+    let r;
+    try { r = await res.json(); } catch (e) { r = { ok: false, error: 'Respuesta inválida del servidor (' + res.status + ')' }; }
+    if (r.auth === false) { manejarSesionInvalida(r); throw r.error; }
+    if (!r.ok) throw r.error || 'No se pudo subir el archivo';
+    return r.url;
+  } finally {
+    if (progress) progress.classList.remove('show');
+  }
 }
 
 async function subirArchivoConToken(file, progressId, token) {
@@ -4693,12 +4714,12 @@ async function agregarCobranza() {
   try {
     // Subir PDF si hay
     if (archivoPdf && !urlPdfSubido) {
-      toast('Subiendo PDF a Drive...','inf');
+      toast('Subiendo PDF...','inf');
       urlPdfSubido = await subirArchivo(archivoPdf, 'pdf-progress');
     }
     // Subir evidencia si hay
     if (archivoEvi && !urlEviSubido) {
-      toast('Subiendo evidencia a Drive...','inf');
+      toast('Subiendo evidencia...','inf');
       urlEviSubido = await subirArchivo(archivoEvi, 'evi-progress');
     }
 
@@ -4897,6 +4918,7 @@ function exportarCobranza(){
 function verDoc(url,titulo){
   document.getElementById('modal-title').textContent=titulo;
   document.getElementById('modal-link').href=url;
+  document.getElementById('modal-link').textContent=url.includes('drive.google.com')?'Abrir en Drive ↗':'Abrir ↗';
   const body=document.getElementById('modal-body');
   const esImagen=/\.(jpg|jpeg|png|gif|webp)/i.test(url)||(url.includes('drive.google.com')&&!url.includes('.pdf'));
   if(esImagen){
@@ -5260,12 +5282,12 @@ async function guardarEditCobranza() {
   try {
     // Subir nuevo PDF si se seleccionó
     if (ecPdfFile && !ecUrlPdfNuevo) {
-      toast('Subiendo PDF a Drive...', 'inf');
+      toast('Subiendo PDF...', 'inf');
       ecUrlPdfNuevo = await subirArchivo(ecPdfFile, 'ec-pdf-progress');
     }
     // Subir nueva evidencia si se seleccionó
     if (ecEviFile && !ecUrlEviNuevo) {
-      toast('Subiendo evidencia a Drive...', 'inf');
+      toast('Subiendo evidencia...', 'inf');
       ecUrlEviNuevo = await subirArchivo(ecEviFile, 'ec-evi-progress');
     }
 
@@ -5846,6 +5868,8 @@ function busquedaGlobal() {
 
 // ── DRIVE AUTH HELPERS ───────────────────────────────
 function verificarTokenAntesDeSeleccionar() {
+  // En modo servidor no hace falta autorizar Google Drive
+  if (authServidor()) { document.getElementById('v-eir-input').click(); return; }
   restoreToken();
   if (gdriveToken && Date.now() < gdriveTokenExpiry - 60000) {
     // Token válido — abrir selector de archivo
@@ -8489,6 +8513,9 @@ function aplicarUsuarioServidor(u) {
   actualizarBadgeUsuario();
   const b = document.getElementById('badge-usuario');
   if (b) b.title = 'Mi cuenta';
+  // Los archivos van al servidor: el aviso de autorizar Google Drive no aplica
+  const avisoDrive = document.getElementById('v-drive-auth-needed');
+  if (avisoDrive) avisoDrive.style.display = 'none';
 }
 
 function _modoSetup(activo, permitido) {

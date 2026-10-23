@@ -172,6 +172,18 @@ CREATE TABLE IF NOT EXISTS login_intentos (
   KEY idx_ip_fecha (ip, fecha)
 ) ENGINE=InnoDB;
 
+-- Archivos subidos (facturas, evidencias, EIR). Reemplaza a Google Drive.
+-- El archivo vive fuera de la carpeta web; solo se descarga con sesión (archivos.php).
+CREATE TABLE IF NOT EXISTS archivos (
+  id                CHAR(32)      NOT NULL PRIMARY KEY,   -- aleatorio, va en la URL
+  nombre            VARCHAR(255)  NOT NULL,               -- nombre original
+  mime              VARCHAR(100)  NOT NULL,
+  tamano            INT UNSIGNED  NOT NULL,
+  ruta              VARCHAR(255)  NOT NULL,               -- relativa a la carpeta de archivos
+  subido_por        VARCHAR(60)   NOT NULL DEFAULT '',
+  subido_en         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 -- Hoja "Config" (pares clave/valor)
 CREATE TABLE IF NOT EXISTS config (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

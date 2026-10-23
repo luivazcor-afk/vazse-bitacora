@@ -1,3 +1,5 @@
 _migracion/
 
 config.local.json
+db/config.servidor.php
+logs/
