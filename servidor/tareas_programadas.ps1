@@ -11,6 +11,10 @@ $tareas = @(
   @{ Nombre = 'Bitacora - Respaldo';         Script = 'respaldo.php'; Trigger = New-ScheduledTaskTrigger -Daily -At '02:00' }
   @{ Nombre = 'Bitacora - Diario';           Script = 'diario.php';   Trigger = New-ScheduledTaskTrigger -Daily -At '08:00' }
   @{ Nombre = 'Bitacora - Resumen semanal';  Script = 'semanal.php';  Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At '08:00' }
+  # Trae cliente, contenedor, peso, bultos, mercancía y BL del otro sistema de captura.
+  # Si 'externo' no está configurado en db/config.servidor.php, no hace nada.
+  @{ Nombre = 'Bitacora - Sincronizar captura'; Script = 'sincronizar_externo.php'
+     Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 15) }
 )
 
 $ajustes = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 1) `

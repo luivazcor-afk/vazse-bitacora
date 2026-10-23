@@ -68,6 +68,33 @@ La vista previa queda en `logs\ultimo_diario.html`; el historial en `logs\tareas
 Para regresar al estado anterior al corte:
 `C:\xampp\mysql\bin\mysql.exe -h 127.0.0.1 -u root < "C:\vazse-respaldos\antes_del_corte_<fecha>.sql"`
 
+## Datos del otro sistema de captura ("Login VAZSE", 192.168.1.152)
+
+La Bitácora trae de ese sistema **referencia, cliente, contenedor, peso, bultos, mercancía
+y BL** (solo lectura, cada 15 minutos) y los usa para:
+
+- **Carta de Instrucciones:** al abrirla desde un viaje se llenan contenedor, BL, bultos,
+  peso y mercancía (buscando por la referencia del viaje; si la referencia tiene varios
+  contenedores, toma el del viaje).
+- **Captura de viajes:** al escribir la referencia sugiere cliente y contenedor
+  (solo llena lo que esté vacío).
+
+Para conectarlo:
+
+1. **En la computadora del otro sistema**, en su phpMyAdmin → pestaña SQL (cambia
+   `NOMBRE_BASE`, la IP de la Bitácora y la contraseña):
+   ```sql
+   CREATE USER 'bitacora_lectura'@'IP_DE_LA_BITACORA' IDENTIFIED BY 'una-contraseña-larga';
+   GRANT SELECT ON NOMBRE_BASE.* TO 'bitacora_lectura'@'IP_DE_LA_BITACORA';
+   ```
+   `IP_DE_LA_BITACORA` = la IP con la que esta PC llega a esa (con Tailscale, su IP 100.x).
+2. **Aquí**, en `db\config.servidor.php` → `'externo'`: host, base, usuario, contraseña y la
+   `consulta` que devuelve las 7 columnas con estos alias:
+   `referencia, cliente, contenedor, peso, bultos, mercancia, bl`.
+3. Probar sin guardar nada: `C:\xampp\php\php.exe C:\vazse-bitacora\tareas\sincronizar_externo.php --prueba`
+4. Volver a ejecutar `instalar_servicios.bat` como administrador (agrega la tarea
+   "Bitacora - Sincronizar captura", cada 15 minutos).
+
 ## Carpetas importantes (inclúyelas en tus respaldos)
 
 | Qué | Dónde |

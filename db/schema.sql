@@ -184,6 +184,25 @@ CREATE TABLE IF NOT EXISTS archivos (
   subido_en         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- Copia de solo lectura de datos del otro sistema de captura (referencia →
+-- cliente, contenedor, peso, bultos, mercancía, BL). La llena
+-- tareas/sincronizar_externo.php; la Bitácora la consulta para precargar
+-- la captura de viajes y la Carta de Instrucciones. No se edita a mano.
+-- Una referencia puede tener varios contenedores: una fila por cada uno.
+CREATE TABLE IF NOT EXISTS referencias_externas (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  referencia        VARCHAR(60)   NOT NULL,               -- normalizada: sin espacios, mayúsculas
+  cliente           VARCHAR(150)  NOT NULL DEFAULT '',
+  contenedor        VARCHAR(30)   NOT NULL DEFAULT '',    -- normalizado igual que la referencia
+  peso              VARCHAR(30)   NOT NULL DEFAULT '',    -- texto tal cual viene (ej. "7,518.000")
+  bultos            VARCHAR(30)   NOT NULL DEFAULT '',
+  mercancia         VARCHAR(500)  NOT NULL DEFAULT '',
+  bl                VARCHAR(60)   NOT NULL DEFAULT '',
+  sincronizado_en   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_ref_cont (referencia, contenedor),
+  KEY idx_contenedor (contenedor)
+) ENGINE=InnoDB;
+
 -- Hoja "Config" (pares clave/valor)
 CREATE TABLE IF NOT EXISTS config (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

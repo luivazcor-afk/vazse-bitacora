@@ -29,4 +29,17 @@ return [
   // o la carpeta de Google Drive para escritorio. Vacío = no hacer segunda copia.
   // Ej.: 'E:/Respaldos Bitacora'  o  'G:/Mi unidad/Respaldos Bitacora'
   'respaldo_copia_dir' => '',
+
+  // Otro sistema de captura (tareas/sincronizar_externo.php). Se conecta a su
+  // MariaDB con un usuario de SOLO LECTURA. Vacío/sin 'host' = desactivado.
+  'externo' => [
+    'host'     => '',              // IP de esa computadora (ej. su IP de Tailscale)
+    'puerto'   => 3306,
+    'base'     => '',              // nombre de su base de datos
+    'usuario'  => 'bitacora_lectura',
+    'password' => '',
+    // Consulta que devuelve EXACTAMENTE estas columnas (con estos alias):
+    // referencia, cliente, contenedor, peso, bultos, mercancia, bl
+    'consulta' => '',
+  ],
 ];

@@ -1549,7 +1549,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
         <div class="fg"><label>Destino</label><input type="text" id="v-destino" placeholder="Ciudad / lugar"></div>
         <div class="fg"><label>Costo ($)</label><input type="number" id="v-costo" placeholder="0.00" min="0" step="0.01"></div>
         <div class="fg"><label>Precio cobrado ($)</label><input type="number" id="v-cobradof" placeholder="0.00" min="0" step="0.01"></div>
-        <div class="fg"><label>Referencia</label><input type="text" id="v-referencia" placeholder="N° orden, contrato, etc."></div>
+        <div class="fg"><label>Referencia</label><input type="text" id="v-referencia" placeholder="N° orden, contrato, etc." onchange="autollenarViajeDesdeExterno('v')"></div>
         <div class="fg full"><label>Notas</label><textarea id="v-notas" placeholder="Conductor, mercancía, observaciones..."></textarea></div>
 
         <!-- SECCIÓN EXCLUSIVA PARA FLETES -->
@@ -2930,7 +2930,7 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
       <div class="fg"><label>Destino</label><input type="text" id="ev-destino"></div>
       <div class="fg"><label>Costo ($)</label><input type="number" id="ev-costo" min="0" step="0.01"></div>
       <div class="fg"><label>Precio cobrado ($)</label><input type="number" id="ev-cobrado" min="0" step="0.01"></div>
-      <div class="fg"><label>Referencia</label><input type="text" id="ev-referencia"></div>
+      <div class="fg"><label>Referencia</label><input type="text" id="ev-referencia" onchange="autollenarViajeDesdeExterno('ev')"></div>
       <div class="fg" style="grid-column:1/-1"><label>Notas</label><textarea id="ev-notas" style="min-height:52px"></textarea></div>
 
       <!-- CAMPOS FLETE EN EDICIÓN -->
@@ -9090,6 +9090,72 @@ function abrirCarta(viajeId) {
   // Show modal
   precargarMisDatosCarta();
   document.getElementById('carta-overlay').classList.add('show');
+  if (authServidor()) precargarCartaDesdeExterno(v);
+}
+
+// ── DATOS DEL OTRO SISTEMA DE CAPTURA (modo servidor) ──
+// externo.php devuelve lo sincronizado por referencia: cliente, contenedor,
+// peso, bultos, mercancía y BL (una fila por contenedor).
+const _normClave = s => String(s || '').replace(/\s+/g, '').toUpperCase();
+
+async function buscarExterno(referencia) {
+  const ref = _normClave(referencia);
+  if (!ref || !authServidor()) return [];
+  try {
+    const res = await fetch(getScriptUrlBase().replace(/api\.php.*$/, 'externo.php') + '?ref=' + encodeURIComponent(ref),
+      { credentials: 'same-origin' });
+    const r = await res.json();
+    if (r.auth === false) { manejarSesionInvalida(r); return []; }
+    return r.ok ? r.filas : [];
+  } catch (e) { return []; }
+}
+
+// La fila del contenedor indicado; si no se indica, la única que haya.
+// Si hay varias y no se sabe cuál, null (solo se usan los datos comunes).
+function _filaExterna(filas, contenedor) {
+  const c = _normClave(contenedor);
+  if (c) return filas.find(f => f.contenedor === c) || null;
+  return filas.length === 1 ? filas[0] : null;
+}
+// Valor del campo si es igual en todas las filas (ej. el BL de una referencia con varios contenedores)
+function _comunExterno(filas, campo) {
+  const vals = [...new Set(filas.map(f => f[campo]).filter(Boolean))];
+  return vals.length === 1 ? vals[0] : '';
+}
+
+async function precargarCartaDesdeExterno(v) {
+  const filas = await buscarExterno(v.referencia);
+  if (!filas.length || _cartaViajeId !== v.id) return;   // sin datos, o ya abrieron otra carta
+  const fila = _filaExterna(filas, v.contenedor);
+  const dato = campo => fila ? fila[campo] : _comunExterno(filas, campo);
+  const poner = (id, val) => { if (val) document.getElementById(id).value = val; };
+  poner('ci-contenedor', fila ? fila.contenedor : (document.getElementById('ci-contenedor').value || ''));
+  poner('ci-bl', dato('bl'));
+  poner('ci-bultos', dato('bultos'));
+  poner('ci-peso', dato('peso'));
+  poner('ci-desc', dato('mercancia'));
+  if (fila) toast('BL, peso, bultos y mercancía precargados del sistema de captura 📦', 'inf');
+  else toast('La referencia tiene ' + filas.length + ' contenedores (' + filas.map(f => f.contenedor || 's/n').join(', ') +
+             '). Pon el contenedor en el viaje para precargar sus datos.', 'inf');
+}
+
+// Al capturar/editar la referencia de un viaje: sugerir cliente y contenedor.
+// pref = 'v' (nuevo viaje) o 'ev' (editar viaje). Solo llena lo que está vacío.
+async function autollenarViajeDesdeExterno(pref) {
+  const refEl = document.getElementById(pref + '-referencia');
+  const filas = await buscarExterno(refEl.value);
+  if (!filas.length) return;
+  const cliEl = document.getElementById(pref + '-cliente');
+  const contEl = document.getElementById(pref + '-contenedor');
+  const fila = _filaExterna(filas, contEl && contEl.value);
+  const llenados = [];
+  const cliente = fila ? fila.cliente : _comunExterno(filas, 'cliente');
+  if (cliEl && !cliEl.value.trim() && cliente) { cliEl.value = cliente; llenados.push('cliente'); }
+  if (contEl && !contEl.value.trim() && fila && fila.contenedor) { contEl.value = fila.contenedor; llenados.push('contenedor'); }
+  if (llenados.length) toast('Del sistema de captura: ' + llenados.join(' y ') + ' ✓', 'inf');
+  if (!fila && filas.length > 1 && contEl && !contEl.value.trim()) {
+    toast('Esta referencia tiene ' + filas.length + ' contenedores: ' + filas.map(f => f.contenedor || 's/n').join(', '), 'inf');
+  }
 }
 
 function cerrarCarta() {
