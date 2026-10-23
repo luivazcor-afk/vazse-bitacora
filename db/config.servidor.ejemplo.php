@@ -30,9 +30,16 @@ return [
   // Ej.: 'E:/Respaldos Bitacora'  o  'G:/Mi unidad/Respaldos Bitacora'
   'respaldo_copia_dir' => '',
 
-  // Otro sistema de captura (tareas/sincronizar_externo.php). Se conecta a su
-  // MariaDB con un usuario de SOLO LECTURA. Vacío/sin 'host' = desactivado.
+  // Otro sistema de captura (tareas/sincronizar_externo.php). Sin 'url' ni 'host' = desactivado.
   'externo' => [
+    // 'api' (recomendado): su API devuelve {"filas":[{referencia, cliente, contenedor,
+    // peso, bultos, mercancia, bl}, ...]} si se manda "Authorization: Bearer <token>".
+    'tipo'     => 'api',
+    'url'      => '',              // ej. https://192.168.1.152/api_bitacora.php
+    'token'    => '',              // la misma clave que tiene configurada la API del otro sistema
+    'verificar_certificado' => false, // false si ese XAMPP usa certificado autofirmado
+
+    // 'bd': conexión directa a su MariaDB con un usuario de SOLO LECTURA
     'host'     => '',              // IP de esa computadora (ej. su IP de Tailscale)
     'puerto'   => 3306,
     'base'     => '',              // nombre de su base de datos

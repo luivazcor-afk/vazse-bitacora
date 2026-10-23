@@ -79,7 +79,18 @@ y BL** (solo lectura, cada 15 minutos) y los usa para:
 - **Captura de viajes:** al escribir la referencia sugiere cliente y contenedor
   (solo llena lo que esté vacío).
 
-Para conectarlo:
+### Opción A (recomendada): API
+
+1. **En el otro sistema** se agrega `api_bitacora.php`, que responde por HTTPS
+   `{"filas":[{"referencia":…,"cliente":…,"contenedor":…,"peso":…,"bultos":…,"mercancia":…,"bl":…}]}`
+   solo si recibe el encabezado `Authorization: Bearer <clave>`.
+2. **Aquí**, en `db\config.servidor.php` → `'externo'`: `'tipo' => 'api'`, la `url` y la
+   misma clave en `token` (con certificado autofirmado: `'verificar_certificado' => false`).
+3. Probar sin guardar nada: `C:\xampp\php\php.exe C:\vazse-bitacora\tareas\sincronizar_externo.php --prueba`
+4. Volver a ejecutar `instalar_servicios.bat` como administrador (agrega la tarea
+   "Bitacora - Sincronizar captura", cada 15 minutos).
+
+### Opción B: conexión directa a su base de datos
 
 1. **En la computadora del otro sistema**, en su phpMyAdmin → pestaña SQL (cambia
    `NOMBRE_BASE`, la IP de la Bitácora y la contraseña):
@@ -88,12 +99,10 @@ Para conectarlo:
    GRANT SELECT ON NOMBRE_BASE.* TO 'bitacora_lectura'@'IP_DE_LA_BITACORA';
    ```
    `IP_DE_LA_BITACORA` = la IP con la que esta PC llega a esa (con Tailscale, su IP 100.x).
-2. **Aquí**, en `db\config.servidor.php` → `'externo'`: host, base, usuario, contraseña y la
-   `consulta` que devuelve las 7 columnas con estos alias:
+2. **Aquí**, en `db\config.servidor.php` → `'externo'`: `'tipo' => 'bd'`, host, base,
+   usuario, contraseña y la `consulta` que devuelve las 7 columnas con estos alias:
    `referencia, cliente, contenedor, peso, bultos, mercancia, bl`.
-3. Probar sin guardar nada: `C:\xampp\php\php.exe C:\vazse-bitacora\tareas\sincronizar_externo.php --prueba`
-4. Volver a ejecutar `instalar_servicios.bat` como administrador (agrega la tarea
-   "Bitacora - Sincronizar captura", cada 15 minutos).
+3. Probar y programar igual que en la opción A (pasos 3 y 4).
 
 ## Carpetas importantes (inclúyelas en tus respaldos)
 
