@@ -2,10 +2,12 @@
 /**
  * Trae del otro sistema de captura: referencia, cliente, contenedor, peso,
  * bultos, mercancía y BL, y los guarda en la tabla referencias_externas.
+ * Opcionales: naviera, tipo_contenedor y regimen (si no vienen, se conserva lo que había).
  *
  * Dos formas de leer (db/config.servidor.php → 'externo' → 'tipo'):
  *   'api' — GET a la API del otro sistema con una clave (token); responde
- *           {"filas":[{referencia, cliente, contenedor, peso, bultos, mercancia, bl}, ...]}
+ *           {"filas":[{referencia, cliente, contenedor, peso, bultos, mercancia, bl,
+ *                      naviera, tipo_contenedor, regimen}, ...]}
  *   'bd'  — consulta directa a su MariaDB con un usuario de solo lectura.
  * Solo LEE del otro sistema. Agrega y actualiza; no borra lo que ya se había traído.
  *
@@ -17,7 +19,9 @@ require __DIR__ . '/comun.php';
 
 $T = 'externo';
 const COLUMNAS = ['referencia', 'cliente', 'contenedor', 'peso', 'bultos', 'mercancia', 'bl'];
-const LIMITES = ['referencia' => 60, 'cliente' => 150, 'contenedor' => 30, 'peso' => 30, 'bultos' => 30, 'mercancia' => 500, 'bl' => 60];
+const OPCIONALES = ['naviera', 'tipo_contenedor', 'regimen'];
+const LIMITES = ['referencia' => 60, 'cliente' => 150, 'contenedor' => 30, 'peso' => 30, 'bultos' => 30, 'mercancia' => 500, 'bl' => 60,
+                 'naviera' => 150, 'tipo_contenedor' => 30, 'regimen' => 80];
 
 // Referencias y contenedores se comparan sin espacios y en mayúsculas
 function normalizarClave($v): string { return mb_strtoupper(preg_replace('/\s+/u', '', (string)$v)); }
@@ -95,7 +99,7 @@ try {
     $ref = normalizarClave(limpiar($f['referencia'] ?? '', 200));
     if ($ref === '') { $sinRef++; continue; }
     $d = ['referencia' => mb_substr($ref, 0, 60), 'contenedor' => mb_substr(normalizarClave(limpiar($f['contenedor'] ?? '', 200)), 0, 30)];
-    foreach (['cliente', 'peso', 'bultos', 'mercancia', 'bl'] as $c) $d[$c] = limpiar($f[$c] ?? '', LIMITES[$c]);
+    foreach (array_merge(['cliente', 'peso', 'bultos', 'mercancia', 'bl'], OPCIONALES) as $c) $d[$c] = limpiar($f[$c] ?? '', LIMITES[$c]);
     $datos[$d['referencia'] . '|' . $d['contenedor']] = $d;   // si viene repetida, gana la última
   }
 
@@ -105,14 +109,20 @@ try {
     exit(0);
   }
 
-  $st = db()->prepare('INSERT INTO referencias_externas (referencia, contenedor, cliente, peso, bultos, mercancia, bl)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)
+  // Opcionales vacíos no pisan lo ya guardado (la API puede no mandarlos todavía)
+  $st = db()->prepare('INSERT INTO referencias_externas (referencia, contenedor, cliente, peso, bultos, mercancia, bl,
+                         naviera, tipo_contenedor, regimen)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                        ON DUPLICATE KEY UPDATE cliente = VALUES(cliente), peso = VALUES(peso), bultos = VALUES(bultos),
-                         mercancia = VALUES(mercancia), bl = VALUES(bl)');
+                         mercancia = VALUES(mercancia), bl = VALUES(bl),
+                         naviera = IF(VALUES(naviera) = \'\', naviera, VALUES(naviera)),
+                         tipo_contenedor = IF(VALUES(tipo_contenedor) = \'\', tipo_contenedor, VALUES(tipo_contenedor)),
+                         regimen = IF(VALUES(regimen) = \'\', regimen, VALUES(regimen))');
   db()->beginTransaction();
   $nuevas = $cambiadas = 0;
   foreach ($datos as $d) {
-    $st->execute([$d['referencia'], $d['contenedor'], $d['cliente'], $d['peso'], $d['bultos'], $d['mercancia'], $d['bl']]);
+    $st->execute([$d['referencia'], $d['contenedor'], $d['cliente'], $d['peso'], $d['bultos'], $d['mercancia'], $d['bl'],
+                  $d['naviera'], $d['tipo_contenedor'], $d['regimen']]);
     // rowCount: 1 = insertada, 2 = actualizada, 0 = sin cambios
     if ($st->rowCount() === 1) $nuevas++; elseif ($st->rowCount() === 2) $cambiadas++;
   }
