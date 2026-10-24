@@ -9137,7 +9137,8 @@ async function precargarCartaDesdeExterno(v) {
   poner('ci-naviera', dato('naviera'));
   poner('ci-tipo-cont', dato('tipo_contenedor'));
   poner('ci-regimen', dato('regimen'));
-  if (fila) toast('BL, peso, bultos, mercancía, naviera y régimen precargados del sistema de captura 📦', 'inf');
+  poner('ci-factura', dato('factura'));
+  if (fila) toast('BL, peso, bultos, mercancía, naviera, régimen y factura precargados del sistema de captura 📦', 'inf');
   else toast('La referencia tiene ' + filas.length + ' contenedores (' + filas.map(f => f.contenedor || 's/n').join(', ') +
              '). Pon el contenedor en el viaje para precargar sus datos.', 'inf');
 }

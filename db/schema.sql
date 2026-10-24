@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS referencias_externas (
   naviera           VARCHAR(150)  NOT NULL DEFAULT '',
   tipo_contenedor   VARCHAR(30)   NOT NULL DEFAULT '',    -- tamaño/tipo, ej. "40 HC"
   regimen           VARCHAR(80)   NOT NULL DEFAULT '',    -- ej. "DEFINITIVO DE IMPORTACIÓN"
+  factura           VARCHAR(200)  NOT NULL DEFAULT '',
   sincronizado_en   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_ref_cont (referencia, contenedor),
   KEY idx_contenedor (contenedor)
@@ -210,7 +211,8 @@ CREATE TABLE IF NOT EXISTS referencias_externas (
 ALTER TABLE referencias_externas
   ADD COLUMN IF NOT EXISTS naviera         VARCHAR(150) NOT NULL DEFAULT '' AFTER bl,
   ADD COLUMN IF NOT EXISTS tipo_contenedor VARCHAR(30)  NOT NULL DEFAULT '' AFTER naviera,
-  ADD COLUMN IF NOT EXISTS regimen         VARCHAR(80)  NOT NULL DEFAULT '' AFTER tipo_contenedor;
+  ADD COLUMN IF NOT EXISTS regimen         VARCHAR(80)  NOT NULL DEFAULT '' AFTER tipo_contenedor,
+  ADD COLUMN IF NOT EXISTS factura         VARCHAR(200) NOT NULL DEFAULT '' AFTER regimen;
 
 -- Hoja "Config" (pares clave/valor)
 CREATE TABLE IF NOT EXISTS config (
