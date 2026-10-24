@@ -3886,10 +3886,10 @@ function renderResumen() {
   document.getElementById('res-cobrado').textContent  = fmt(tc);
   document.getElementById('res-costo').textContent    = fmt(tk);
   const ru = document.getElementById('res-utilidad');
-  ru.textContent = fmt(tu); ru.className = 'metric-val '+(tu>=0?'pos':'neg');
+  ru.textContent = fmt(tu); ru.className = 'res-kpi-val mono '+(tu>=0?'pos':'neg');
   const rm = document.getElementById('res-margen');
   rm.textContent = margen.toFixed(1)+'%';
-  rm.className = 'metric-val '+(margen>=50?'pos':margen>=20?'warn':'neg');
+  rm.className = 'res-kpi-val mono '+(margen>=50?'pos':margen>=20?'warn':'neg');
   document.getElementById('res-viajes').textContent = viajes.length;
   document.getElementById('resumen-periodo').textContent = viajes.length + ' viaje' + (viajes.length!==1?'s':'') + ' · ' + cobranzas.length + ' factura' + (cobranzas.length!==1?'s':'');
 
