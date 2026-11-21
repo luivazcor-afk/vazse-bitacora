@@ -1311,6 +1311,12 @@ html[data-theme=dark] .report-panel .metric-label{color:#9AA0A9}
   </div>
 
   <!-- PESTAÑAS -->
+  <!-- AVISO SOLO CONSULTA (se muestra cuando la app apunta a Google Sheets) -->
+  <div id="aviso-solo-consulta" role="alert" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;background:#FDECEC;border:1px solid #E5A3A3;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#8A1C1C">
+    <span style="font-size:18px">⛔</span>
+    <span><strong>Solo consulta.</strong> Esta bitácora ya no guarda cambios. Captura viajes, cobranza y pagos en la
+      <a href="https://192.168.68.108/vazse-bitacora/" style="color:#8A1C1C;font-weight:700">bitácora del servidor de la oficina</a>.</span>
+  </div>
   <!-- OFFLINE BANNER -->
   <div class="offline-banner" id="offline-banner">
     <span class="offline-dot"></span>
@@ -3102,6 +3108,22 @@ async function cargarConfig() {
     CFG = { ..._CFG_DEFAULT };
   }
   aplicarConfig();
+  mostrarAvisoSoloConsulta();
+}
+
+// ── SOLO CONSULTA (21-nov-2026) ───────────────────────
+// La bitácora oficial es la del servidor de la oficina (PHP + MySQL). Esta
+// versión de GitHub Pages escribe en Google Sheets y no aplica la regla de
+// montos netos (viaje sin IVA; cobranza = neto + IVA − retención), así que
+// cuando apunta al Apps Script queda de solo consulta. Con api.php (servidor
+// local) no aplica.
+const URL_BITACORA_OFICIAL = 'https://192.168.68.108/vazse-bitacora/';
+function soloConsulta() { return /script\.google\.com/i.test(getScriptUrlBase()); }
+const MSG_SOLO_CONSULTA = 'Esta bitácora (GitHub Pages / Google Sheets) es solo de consulta.\n\n' +
+  'Los viajes, la cobranza y los pagos se capturan en la bitácora del servidor de la oficina:\n' + URL_BITACORA_OFICIAL;
+function mostrarAvisoSoloConsulta() {
+  const el = document.getElementById('aviso-solo-consulta');
+  if (el) el.style.display = soloConsulta() ? 'flex' : 'none';
 }
 
 function aplicarConfig() {
@@ -3233,6 +3255,7 @@ function mostrarEstadoConexion() {
 async function sincronizarCola() {
   const cola = getCola();
   if (!cola.length) return;
+  if (soloConsulta()) { toast('Solo consulta: la cola offline no se envía a Google Sheets', 'err'); return; }
   if (!estaOnline()) { toast('Sin conexión — reintenta cuando tengas internet', 'err'); return; }
 
   toast('Sincronizando ' + cola.length + ' registro(s)...', 'inf');
@@ -3320,6 +3343,14 @@ function _etiquetarUsuario(payload) {
 }
 
 async function sendPost(payload) {
+  if (soloConsulta()) {
+    // No se escribe ni se encola: se avisa y se recarga para descartar el
+    // cambio que la pantalla ya hubiera aplicado en memoria.
+    console.warn('[VAZSE] Solo consulta — escritura bloqueada:', payload && payload.action);
+    alert('⛔ No se guardó el cambio.\n\n' + MSG_SOLO_CONSULTA);
+    location.reload();
+    return { ok: false, error: 'Bitácora de solo consulta' };
+  }
   payload = _etiquetarUsuario(payload);
   if (estaOnline()) {
     try {
